@@ -27,25 +27,6 @@ public class SearchController {
 
     private final SearchService searchService;
 
-//    @GetMapping
-//    public ResponseEntity<ApiResponse<SearchResultResponse>> search(
-//            @RequestParam("q") String query,
-//            @RequestParam(defaultValue = "all") String type,
-//            @RequestParam(defaultValue = "0") int page,
-//            @RequestParam(defaultValue = "20") int size) {
-//
-//        SearchRequest request = new SearchRequest();
-//        request.setQuery(query);
-//        request.setType(type);
-//        request.setPage(page);
-//        request.setSize(size);
-//
-//        SearchResultResponse result = searchService.searchAll(request);
-//        return ResponseEntity.ok(
-//                ApiResponse.success(result, "Search completed successfully")
-//        );
-//    }
-
     @GetMapping("/users")
     public ResponseEntity<ApiResponse<Page<UserSearchResponseSimple>>> searchUsers(
             @RequestParam("q") String query,

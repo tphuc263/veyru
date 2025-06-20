@@ -7,5 +7,5 @@ import lombok.Data;
 public class UserSearchResponseSimple {
     private String id;
     private String username;
-    private String profileImageUrl;
+    private String imageUrl;
 }

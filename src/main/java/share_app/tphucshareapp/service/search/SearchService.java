@@ -40,38 +40,6 @@ public class SearchService implements ISearchService {
     private final UserService userService;
     private final FollowService followService;
 
-//    @Override
-//    public SearchResultResponse searchAll(SearchRequest request) {
-//        log.info("Performing comprehensive search for: {}", request.getQuery());
-//
-//        String query = sanitizeSearchQuery(request.getQuery());
-//        if (query.isEmpty()) {
-//            return new SearchResultResponse();
-//        }
-//
-//        SearchResultResponse result = new SearchResultResponse();
-//        result.setQuery(request.getQuery());
-//
-//        // Search users (limit to small number for "all" search)
-//        Page<UserSearchResponse> users = searchUsers(query, 0, 5);
-//        result.setUsers(users.getContent().stream()
-//                .map(this::convertToUserProfileResponse)
-//                .toList());
-//        result.setTotalUsers(users.getTotalElements());
-//
-//        // Search photos
-//        Page<PhotoResponse> photos = searchPhotos(query, 0, 10);
-//        result.setPhotos(photos.getContent());
-//        result.setTotalPhotos(photos.getTotalElements());
-//
-//        // Search tags
-//        List<Tag> tags = searchTags(query, 5);
-//        result.setTags(tags);
-//        result.setTotalTags(tags.size());
-//
-//        return result;
-//    }
-
     @Override
     public Page<UserSearchResponseSimple> searchUsers(String query, int page, int size) {
         log.info("Searching users for: {}", query);
