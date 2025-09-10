@@ -39,6 +39,13 @@ public class UserService implements IUserService {
         if (followService.isFollowing(currentUser.getId(), targetUserId)) {
             response.setFollowingByCurrentUser(true);
         }
+
+        HashMap<String, Long> stats = new HashMap<>();
+        stats.put("posts", targetUser.getPhotoCount());
+        stats.put("followers", targetUser.getFollowerCount());
+        stats.put("following", targetUser.getFollowingCount());
+
+        response.setStats(stats);
         return response;
     }
 
@@ -46,10 +53,12 @@ public class UserService implements IUserService {
     public UserProfileResponse getCurrentUserProfile() {
         User user = getCurrentUser();
         UserProfileResponse response = modelMapper.map(user, UserProfileResponse.class);
+
         HashMap<String, Long> stats = new HashMap<>();
         stats.put("posts", user.getPhotoCount());
         stats.put("followers", user.getFollowerCount());
         stats.put("following", user.getFollowingCount());
+
         response.setStats(stats);
         return response;
     }

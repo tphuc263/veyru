@@ -23,7 +23,7 @@ public class NewsfeedController {
     @GetMapping
     public ResponseEntity<ApiResponse<Page<PhotoResponse>>> getNewsfeed(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "10") int size) {
 
         // Get current user from security context
         String userId = userService.getCurrentUser().getId();

@@ -12,8 +12,6 @@ import java.util.List;
 
 public interface ISearchService {
 
-//    SearchResultResponse searchAll(SearchRequest request);
-
     Page<UserSearchResponseSimple> searchUsers(String query, int page, int size);
 
     Page<PhotoResponse> searchPhotos(String query, int page, int size);

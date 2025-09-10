@@ -24,17 +24,13 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest request) {
-        log.info("Login request: {}", request);
         LoginResponse loginResponse = authService.login(request);
-        log.info("Login response: {}", loginResponse);
         return ResponseEntity.ok(ApiResponse.success(loginResponse, "Login successful"));
     }
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<Void>> register(@RequestBody RegisterRequest request) {
-        log.info("Register request: {}", request);
         authService.register(request);
-        log.info("Register successful");
         return ResponseEntity.ok(ApiResponse.success(null, "Register successful"));
     }
 }

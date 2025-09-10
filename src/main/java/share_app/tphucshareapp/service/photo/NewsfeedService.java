@@ -41,13 +41,11 @@ public class NewsfeedService implements INewsfeedService {
 
     @Override
     public Page<PhotoResponse> getNewsfeed(String userId, int page, int size) {
-        log.info("Generating real-time newsfeed for user: {}", userId);
         User currentUser = userService.findUserById(userId);
 
         // Step 1: Get users that current user follows
         List<String> followingIds = getFollowingUserIds(userId);
         if (followingIds.isEmpty()) {
-            log.info("User {} follows no one, returning empty feed", userId);
             return Page.empty();
         }
 
@@ -63,7 +61,6 @@ public class NewsfeedService implements INewsfeedService {
 
     @Override
     public Page<PhotoResponse> getCachedNewsfeed(String userId, int page, int size) {
-        log.info("Retrieving cached newsfeed for user: {}", userId);
         User currentUser = userService.findUserById(userId);
 
         String cacheKey = NEWSFEED_CACHE_KEY + userId;

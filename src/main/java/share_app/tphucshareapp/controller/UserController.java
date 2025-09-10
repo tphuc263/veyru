@@ -41,9 +41,7 @@ public class UserController {
     @PutMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<UserProfileResponse>> updateProfile(
             @ModelAttribute UpdateProfileRequest request) {
-        log.info("Updating user profile");
         UserProfileResponse updatedProfile = userService.updateProfile(request);
-        log.info("User profile updated successfully");
         return ResponseEntity.ok(ApiResponse.success(updatedProfile, "Profile updated successfully"));
     }
 }

@@ -24,7 +24,7 @@ public interface PhotoRepository extends MongoRepository<Photo, String> {
 
     Page<Photo> findByTagsIn(List<String> tagNames, Pageable pageable);
 
-    Page<Photo> findByUserUserId(String userId, Pageable pageable);
+//    Page<Photo> findByUserUserId(String userId, Pageable pageable);
 
     List<Photo> findByUser_UserIdInAndCreatedAtAfterOrderByCreatedAtDesc(List<String> userIds, Instant createdAt);
 }

@@ -137,30 +137,6 @@ public class FollowService implements IFollowService {
     }
 
     @Override
-    public FollowStatsResponse getFollowStats(String userId) {
-        // Validate user exists
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
-
-        FollowStatsResponse stats = new FollowStatsResponse();
-        stats.setFollowersCount(user.getFollowerCount());
-        stats.setFollowingCount(user.getFollowingCount());
-
-        // Check if current user follows this user
-        try {
-            User currentUser = getCurrentUser();
-            boolean isFollowed = followRepository.existsByFollowerIdAndFollowingId(
-                    currentUser.getId(), userId);
-            stats.setFollowedByCurrentUser(isFollowed);
-        } catch (Exception e) {
-            // User not authenticated
-            stats.setFollowedByCurrentUser(false);
-        }
-
-        return stats;
-    }
-
-    @Override
     public boolean isFollowing(String followerId, String followingId) {
         return followRepository.existsByFollowerIdAndFollowingId(followerId, followingId);
     }

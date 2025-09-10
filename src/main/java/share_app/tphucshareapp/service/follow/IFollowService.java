@@ -14,7 +14,5 @@ public interface IFollowService {
 
     List<FollowResponse> getFollowing(String userId, int page, int size);
 
-    FollowStatsResponse getFollowStats(String userId);
-
     boolean isFollowing(String followerId, String followingId);
 }

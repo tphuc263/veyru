@@ -7,6 +7,7 @@ import share_app.tphucshareapp.dto.response.ApiResponse;
 import share_app.tphucshareapp.dto.response.follow.FollowResponse;
 import share_app.tphucshareapp.dto.response.follow.FollowStatsResponse;
 import share_app.tphucshareapp.service.follow.FollowService;
+import share_app.tphucshareapp.service.follow.IFollowService;
 
 import java.util.List;
 
@@ -14,7 +15,7 @@ import java.util.List;
 @RequestMapping("${api.prefix}/follows")
 @RequiredArgsConstructor
 public class FollowController {
-    private final FollowService followService;
+    private final IFollowService followService;
 
     // Follow
     @PostMapping("/follow/{targetUserId}")
@@ -48,13 +49,6 @@ public class FollowController {
             @RequestParam(defaultValue = "20") int size) {
         List<FollowResponse> following = followService.getFollowing(userId, page, size);
         return ResponseEntity.ok(ApiResponse.success(following, "Following list retrieved successfully"));
-    }
-
-    // Get follow statistics
-    @GetMapping("/{userId}/stats")
-    public ResponseEntity<ApiResponse<FollowStatsResponse>> getFollowStats(@PathVariable String userId) {
-        FollowStatsResponse stats = followService.getFollowStats(userId);
-        return ResponseEntity.ok(ApiResponse.success(stats, "Follow stats retrieved successfully"));
     }
 
     // Check if user A follows user B

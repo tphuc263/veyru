@@ -88,7 +88,7 @@ public class MongoIndexConfig {
         ensureIndex(collection,
                 new CompoundIndexDefinition(
                         new Document("photoId", 1)
-                                .append("createdAt", -1) // Đã thay đổi từ 1 thành -1
+                                .append("createdAt", -1)
                 ));
 
         log.info("✓ Comment indexes synchronized");
