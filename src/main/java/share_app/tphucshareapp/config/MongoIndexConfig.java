@@ -12,14 +12,14 @@ import org.springframework.data.mongodb.core.index.CompoundIndexDefinition;
 import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.data.mongodb.core.index.IndexDefinition;
 
-//@Configuration
+@Configuration
 @RequiredArgsConstructor
 @Slf4j
 public class MongoIndexConfig {
 
     private final MongoTemplate mongoTemplate;
 
-//    @Bean
+    @Bean
     public CommandLineRunner createIndexes() {
         return args -> {
             log.info("Synchronizing MongoDB indexes with database definitions...");

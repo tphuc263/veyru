@@ -178,7 +178,6 @@ public class FollowService implements IFollowService {
                     .map(Follow::getFollowingId)
                     .collect(Collectors.toSet());
         } catch (Exception e) {
-            // User not authenticated
             return Set.of();
         }
     }

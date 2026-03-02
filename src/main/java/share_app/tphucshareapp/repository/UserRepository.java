@@ -6,10 +6,16 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import share_app.tphucshareapp.model.User;
 
+import java.util.Optional;
+
 public interface UserRepository extends MongoRepository<User, String> {
-    User findByEmail(String username);
+    Optional<User> findByEmail(String email);
+    Optional<User> findByUsername(String username);
+    Optional<User> findByPhoneNumber(String phoneNumber);
 
     boolean existsByEmail(String email);
+    boolean existsByUsername(String username);
+    boolean existsByPhoneNumber(String phoneNumber);
 
     @Query("{ $or: [ " +
             "{ 'username': { $regex: ?0, $options: 'i' } }, " +
@@ -20,5 +26,7 @@ public interface UserRepository extends MongoRepository<User, String> {
 
     @Query("{ 'username': { $regex: ?0, $options: 'i' } }")
     Page<User> findByUsernameRegex(String searchTerm, Pageable pageable);
+
+    Optional<User> findByResetToken(String resetToken);
 }
 

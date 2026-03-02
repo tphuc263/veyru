@@ -15,16 +15,19 @@ public interface PhotoRepository extends MongoRepository<Photo, String> {
 
     Page<Photo> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
-    // Text search in captions - simplified approach
     @Query("{ 'caption': { $regex: ?0, $options: 'i' } }")
     Page<Photo> findByTextSearch(String searchText, Pageable pageable);
 
-    // Caption search (partial match) - this works better for simple cases
     Page<Photo> findByCaptionContainingIgnoreCase(String caption, Pageable pageable);
 
     Page<Photo> findByTagsIn(List<String> tagNames, Pageable pageable);
 
-//    Page<Photo> findByUserUserId(String userId, Pageable pageable);
-
+    // For newsfeed - get recent photos from followed users
     List<Photo> findByUser_UserIdInAndCreatedAtAfterOrderByCreatedAtDesc(List<String> userIds, Instant createdAt);
+    
+    // For newsfeed - get all photos from followed users (fallback when no recent photos)
+    List<Photo> findByUser_UserIdInOrderByCreatedAtDesc(List<String> userIds);
+    
+    // For newsfeed - get user's own photos
+    List<Photo> findByUser_UserIdOrderByCreatedAtDesc(String userId);
 }

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import share_app.tphucshareapp.dto.response.photo.PhotoResponse;
 import share_app.tphucshareapp.model.Photo;
 import share_app.tphucshareapp.model.User;
+import share_app.tphucshareapp.repository.FavoriteRepository;
 import share_app.tphucshareapp.repository.LikeRepository;
 
 @Service
@@ -17,6 +18,7 @@ public class PhotoConversionService {
 
     private final ModelMapper modelMapper;
     private final LikeRepository likeRepository;
+    private final FavoriteRepository favoriteRepository;
 
     public PhotoResponse convertToPhotoResponse(Photo photo, @Nullable User currentUser) {
         PhotoResponse response = modelMapper.map(photo, PhotoResponse.class);
@@ -31,8 +33,11 @@ public class PhotoConversionService {
         if (currentUser != null) {
             boolean isLiked = likeRepository.existsByPhotoIdAndUserId(photo.getId(), currentUser.getId());
             response.setLikedByCurrentUser(isLiked);
+            boolean isSaved = favoriteRepository.existsByUserIdAndPhotoId(currentUser.getId(), photo.getId());
+            response.setSavedByCurrentUser(isSaved);
         } else {
             response.setLikedByCurrentUser(false);
+            response.setSavedByCurrentUser(false);
         }
 
         return response;

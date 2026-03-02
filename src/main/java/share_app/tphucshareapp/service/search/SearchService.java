@@ -51,7 +51,9 @@ public class SearchService implements ISearchService {
 
         Pageable pageable = PageRequest.of(page, size);
 
-        Page<User> users = userRepository.findByUsernameRegex(sanitizedQuery, pageable);
+        // Search by username, firstName, or lastName
+        Page<User> users = userRepository.findByNameFields(sanitizedQuery, pageable);
+        log.info("Found {} users matching query: {}", users.getTotalElements(), query);
 
         return users.map(user -> modelMapper.map(user, UserSearchResponseSimple.class));
     }

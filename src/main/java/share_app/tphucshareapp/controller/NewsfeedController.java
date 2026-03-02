@@ -1,6 +1,7 @@
 package share_app.tphucshareapp.controller;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +13,7 @@ import share_app.tphucshareapp.service.user.UserService;
 @RestController
 @RequestMapping("${api.prefix}/newsfeed")
 @RequiredArgsConstructor
+@Slf4j
 public class NewsfeedController {
     private final NewsfeedService newsfeedService;
     private final UserService userService;
@@ -25,18 +27,24 @@ public class NewsfeedController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        // Get current user from security context
-        String userId = userService.getCurrentUser().getId();
-        Page<PhotoResponse> newsfeed = newsfeedService.getSmartNewsfeed(userId, page, size);
+        try {
+            log.info("Fetching newsfeed for page: {}, size: {}", page, size);
+            // Get current user from security context
+            String userId = userService.getCurrentUser().getId();
+            log.info("Fetching newsfeed for user: {}", userId);
+            Page<PhotoResponse> newsfeed = newsfeedService.getSmartNewsfeed(userId, page, size);
+            log.info("Successfully fetched {} items for newsfeed", newsfeed.getContent().size());
 
-        return ResponseEntity.ok(
-                ApiResponse.success(newsfeed, "Newsfeed retrieved successfully")
-        );
+            return ResponseEntity.ok(
+                    ApiResponse.success(newsfeed, "Newsfeed retrieved successfully")
+            );
+        } catch (Exception e) {
+            log.error("Error fetching newsfeed: ", e);
+            throw e;
+        }
     }
 
-    /**
-     * Force refresh newsfeed cache
-     */
+
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<Void>> refreshNewsfeed() {
         String userId = userService.getCurrentUser().getId();
@@ -47,9 +55,6 @@ public class NewsfeedController {
         );
     }
 
-    /**
-     * Get real-time newsfeed (bypass cache)
-     */
     @GetMapping("/realtime")
     public ResponseEntity<ApiResponse<Page<PhotoResponse>>> getRealtimeNewsfeed(
             @RequestParam(defaultValue = "0") int page,

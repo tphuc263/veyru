@@ -33,7 +33,6 @@ public class PhotoEventListener {
             log.info("Successfully updated followers' feeds for photo: {}", event.getPhotoId());
         } catch (Exception e) {
             log.error("Error updating followers' feeds for photo: {}", event.getPhotoId(), e);
-            // In production, you might want to retry or send to dead letter queue
         }
     }
 }

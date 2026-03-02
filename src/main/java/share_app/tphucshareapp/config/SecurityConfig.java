@@ -17,6 +17,11 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import share_app.tphucshareapp.security.jwt.AuthTokenFilter;
 import share_app.tphucshareapp.security.jwt.JwtEntryPoint;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+import share_app.tphucshareapp.security.oauth2.OAuth2FailureHandler;
+import share_app.tphucshareapp.security.oauth2.OAuth2SuccessHandler;
 import share_app.tphucshareapp.security.userdetails.AppUserDetailsService;
 
 import java.util.List;
@@ -32,6 +37,9 @@ public class SecurityConfig {
     private final JwtEntryPoint authEntryPoint;
     private final AuthTokenFilter authTokenFilter;
     private final PasswordEncoder passwordEncoder;
+    private final OAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final OAuth2FailureHandler oAuth2FailureHandler;
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
@@ -55,7 +63,9 @@ public class SecurityConfig {
                         API + "/photos/*/delete",
                         API + "/likes/**",
                         API + "/comments/**",
-                        API + "/follows/**"
+                        API + "/follows/**",
+                        API + "/favorites/**",
+                        API + "/ai/**"
                 );
 
         http
@@ -71,6 +81,11 @@ public class SecurityConfig {
                         .requestMatchers(API + "/auth/**").permitAll()
                         .anyRequest().permitAll())
                 .authenticationProvider(authenticationProvider())
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(oAuth2UserService))
+                        .successHandler(oAuth2SuccessHandler)
+                        .failureHandler(oAuth2FailureHandler))
                 .addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

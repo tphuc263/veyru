@@ -25,6 +25,7 @@
     import share_app.tphucshareapp.model.Photo.EmbeddedUser;
     import share_app.tphucshareapp.model.User;
     import share_app.tphucshareapp.repository.CommentRepository;
+    import share_app.tphucshareapp.repository.FavoriteRepository;
     import share_app.tphucshareapp.repository.LikeRepository;
     import share_app.tphucshareapp.repository.PhotoRepository;
     import share_app.tphucshareapp.service.tag.TagService;
@@ -44,6 +45,7 @@
         private final UserService userService;
         private final ModelMapper modelMapper;
         private final LikeRepository likeRepository;
+        private final FavoriteRepository favoriteRepository;
         private final CommentRepository commentRepository;
         private final TagService tagService;
         private final PhotoConversionService photoConversionService;
@@ -173,7 +175,8 @@
 
                 likeRepository.deleteAllByPhotoId(photoId);
                 commentRepository.deleteAllByPhotoId(photoId);
-                log.info("Deleted all likes and comments for photo ID: {}", photoId);
+                favoriteRepository.deleteAllByPhotoId(photoId);
+                log.info("Deleted all likes, comments, and favorites for photo ID: {}", photoId);
 
                 photoRepository.deleteById(photoId);
 
@@ -196,16 +199,20 @@
                 response.setUsername(photo.getUser().getUsername());
                 response.setUserImageUrl(photo.getUser().getUserImageUrl());
             }
-            response.setLikesCount((int) photo.getLikeCount());
-            response.setCommentsCount((int) photo.getCommentCount());
+            response.setLikeCount((int) photo.getLikeCount());
+            response.setCommentCount((int) photo.getCommentCount());
 
             try {
                 User currentUser = userService.getCurrentUser();
                 response.setLikedByCurrentUser(
                         likeRepository.existsByPhotoIdAndUserId(photo.getId(), currentUser.getId())
                 );
+                response.setSavedByCurrentUser(
+                        favoriteRepository.existsByUserIdAndPhotoId(currentUser.getId(), photo.getId())
+                );
             } catch (Exception e) {
                 response.setLikedByCurrentUser(false);
+                response.setSavedByCurrentUser(false);
             }
 
             return response;

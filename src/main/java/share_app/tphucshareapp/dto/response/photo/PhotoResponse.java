@@ -1,5 +1,6 @@
 package share_app.tphucshareapp.dto.response.photo;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.time.Instant;
@@ -16,6 +17,12 @@ public class PhotoResponse {
     private Instant createdAt;
     private int likeCount;
     private int commentCount;
+
+    @JsonProperty("isLikedByCurrentUser")
     private boolean isLikedByCurrentUser;
+
+    @JsonProperty("isSavedByCurrentUser")
+    private boolean isSavedByCurrentUser;
+
     private List<String> tags;
 }

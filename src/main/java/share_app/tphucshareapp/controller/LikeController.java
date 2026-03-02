@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import share_app.tphucshareapp.dto.response.ApiResponse;
 import share_app.tphucshareapp.dto.response.like.LikeResponse;
+import share_app.tphucshareapp.dto.response.photo.PhotoResponse;
 import share_app.tphucshareapp.service.like.LikeService;
 
 import java.util.List;
@@ -15,18 +16,11 @@ import java.util.List;
 public class LikeController {
     private final LikeService likeService;
 
-    // like a photo
-    @PostMapping("/like/photo/{photoId}")
-    public ResponseEntity<ApiResponse<Void>> like(@PathVariable String photoId) {
-        likeService.like(photoId);
-        return ResponseEntity.ok(ApiResponse.success(null, "Like successfully"));
-    }
-
-    // like a photo
-    @PostMapping("/unlike/photo/{photoId}")
-    public ResponseEntity<ApiResponse<Void>> unlike(@PathVariable String photoId) {
-        likeService.unlike(photoId);
-        return ResponseEntity.ok(ApiResponse.success(null, "Unlike successfully"));
+    // Toggle like - returns full photo state like Facebook/Instagram API
+    @PostMapping("/toggle/photo/{photoId}")
+    public ResponseEntity<ApiResponse<PhotoResponse>> toggleLike(@PathVariable String photoId) {
+        PhotoResponse photo = likeService.toggleLike(photoId);
+        return ResponseEntity.ok(ApiResponse.success(photo, "Action completed successfully"));
     }
 
     // Get all likes for a photo

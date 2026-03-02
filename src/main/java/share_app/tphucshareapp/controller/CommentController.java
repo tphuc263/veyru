@@ -43,7 +43,7 @@ public class CommentController {
         return ResponseEntity.ok(ApiResponse.success(null, "Comment deleted successfully"));
     }
 
-    // Get all comments for a photo
+    // Get all comments for a photo -> pagnition ?
     @GetMapping("/photo/{photoId}")
     public ResponseEntity<ApiResponse<List<CommentResponse>>> getPhotoComments(
             @PathVariable String photoId) {

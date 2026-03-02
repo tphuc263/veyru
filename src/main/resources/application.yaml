@@ -32,6 +32,32 @@ spring:
       pool:
         core-size: 4
         max-size: 8
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 api:
   prefix: /api/v1
@@ -48,7 +74,19 @@ cloudinary:
 auth:
   token:
     jwtSecret: ${JWT_SECRET}
-    accessExpirationInMils: 7200000
+    accessExpirationInMils: 720000000
+
+app:
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:5173}
+  oauth2:
+    redirectUri: ${OAUTH2_REDIRECT_URI:http://localhost:5173/auth/oauth2/redirect}
+    failureRedirectUri: ${OAUTH2_FAILURE_REDIRECT_URI:http://localhost:5173/login?error=true}
+
+ai:
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
+    model: ${GEMINI_MODEL:gemini-2.0-flash}
 
 newsfeed:
   cache:

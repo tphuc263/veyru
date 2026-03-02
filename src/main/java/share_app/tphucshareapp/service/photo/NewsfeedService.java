@@ -37,29 +37,45 @@ public class NewsfeedService implements INewsfeedService {
     private static final String NEWSFEED_CACHE_KEY = "newsfeed:user:";
     private static final Duration CACHE_TTL = Duration.ofHours(2);
     private static final int MAX_CACHED_ITEMS = 200;
-    private static final int RELEVANCE_WINDOW_DAYS = 7;
 
     @Override
     public Page<PhotoResponse> getNewsfeed(String userId, int page, int size) {
         User currentUser = userService.findUserById(userId);
 
-        // Step 1: Get users that current user follows
-        List<String> followingIds = getFollowingUserIds(userId);
+        // Get users that current user follows
+        List<String> followingIds = new ArrayList<>(getFollowingUserIds(userId));
+        
+        // If not following anyone, return user's own photos
         if (followingIds.isEmpty()) {
-            return Page.empty();
+            log.info("User {} is not following anyone, showing own photos", userId);
+            List<Photo> userPhotos = photoRepository.findByUser_UserIdOrderByCreatedAtDesc(userId);
+            return paginateAndConvert(userPhotos, currentUser, PageRequest.of(page, size));
         }
 
-        // Step 2: Fetch recent photos from followed users
-        List<Photo> candidatePhotos = fetchRecentPhotosFromFollowing(followingIds);
+        // Include user's own photos in feed
+        followingIds.add(userId);
 
-        // Step 3: Apply ranking algorithm
-        List<Photo> rankedPhotos = rankPhotos(candidatePhotos);
+        // Fetch recent photos from followed users (last 30 days)
+        Instant cutoffTime = Instant.now().minus(Duration.ofDays(30));
+        List<Photo> photos = photoRepository.findByUser_UserIdInAndCreatedAtAfterOrderByCreatedAtDesc(
+            followingIds, cutoffTime
+        );
+        
+        // If no recent photos, get all photos from followed users
+        if (photos.isEmpty()) {
+            log.info("No recent photos found, fetching all photos from followed users");
+            photos = photoRepository.findByUser_UserIdInOrderByCreatedAtDesc(followingIds);
+        }
 
-        // Step 4: Convert to response and paginate
+        // Apply simple ranking by engagement and recency
+        List<Photo> rankedPhotos = rankPhotos(photos);
+
+        // Convert to response and paginate
         return paginateAndConvert(rankedPhotos, currentUser, PageRequest.of(page, size));
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Page<PhotoResponse> getCachedNewsfeed(String userId, int page, int size) {
         User currentUser = userService.findUserById(userId);
 
@@ -116,12 +132,20 @@ public class NewsfeedService implements INewsfeedService {
 
         try {
             // Generate feed using real-time algorithm
-            List<String> followingIds = getFollowingUserIds(userId);
+            List<String> followingIds = new ArrayList<>(getFollowingUserIds(userId));
             if (followingIds.isEmpty()) {
                 return;
             }
 
-            List<Photo> candidatePhotos = fetchRecentPhotosFromFollowing(followingIds);
+            // Include user's own photos in feed
+            followingIds.add(userId);
+            
+            // Fetch recent photos
+            Instant cutoffTime = Instant.now().minus(Duration.ofDays(30));
+            List<Photo> candidatePhotos = photoRepository.findByUser_UserIdInAndCreatedAtAfterOrderByCreatedAtDesc(
+                followingIds, cutoffTime
+            );
+            
             List<Photo> rankedPhotos = rankPhotos(candidatePhotos);
 
             // Limit cache size for performance
@@ -142,6 +166,7 @@ public class NewsfeedService implements INewsfeedService {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void updateFollowersFeeds(String photoId, String authorId) {
         log.info("Updating followers' feeds with new photo: {} from author: {}", photoId, authorId);
 
@@ -182,40 +207,17 @@ public class NewsfeedService implements INewsfeedService {
     @Override
     public Page<PhotoResponse> getSmartNewsfeed(String userId, int page, int size) {
         log.info("Getting smart newsfeed for user: {}", userId);
-
-        // Try cache first
-        try {
-            String cacheKey = NEWSFEED_CACHE_KEY + userId;
-            List<String> cachedPhotoIds = (List<String>) redisTemplate.opsForValue().get(cacheKey);
-
-            if (cachedPhotoIds != null && !cachedPhotoIds.isEmpty()) {
-                // Check cache freshness
-                Long cacheTimestamp = redisTemplate.opsForValue().getOperations()
-                        .getExpire(cacheKey);
-
-                if (cacheTimestamp != null && cacheTimestamp > Duration.ofMinutes(30).getSeconds()) {
-                    return getCachedNewsfeed(userId, page, size);
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Cache access failed, falling back to real-time: {}", e.getMessage());
-        }
-
-        // Fallback to real-time generation
+        
+        // Use simple real-time generation for now
+        // This is more reliable and easier to debug
         return getNewsfeed(userId, page, size);
     }
 
-    // helper methods
     private List<String> getFollowingUserIds(String userId) {
         List<Follow> following = followRepository.findByFollowerId(userId);
         return following.stream()
                 .map(Follow::getFollowingId)
                 .toList();
-    }
-
-    private List<Photo> fetchRecentPhotosFromFollowing(List<String> followingIds) {
-        Instant cutoffTime = Instant.now().minus(Duration.ofDays(RELEVANCE_WINDOW_DAYS));
-        return photoRepository.findByUser_UserIdInAndCreatedAtAfterOrderByCreatedAtDesc(followingIds, cutoffTime);
     }
 
     private List<Photo> rankPhotos(List<Photo> photos) {
@@ -229,18 +231,32 @@ public class NewsfeedService implements INewsfeedService {
     private double calculateRelevantScore(Photo photo) {
         double score = 0.0;
 
-        // calculate time duration from posted to now
+        // Time decay: newer photos get higher score
         long hoursOld = Duration.between(photo.getCreatedAt(), Instant.now()).toHours();
-        // score range (0, 100), minus 2 each hour
-        score += Math.max(0, 100 - hoursOld * 2);
-        // add 2 score for each 10 likes
-        score += photo.getLikeCount();
-        // add 2 score for each 5 comment
-        score += photo.getCommentCount() * 2;
+        
+        // Score decreases as photo gets older
+        // Recent photos (< 24h): 100-50 points
+        // Medium age (24-168h): 50-10 points  
+        // Older (> 168h): 10-0 points
+        if (hoursOld < 24) {
+            score += 100 - (hoursOld * 2);
+        } else if (hoursOld < 168) { // 1 week
+            score += 50 - ((hoursOld - 24) * 0.3);
+        } else {
+            score += Math.max(0, 10 - ((hoursOld - 168) * 0.1));
+        }
 
-        // quality photo signals
+        // Engagement signals
+        score += photo.getLikeCount() * 2;  // Each like adds 2 points
+        score += photo.getCommentCount() * 5;  // Each comment adds 5 points (more valuable)
+
+        // Content quality signals
         if (photo.getCaption() != null && !photo.getCaption().trim().isEmpty()) {
-            score += 10;
+            score += 10;  // Photos with captions are more engaging
+        }
+        
+        if (photo.getTags() != null && !photo.getTags().isEmpty()) {
+            score += 5;  // Tagged photos get small boost
         }
 
         return score;
@@ -248,7 +264,7 @@ public class NewsfeedService implements INewsfeedService {
 
     private Page<PhotoResponse> paginateAndConvert(List<Photo> photos, User currentUser, Pageable pageable) {
         int start = (int) pageable.getOffset();
-        int end = Math.min(start + (int) pageable.getOffset() + pageable.getPageSize(), photos.size());
+        int end = Math.min(start + pageable.getPageSize(), photos.size());
 
         if (start >= photos.size()) {
             return Page.empty();

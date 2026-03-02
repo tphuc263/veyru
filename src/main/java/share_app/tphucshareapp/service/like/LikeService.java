@@ -9,12 +9,14 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import share_app.tphucshareapp.dto.response.like.LikeResponse;
+import share_app.tphucshareapp.dto.response.photo.PhotoResponse;
 import share_app.tphucshareapp.model.Like;
 import share_app.tphucshareapp.model.Photo;
 import share_app.tphucshareapp.model.User;
 import share_app.tphucshareapp.repository.LikeRepository;
 import share_app.tphucshareapp.repository.PhotoRepository;
 import share_app.tphucshareapp.repository.UserRepository;
+import share_app.tphucshareapp.service.photo.PhotoConversionService;
 import share_app.tphucshareapp.service.user.UserService;
 
 import java.time.Instant;
@@ -32,6 +34,47 @@ public class LikeService implements ILikeService {
     private final UserService userService;
     private final ModelMapper modelMapper;
     private final MongoTemplate mongoTemplate;
+    private final PhotoConversionService photoConversionService;
+
+    @Override
+    public PhotoResponse toggleLike(String photoId) {
+        User currentUser = userService.getCurrentUser();
+        Photo photo = photoRepository.findById(photoId)
+                .orElseThrow(() -> new RuntimeException("Photo not found with ID: " + photoId));
+
+        boolean alreadyLiked = likeRepository.existsByPhotoIdAndUserId(photoId, currentUser.getId());
+        
+        if (alreadyLiked) {
+            // Unlike
+            Like like = likeRepository.findByPhotoIdAndUserId(photoId, currentUser.getId())
+                    .orElseThrow(() -> new RuntimeException("Like not found"));
+            likeRepository.delete(like);
+            
+            Query query = new Query(Criteria.where("_id").is(photoId));
+            Update update = new Update().inc("likeCount", -1);
+            mongoTemplate.updateFirst(query, update, Photo.class);
+            photo.setLikeCount(Math.max(0, photo.getLikeCount() - 1));
+            
+            log.info("User {} unliked photo {}", currentUser.getId(), photoId);
+        } else {
+            // Like
+            Like like = new Like();
+            like.setPhotoId(photoId);
+            like.setUserId(currentUser.getId());
+            like.setCreatedAt(Instant.now());
+            likeRepository.save(like);
+            
+            Query query = new Query(Criteria.where("_id").is(photoId));
+            Update update = new Update().inc("likeCount", 1);
+            mongoTemplate.updateFirst(query, update, Photo.class);
+            photo.setLikeCount(photo.getLikeCount() + 1);
+            
+            log.info("User {} liked photo {}", currentUser.getId(), photoId);
+        }
+        
+        // Return full updated photo state - Facebook/Instagram pattern
+        return photoConversionService.convertToPhotoResponse(photo, currentUser);
+    }
 
     @Override
     public void like(String photoId) {
@@ -41,7 +84,9 @@ public class LikeService implements ILikeService {
 
         boolean alreadyLiked = likeRepository.existsByPhotoIdAndUserId(photoId, currentUser.getId());
         if (alreadyLiked) {
-            throw new RuntimeException("You have already liked this photo");
+            // Auto-unlike if already liked (toggle behavior)
+            unlike(photoId);
+            return;
         }
 
         Like like = new Like();
