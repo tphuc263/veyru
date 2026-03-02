@@ -1,0 +1,388 @@
+/* Photo Modal Styles - Instagram-like */
+.photo-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.photo-modal-content {
+  position: relative;
+  max-width: 1200px;
+  width: 100%;
+  max-height: 90vh;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-close-button {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  z-index: 10;
+  transition: background 0.2s;
+}
+
+.modal-close-button:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.photo-modal-container {
+  display: flex;
+  height: 100%;
+  max-height: 90vh;
+}
+
+/* Left side - Image */
+.photo-modal-image-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #000;
+  min-width: 0;
+}
+
+.photo-modal-image-section img {
+  max-width: 100%;
+  max-height: 90vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Right side - Details */
+.photo-modal-details-section {
+  width: 400px;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-left: 1px solid #dbdbdb;
+}
+
+/* Header */
+.photo-modal-header {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #efefef;
+  gap: 12px;
+}
+
+.photo-modal-header .user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.photo-modal-header .username {
+  font-weight: 600;
+  color: #262626;
+  font-size: 14px;
+}
+
+/* Content Area - Caption and Comments */
+.photo-modal-content-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.photo-modal-caption {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.user-avatar-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.caption-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.caption-content .username {
+  font-weight: 600;
+  font-size: 14px;
+  color: #262626;
+}
+
+.caption-text {
+  font-size: 14px;
+  color: #262626;
+  line-height: 1.5;
+  margin: 0;
+  word-wrap: break-word;
+}
+
+.timestamp {
+  font-size: 12px;
+  color: #8e8e8e;
+  margin-top: 4px;
+}
+
+/* Comments */
+.photo-modal-comments {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.comment-item {
+  display: flex;
+  gap: 12px;
+}
+
+.comment-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.comment-content .username {
+  font-weight: 600;
+  font-size: 14px;
+  color: #262626;
+}
+
+.comment-text {
+  font-size: 14px;
+  color: #262626;
+  line-height: 1.5;
+  margin: 0;
+  word-wrap: break-word;
+}
+
+.no-comments {
+  text-align: center;
+  color: #8e8e8e;
+  font-size: 14px;
+  padding: 24px 0;
+}
+
+/* Footer - Actions */
+.photo-modal-footer {
+  border-top: 1px solid #efefef;
+  padding: 16px;
+}
+
+.actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 16px;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  color: #262626;
+  transition: opacity 0.2s;
+}
+
+.action-btn:hover {
+  opacity: 0.6;
+}
+
+.action-btn.liked {
+  color: #ed4956;
+}
+
+.action-btn.saved {
+  color: #262626;
+}
+
+.action-btn svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 2;
+}
+
+.likes-count {
+  font-size: 14px;
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 8px;
+}
+
+.post-date {
+  font-size: 12px;
+  color: #8e8e8e;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+/* Tags */
+.photo-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.tag {
+  font-size: 12px;
+  color: #0095f6;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.tag:hover {
+  text-decoration: underline;
+}
+
+/* Error message */
+.error-message {
+  color: #ed4956;
+  text-align: center;
+  padding: 20px;
+}
+
+.close-button {
+  background: #0095f6;
+  color: white;
+  border: none;
+  padding: 8px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  margin-top: 16px;
+}
+
+.close-button:hover {
+  background: #1877f2;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .photo-modal-details-section {
+    width: 350px;
+  }
+}
+
+@media (max-width: 768px) {
+  .photo-modal-container {
+    flex-direction: column;
+  }
+
+  .photo-modal-image-section {
+    max-height: 50vh;
+  }
+
+  .photo-modal-details-section {
+    width: 100%;
+    max-height: 50vh;
+  }
+
+  .photo-modal-content {
+    max-height: 95vh;
+  }
+}
+
+/* Scrollbar styling */
+.photo-modal-content-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.photo-modal-content-area::-webkit-scrollbar-track {
+  background: #fafafa;
+}
+
+.photo-modal-content-area::-webkit-scrollbar-thumb {
+  background: #dbdbdb;
+  border-radius: 3px;
+}
+
+.photo-modal-content-area::-webkit-scrollbar-thumb:hover {
+  background: #c7c7c7;
+}
+
+/* Comment Form Styles */
+.comment-form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #efefef;
+}
+
+.comment-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  padding: 8px 0;
+  color: #262626;
+  resize: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.comment-input::placeholder {
+  color: #8e8e8e;
+}
+
+.comment-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.comment-submit-btn {
+  background: none;
+  border: none;
+  color: #0095f6;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.2s;
+}
+
+.comment-submit-btn:hover:not(:disabled) {
+  opacity: 0.7;
+}
+
+.comment-submit-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}

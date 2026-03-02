@@ -3,7 +3,8 @@ import {useAuthContext} from "../../context/AuthContext.jsx";
 import {
   updateUserProfile,
   getCurrentUserProfile,
-} from "../../services/userService.js";
+} from "../../services/userService";
+import {toastSuccess, toastError} from '../../utils/toastService.js';
 import '../../assets/styles/pages/editProfile.css';
 
 const EditProfileForm = () => {
@@ -46,8 +47,8 @@ const EditProfileForm = () => {
     }, [currentUser?.id]);
 
     const handleInputChange = (e) => {
-      const { id, value } = e.target;
-      setFormData((prev) => ({ ...prev, [id]: value }));
+      const { name, value } = e.target;
+      setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
     const handleAvatarClick = () => {
@@ -57,6 +58,18 @@ const EditProfileForm = () => {
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                toastError.invalidImage();
+                return;
+            }
+            
+            // Validate file size (10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                toastError.imageTooLarge();
+                return;
+            }
+            
             setAvatarFile(file);
             setAvatarPreview( URL.createObjectURL(file));
         }
@@ -76,11 +89,15 @@ const EditProfileForm = () => {
         try {
             const updatedProfileData = await updateUserProfile(dataToSubmit);
             setUser(updatedProfileData);
-            alert("Profile updated successfully!");
+            if (avatarFile) {
+                toastSuccess.avatarUpdated();
+            } else {
+                toastSuccess.profileUpdated();
+            }
             setAvatarFile(null);
         } catch (error) {
             console.error('Failed to update profile:', error);
-            alert(`Error: ${error.message}`);
+            toastError.updateFailed();
         } finally {
             setIsSubmitting(false);
         }
@@ -129,8 +146,10 @@ const EditProfileForm = () => {
               <input
                 type="text"
                 id="username"
+                name="username"
                 value={formData.username}
                 onChange={handleInputChange}
+                autoComplete="username"
               />
             </div>
 
@@ -141,8 +160,10 @@ const EditProfileForm = () => {
               <input
                 type="text"
                 id="bio"
+                name="bio"
                 value={formData.bio}
                 onChange={handleInputChange}
+                autoComplete="off"
               />
             </div>
 
@@ -161,6 +182,8 @@ const EditProfileForm = () => {
           </form>
           <input
             type="file"
+            id="avatar-file-input"
+            name="avatar"
             ref={fileInputRef}
             onChange={handleFileChange}
             style={{ display: "none" }}

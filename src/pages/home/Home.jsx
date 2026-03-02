@@ -1,6 +1,7 @@
 import {useEffect, useState} from "react";
-import {getNewsfeed} from "../../services/newsfeedService.js";
+import {getNewsfeed} from "../../services/newsfeedService";
 import PhotoCard from '../../components/features/PhotoCard.jsx';
+import PhotoModal from '../../components/features/PhotoModal.jsx';
 import {Loader} from '../../components/common/Loader.jsx'
 import '../../assets/styles/pages/homePage.css';
 
@@ -11,6 +12,21 @@ const Home = () => {
     const [error, setError] = useState(null);
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
+    const [selectedPhotoId, setSelectedPhotoId] = useState(null);
+    const [showScrollTop, setShowScrollTop] = useState(false);
+
+    // Handle scroll to show/hide scroll-to-top button
+    useEffect(() => {
+        const handleScroll = () => {
+            setShowScrollTop(window.scrollY > 400);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     const loadFeed = async (pageNum = 0, isRefresh = false) => {
         try {
@@ -18,7 +34,7 @@ const Home = () => {
             setError(null);
 
             const response = await getNewsfeed(pageNum, 20);
-            const newPosts = response.data.content;
+            const newPosts = response.content || [];
 
             if (isRefresh) {
                 setFeed(newPosts);
@@ -26,7 +42,7 @@ const Home = () => {
                 setFeed(prev => [...prev, ...newPosts]);
             }
 
-            setHasMore(!response.data.last);
+            setHasMore(response.page < response.totalPages - 1);
             setPage(pageNum);
         } catch (err) {
             setError(err.message);
@@ -57,13 +73,15 @@ const Home = () => {
     return (
         <div className="home-container">
             <main className="feed-wrapper">
-                <button onClick={refreshFeed} disabled={loading} className="refresh-btn">
-                    {loading ? 'Loading...' : 'Refresh Feed'}
-                </button>
-
                 {error && (
                     <div className="error-message">
-                        Error: {error}
+                        <svg width="96" height="96" viewBox="0 0 96 96" fill="none">
+                            <circle cx="48" cy="48" r="48" fill="#f0f0f0"/>
+                            <path d="M48 32v24M48 64h.01" stroke="#8e8e8e" strokeWidth="4" strokeLinecap="round"/>
+                        </svg>
+                        <h3>Không thể tải bài viết</h3>
+                        <p>{error}</p>
+                        <button onClick={refreshFeed} className="retry-btn">Thử lại</button>
                     </div>
                 )}
                 {loading && feed.length === 0 && !error && (
@@ -72,36 +90,104 @@ const Home = () => {
                     </div>
                 )}
 
-                {feed.map((post) => (
-                    <PhotoCard
-                        key={post.id}
-                        username={post.username}
-                        avatarSrc={post.userImageUrl}
-                        photoSrc={post.imageURL}
-                        caption={post.caption}
-                        likesCount={post.likesCount}
-                        commentsCount={post.commentsCount}
-                        isLiked={post.isLikedByCurrentUser}
-                        createdAt={post.createdAt}
-                        tags={post.tags}
-                    />
-                ))}
-
-                {loading && feed.length > 0 && (
-                    <div className="load-more-loader">
-                        <Loader />
+                {!loading && !error && feed.length === 0 && (
+                    <div className="empty-feed">
+                        <svg width="96" height="96" viewBox="0 0 96 96" fill="none">
+                            <circle cx="48" cy="48" r="40" stroke="#dbdbdb" strokeWidth="3"/>
+                            <path d="M48 28v40M28 48h40" stroke="#dbdbdb" strokeWidth="3" strokeLinecap="round"/>
+                        </svg>
+                        <h3>Chưa có bài viết nào</h3>
+                        <p>Hãy theo dõi người dùng khác để xem bài viết của họ</p>
                     </div>
                 )}
 
-                {hasMore && !loading && (
-                    <button onClick={loadMore} className="load-more-btn">
-                        Load More
-                    </button>
+                {feed.map((post) => (
+                    <PhotoCard
+                        key={post.id}
+                        photoId={post.id}
+                        username={post.username}
+                        avatarSrc={post.userImageUrl}
+                        photoSrc={post.imageUrl}
+                        caption={post.caption}
+                        likesCount={post.likeCount}
+                        commentsCount={post.commentCount}
+                        isLiked={post.isLikedByCurrentUser}
+                        isSaved={post.isSavedByCurrentUser}
+                        createdAt={post.createdAt}
+                        tags={post.tags}
+                        onPhotoClick={() => setSelectedPhotoId(post.id)}
+                        onPhotoUpdate={(photoId, updatedPhoto) => {
+                            // Facebook pattern: Update entire photo object in feed
+                            setFeed(prevFeed => 
+                                prevFeed.map(p => 
+                                    p.id === photoId 
+                                        ? { 
+                                            ...p, 
+                                            isLikedByCurrentUser: updatedPhoto.isLikedByCurrentUser,
+                                            likeCount: updatedPhoto.likeCount,
+                                            commentCount: updatedPhoto.commentCount || p.commentCount
+                                          }
+                                        : p
+                                )
+                            );
+                        }}
+                    />
+                ))}
+
+                {hasMore && (
+                    <div className="load-more-section">
+                        {loading && feed.length > 0 ? (
+                            <div className="load-more-loader">
+                                <Loader />
+                            </div>
+                        ) : (
+                            <button onClick={loadMore} className="load-more-btn" disabled={loading}>
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 3v14m-7-7h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                                </svg>
+                                Xem thêm bài viết
+                            </button>
+                        )}
+                    </div>
                 )}
 
-                {loading && <div className="loading">Loading...</div>}
-
+                {!hasMore && feed.length > 0 && (
+                    <div className="end-of-feed">
+                        <p>Bạn đã xem hết bài viết</p>
+                    </div>
+                )}
             </main>
+
+            {/* Scroll to Top Button */}
+            {showScrollTop && (
+                <button onClick={scrollToTop} className="scroll-to-top" title="Về đầu trang">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 4l-8 8h6v8h4v-8h6z"/>
+                    </svg>
+                </button>
+            )}
+
+            {selectedPhotoId && (() => (
+                    <PhotoModal 
+                        photoId={selectedPhotoId}
+                        onClose={() => setSelectedPhotoId(null)}
+                        onPhotoUpdate={(photoId, updatedPhoto) => {
+                            // Sync state between modal and feed
+                            setFeed(prevFeed => 
+                                prevFeed.map(post => 
+                                    post.id === photoId 
+                                        ? { 
+                                            ...post, 
+                                            isLikedByCurrentUser: updatedPhoto.isLikedByCurrentUser,
+                                            likeCount: updatedPhoto.likeCount,
+                                            commentCount: updatedPhoto.commentCount || post.commentCount
+                                          }
+                                        : post
+                                )
+                            );
+                        }}
+                    />
+            ))()} 
         </div>
     );
 };

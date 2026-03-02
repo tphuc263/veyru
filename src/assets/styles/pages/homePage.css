@@ -1,28 +1,217 @@
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    background-color: #fafafa; /* Màu nền giống Instagram */
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
 .home-container {
     display: flex;
     flex-direction: column;
-    align-items: center; /* Canh giữa nội dung */
+    align-items: center;
     min-height: 100vh;
 }
 
-/* Vùng chứa các bài đăng (Feed) */
 .feed-wrapper {
-    margin-top: 70px; /* Khoảng cách từ navbar */
+    margin-top: 70px;
     width: 100%;
-    max-width: 600px; /* Chiều rộng tối đa của feed giống Instagram */
-    padding: 20px 0; /* Khoảng cách trên dưới */
+    max-width: 600px;
+    padding: 20px 0;
 }
 
-/* Điều chỉnh thêm cho PhotoCard nếu cần thiết */
-/* (PhotoCard.css đã xử lý phần lớn) */
 .photo-card {
-    margin-bottom: 30px; /* Khoảng cách giữa các bài đăng */
+    margin-bottom: 30px;
+}
+
+/* Error Message - Instagram style */
+.error-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.error-message svg {
+    margin-bottom: 24px;
+    opacity: 0.5;
+}
+
+.error-message h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--ig-primary-text);
+    margin: 0 0 8px 0;
+}
+
+.error-message p {
+    font-size: 14px;
+    color: var(--ig-secondary-text);
+    margin: 0 0 24px 0;
+}
+
+.retry-btn {
+    background-color: #0095f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.retry-btn:hover {
+    background-color: #1877f2;
+}
+
+.retry-btn:active {
+    transform: scale(0.98);
+}
+
+/* Load More Section */
+.load-more-section {
+    display: flex;
+    justify-content: center;
+    padding: 24px 0;
+}
+
+.load-more-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: transparent;
+    color: #0095f6;
+    border: 1px solid #dbdbdb;
+    border-radius: 8px;
+    padding: 12px 32px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.load-more-btn:hover {
+    background-color: #fafafa;
+    border-color: #b2b2b2;
+}
+
+.load-more-btn:active {
+    transform: scale(0.98);
+}
+
+.load-more-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.load-more-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.load-more-loader {
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+}
+
+/* Page Loader Container */
+.page-loader-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+}
+
+/* Empty Feed State */
+.empty-feed {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    text-align: center;
+}
+
+.empty-feed svg {
+    margin-bottom: 24px;
+    opacity: 0.3;
+}
+
+.empty-feed h3 {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--ig-primary-text);
+    margin: 0 0 8px 0;
+}
+
+.empty-feed p {
+    font-size: 14px;
+    color: var(--ig-secondary-text);
+    margin: 0;
+}
+
+/* End of Feed Message */
+.end-of-feed {
+    display: flex;
+    justify-content: center;
+    padding: 32px 20px;
+    text-align: center;
+}
+
+.end-of-feed p {
+    font-size: 14px;
+    color: var(--ig-secondary-text);
+    margin: 0;
+}
+
+/* Scroll to Top Button */
+.scroll-to-top {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 48px;
+    height: 48px;
+    background-color: var(--ig-surface);
+    border: 1px solid var(--ig-border-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    z-index: 100;
+}
+
+.scroll-to-top:hover {
+    background-color: var(--ig-hover-background);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.scroll-to-top:active {
+    transform: translateY(0);
+}
+
+.scroll-to-top svg {
+    color: var(--ig-primary-text);
+    width: 24px;
+    height: 24px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .feed-wrapper {
+        max-width: 100%;
+        padding: 16px 0;
+    }
+
+    .scroll-to-top {
+        bottom: 16px;
+        right: 16px;
+        width: 44px;
+        height: 44px;
+    }
+
+    .load-more-btn {
+        width: 100%;
+        justify-content: center;
+    }
 }

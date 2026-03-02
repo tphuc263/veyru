@@ -1,6 +1,7 @@
 import {createContext, useContext, useEffect, useState} from 'react'
 import {clearAuthData, getAuthData} from '../utils/storage'
-import {useAuth as useAuthLogic} from '../hooks/useAuth.js'
+import {useAuth as useAuthLogic} from '../hooks/useAuth'
+import {toastSuccess} from '../utils/toastService'
 
 const AuthContext = createContext(undefined)
 
@@ -29,12 +30,8 @@ export const AuthProvider = ({children}) => {
                 if (savedToken && savedUser) {
                     setToken(savedToken)
                     setUser(savedUser)
-                    console.log('Session restored for user:', savedUser.username)
-                } else {
-                    console.log('No existing session found')
                 }
-            } catch (error) {
-                console.error('Failed to initialize auth state:', error)
+            } catch {
                 clearAuthData()
             } finally {
                 setInitLoading(false);
@@ -50,7 +47,6 @@ export const AuthProvider = ({children}) => {
         if (result.success) {
             setToken(result.token)
             setUser(result.data)
-            console.log('User logged in:', result.data.username)
         }
 
         return result
@@ -58,11 +54,6 @@ export const AuthProvider = ({children}) => {
 
     const register = async (userData) => {
         const result = await handleRegister(userData)
-
-        if (result.success) {
-            console.log('User registered successfully')
-        }
-
         return result
     }
 
@@ -71,43 +62,23 @@ export const AuthProvider = ({children}) => {
 
         setToken(null)
         setUser(null)
-        console.log('User logged out')
+        toastSuccess.logoutSuccess()
 
         return result
     }
 
     const isAuthenticated = !!(token && user)
 
-    const getUserRole = () => {
-        return user?.role || null
-    }
-
-    const hasRole = (role) => {
-        return user?.role === role
-    }
-
-    const isAdmin = () => {
-        return hasRole('ROLE_ADMIN')
-    }
-
     const contextValue = {
-      // State
       user,
       setUser,
       token,
       loading: initLoading,
-      operationLoading: operationLoading,
-      isAuthenticated, // Boolean authentication status
-
-      // Operations
-      login, // Login function
-      register, // Registration function
-      logout, // Logout function
-
-      // User utilities
-      getUserRole,
-      hasRole,
-      isAdmin,
+      operationLoading,
+      isAuthenticated,
+      login,
+      register,
+      logout,
     };
 
     return (

@@ -35,6 +35,20 @@
     margin: 0;
 }
 
+/* Instagram-style title */
+.instagram-title {
+    font-family: 'Billabong', 'Brush Script MT', cursive !important;
+    font-size: 3.5rem !important;
+    font-weight: 400 !important;
+    letter-spacing: 0.5px !important;
+    background: none !important;
+    -webkit-background-clip: unset !important;
+    -webkit-text-fill-color: var(--ig-primary-text) !important;
+    background-clip: unset !important;
+    color: var(--ig-primary-text) !important;
+    margin-bottom: var(--ig-spacing-lg) !important;
+}
+
 /* Thông báo thành công (sau khi đăng ký) */
 .success-message {
     background-color: rgba(0, 186, 124, 0.1); /* Màu nền nhạt hơn */
@@ -59,6 +73,10 @@
     display: flex;
     flex-direction: column;
     gap: var(--ig-spacing-xs);
+}
+
+.form-group:has(> .form-input:only-child) {
+    gap: 0;
 }
 
 .form-label {
@@ -168,7 +186,7 @@
    SUBMIT BUTTON & FOOTER
    ================================== */
 .submit-btn {
-    background-color: var(--ig-button-primary);
+    background-color: #0095f6;
     color: var(--ig-surface);
     border: none;
     border-radius: var(--ig-radius-md);
@@ -186,7 +204,7 @@
 }
 
 .submit-btn:hover:not(:disabled) {
-    background-color: var(--ig-button-primary-hover);
+    background-color: #1877f2;
 }
 
 .submit-btn:disabled {
@@ -215,6 +233,85 @@
 
 .auth-footer p {
     margin: 0;
+}
+
+/* OR Divider */
+.or-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: var(--ig-spacing-lg) 0;
+    position: relative;
+}
+
+.or-divider::before,
+.or-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--ig-border-color);
+}
+
+.or-text {
+    padding: 0 var(--ig-spacing-md);
+    color: var(--ig-secondary-text);
+    font-size: var(--ig-font-size-sm);
+    font-weight: 600;
+}
+
+/* Google Login Button */
+.google-login-btn {
+    width: 100%;
+    background: transparent;
+    color: #385185;
+    border: none;
+    border-radius: var(--ig-radius-md);
+    padding: var(--ig-spacing-sm);
+    font-size: var(--ig-font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ig-spacing-sm);
+    min-height: 36px;
+    transition: opacity 0.2s;
+}
+
+.google-login-btn:hover:not(:disabled) {
+    opacity: 0.7;
+}
+
+.google-login-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.google-icon {
+    width: 18px;
+    height: 18px;
+}
+
+/* Forgot Password Link */
+.forgot-password-link {
+    text-align: center;
+    margin-top: var(--ig-spacing-md);
+    font-size: var(--ig-font-size-xs);
+}
+
+/* Sign Up Card - Separate card below login */
+.auth-signup-card {
+    background: var(--ig-surface);
+    padding: var(--ig-spacing-lg);
+    border: 1px solid var(--ig-border-color);
+    border-radius: var(--ig-radius-sm);
+    text-align: center;
+    margin-top: var(--ig-spacing-md);
+    font-size: var(--ig-font-size-sm);
+}
+
+.auth-signup-card p {
+    margin: 0;
+    color: var(--ig-primary-text);
 }
 
 .auth-link {
@@ -277,4 +374,89 @@
 
 .strength-strong {
     width: 100%;
+}
+
+/* ===================================
+   FORGOT PASSWORD PAGE
+   ================================== */
+.forgot-password-icon,
+.reset-password-icon {
+    text-align: center;
+    padding: var(--ig-spacing-md) 0;
+}
+
+.forgot-password-text,
+.reset-password-text {
+    text-align: center;
+    margin-bottom: var(--ig-spacing-sm);
+}
+
+.forgot-password-text h2,
+.reset-password-text h2 {
+    font-size: var(--ig-font-size-lg);
+    font-weight: 600;
+    color: var(--ig-primary-text);
+    margin: 0 0 var(--ig-spacing-sm) 0;
+}
+
+.forgot-password-text p,
+.reset-password-text p {
+    font-size: var(--ig-font-size-sm);
+    color: var(--ig-secondary-text);
+    margin: 0;
+    line-height: 1.5;
+}
+
+.forgot-password-create {
+    text-align: center;
+}
+
+.create-account-link {
+    font-size: var(--ig-font-size-sm);
+    font-weight: 600;
+}
+
+/* Forgot Password Success State */
+.forgot-password-success,
+.reset-password-success,
+.reset-password-invalid,
+.reset-password-loading {
+    text-align: center;
+    padding: var(--ig-spacing-md) 0;
+}
+
+.forgot-password-success .success-icon,
+.reset-password-success .success-icon,
+.reset-password-invalid .invalid-icon {
+    margin-bottom: var(--ig-spacing-lg);
+}
+
+.forgot-password-success h2,
+.reset-password-success h2,
+.reset-password-invalid h2 {
+    font-size: var(--ig-font-size-lg);
+    font-weight: 600;
+    color: var(--ig-primary-text);
+    margin: 0 0 var(--ig-spacing-sm) 0;
+}
+
+.forgot-password-success p,
+.reset-password-success p,
+.reset-password-invalid p {
+    font-size: var(--ig-font-size-sm);
+    color: var(--ig-secondary-text);
+    margin: 0 0 var(--ig-spacing-sm) 0;
+    line-height: 1.5;
+}
+
+.reset-password-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--ig-spacing-md);
+}
+
+.reset-password-loading p {
+    font-size: var(--ig-font-size-sm);
+    color: var(--ig-secondary-text);
 }

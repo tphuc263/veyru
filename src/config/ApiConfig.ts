@@ -1,14 +1,14 @@
 import axios from "axios";
-import { API_BASE_URL } from "../utils/constants.js";
-import { clearAuthData, getToken } from "../utils/storage.js";
+import { API_BASE_URL } from "../utils/constants";
+import { clearAuthData, getToken } from "../utils/storage";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     "Content-Type": "application/json",
   },
-});
+}); 
 
 api.interceptors.request.use(
   (config) => {
@@ -28,16 +28,18 @@ api.interceptors.response.use(
     return response.data;
   },
   (error) => {
-    const { status, config } = error.response;
-    if (
-      status === 401 &&
-      config.url !== "/auth/login" &&
-      config.url !== "/auth/register"
-    ) {
-      clearAuthData();
-      window.location.href =
-        "/login?message=Your+session+has+expired.+Please+log+in+again.";
-      return new Promise(() => {});
+    if (error.response) {
+      const { status, config } = error.response;
+      if (
+        status === 401 &&
+        config.url !== "/auth/login" &&
+        config.url !== "/auth/register"
+      ) {
+        clearAuthData();
+        window.location.href =
+          "/login?message=Your+session+has+expired.+Please+log+in+again.";
+        return new Promise(() => {});
+      }
     }
     return Promise.reject(error);
   }

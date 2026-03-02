@@ -1,11 +1,22 @@
 import { useState } from "react";
-import { login, register } from "../services/authService.js";
+import { login, register } from "../services/authService";
 import { clearAuthData, setAuthData } from "../utils/storage";
+
+interface LoginCredentials {
+  username: string;
+  password: string;
+}
+
+interface RegisterData {
+  username: string;
+  email: string;
+  password: string;
+}
 
 export const useAuth = () => {
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (credentials) => {
+  const handleLogin = async (credentials: LoginCredentials) => {
     setLoading(true);
 
     try {
@@ -18,10 +29,11 @@ export const useAuth = () => {
         token: jwt,
         data: userData,
       };
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || "Login failed";
       return {
         success: false,
-        error: error?.response?.data.message || "Login failed",
+        error: errorMessage,
         data: null,
         token: null,
       };
@@ -30,7 +42,7 @@ export const useAuth = () => {
     }
   };
 
-  const handleRegister = async (userData) => {
+  const handleRegister = async (userData: RegisterData) => {
     setLoading(true);
     try {
       const apiResponse = await register(userData);
@@ -39,11 +51,12 @@ export const useAuth = () => {
         data: apiResponse,
         message: "Registration successful",
       };
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || "Registration failed";
       console.error("Registration operation failed:", error);
       return {
         success: false,
-        error: error.message || "Registration failed",
+        error: errorMessage,
         data: null,
       };
     } finally {
@@ -54,9 +67,9 @@ export const useAuth = () => {
   const handleLogout = () => {
     try {
       clearAuthData();
-      return { success: true, message: "Logout successful" };
+      return { success: true, message: "Đăng xuất thành công" };
     } catch (error) {
-      console.error("Logout operation failed:", error);
+      return { success: false, message: "Lỗi khi đăng xuất" };
     }
   };
 

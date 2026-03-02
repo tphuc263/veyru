@@ -51,3 +51,51 @@
     --ig-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
     --ig-shadow-lg: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
+
+/* ===================================
+   DARK THEME
+   ================================== */
+[data-theme="dark"] {
+    --ig-primary-text: #f5f5f5;
+    --ig-secondary-text: #a8a8a8;
+    --ig-link-color: #0095f6;
+    --ig-error-color: #ed4956;
+    --ig-success-color: #00ba7c;
+
+    --ig-background: #000000;
+    --ig-surface: #000000;
+    --ig-border-color: #262626;
+    --ig-hover-background: #121212;
+
+    --ig-button-primary: #0095f6;
+    --ig-button-primary-hover: #1877f2;
+    --ig-button-secondary: #363636;
+
+    --ig-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --ig-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+    --ig-shadow-lg: 0 8px 25px rgba(0, 0, 0, 0.5);
+}
+
+/* ===================================
+   LIGHT THEME (explicit)
+   ================================== */
+[data-theme="light"] {
+    --ig-primary-text: #262626;
+    --ig-secondary-text: #8e8e8e;
+    --ig-link-color: #0095f6;
+    --ig-error-color: #ed4956;
+    --ig-success-color: #00ba7c;
+
+    --ig-background: #fafafa;
+    --ig-surface: #ffffff;
+    --ig-border-color: #dbdbdb;
+    --ig-hover-background: #f5f5f5;
+
+    --ig-button-primary: #0095f6;
+    --ig-button-primary-hover: #1877f2;
+    --ig-button-secondary: #efefef;
+
+    --ig-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --ig-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+    --ig-shadow-lg: 0 8px 25px rgba(0, 0, 0, 0.15);
+}

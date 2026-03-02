@@ -2,21 +2,20 @@ import {Route, Routes, Navigate} from 'react-router-dom'
 import {AuthProvider} from './context/AuthContext'
 import Layout from './components/layout/Layout'
 import ProtectedRoute, {PublicRoute} from './utils/ProtectedRoute.jsx'
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
+import './assets/styles/toast.css'
 
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
+import ForgotPassword from './pages/auth/ForgotPassword'
+import ResetPassword from './pages/auth/ResetPassword'
+import OAuth2RedirectHandler from './pages/auth/OAuth2RedirectHandler'
 import Home from './pages/home/Home'
 import Search from './pages/search/Search'
 import Create from './pages/create/Create'
 import Profile from './pages/profile/Profile'
 import EditProfileForm from './pages/profile/EditProfileForm.jsx'
-
-const ExplorePage = () => (
-    <div className="page-placeholder">
-        <h2>🧭 Explore Page</h2>
-        <p>Discover new content...</p>
-    </div>
-)
 
 const MessagesPage = () => (
     <div className="page-placeholder">
@@ -31,20 +30,6 @@ const NotificationsPage = () => (
         <p>Stay updated with notifications...</p>
     </div>
 )
-
-const ForgotPasswordPage = () => (
-    <div className="auth-container">
-        <div className="auth-card">
-            <div className="auth-header">
-                <h1>🔑 Password Reset</h1>
-                <p>Reset your password</p>
-            </div>
-            <div className="page-placeholder">
-                <p>Password reset functionality coming soon...</p>
-            </div>
-        </div>
-    </div>
-);
 
 const SettingsPage = () => (
     <div className="page-placeholder">
@@ -89,13 +74,15 @@ function App() {
                     <Route element={<PublicRoute />}>
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
-                        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                        <Route path="/forgot-password" element={<ForgotPassword />} />
+                        <Route path="/reset-password" element={<ResetPassword />} />
+                        <Route path="/auth/oauth2/redirect" element={<OAuth2RedirectHandler />} />
                     </Route>
 
                     <Route element={<ProtectedRoute />}>
                         <Route path="/home" element={<Home />} />
                         <Route path="/search" element={<Search />} />
-                        <Route path="/explore" element={<ExplorePage />} />
+                        <Route path="/explore" element={<Navigate to="/search" replace />} />
                         <Route path="/messages" element={<MessagesPage />} />
                         <Route path="/notifications" element={<NotificationsPage />} />
                         <Route path="/create" element={<Create />} />
@@ -109,6 +96,18 @@ function App() {
                     <Route path="*" element={<NotFoundPage />} />
                 </Routes>
             </Layout>
+            <ToastContainer 
+                position="top-right"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+            />
         </AuthProvider>
     )
 }

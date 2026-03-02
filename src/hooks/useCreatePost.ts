@@ -1,7 +1,19 @@
 import {useState} from 'react'
-import {createPhoto} from '../services/photoService.js'
+import {createPhoto} from '../services/photoService'
 
-const initialFormData = {
+export interface CreatePostFormData {
+    image: File | null;
+    imagePreview: string | null;
+    caption: string;
+    tags: string;
+}
+
+interface CreatePostResponse {
+    success: boolean;
+    error?: string;
+}
+
+const initialFormData: CreatePostFormData = {
     image: null,
     imagePreview: null,
     caption: '',
@@ -9,11 +21,11 @@ const initialFormData = {
 }
 
 export const useCreatePost = () => {
-    const [formData, setFormData] = useState(initialFormData)
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState('')
+    const [formData, setFormData] = useState<CreatePostFormData>(initialFormData)
+    const [loading, setLoading] = useState<boolean>(false)
+    const [error, setError] = useState<string>('')
 
-    const parseTagsFromInput = (tagString) => {
+    const parseTagsFromInput = (tagString: string): string[] => {
         if (!tagString.trim()) return []
 
         return tagString
@@ -23,7 +35,7 @@ export const useCreatePost = () => {
             .slice(0, 10)
     }
 
-    const validateCreatePostForm = (data) => {
+    const validateCreatePostForm = (data: CreatePostFormData): string | null => {
         if (!data.image) {
             return 'Please select an image'
         }
@@ -39,7 +51,7 @@ export const useCreatePost = () => {
         return null
     }
 
-    const submitPost = async (postData) => {
+    const submitPost = async (postData: CreatePostFormData): Promise<boolean> => {
         const validationError = validateCreatePostForm(postData)
         if (validationError) {
             setError(validationError)
@@ -51,6 +63,10 @@ export const useCreatePost = () => {
             setError('')
 
             const formDataToSend = new FormData()
+            if (!postData.image) {
+                setError('Image file is missing')
+                return false
+            }
             formDataToSend.append('image', postData.image)
             formDataToSend.append('caption', postData.caption.trim())
 
@@ -61,15 +77,8 @@ export const useCreatePost = () => {
                 })
             }
 
-            const response = await createPhoto(formDataToSend)
-
-            if (response.success) {
-                console.log('Photo created successfully')
-                return true
-            } else {
-                setError(response.error || 'Failed to create post')
-                return false
-            }
+            await createPhoto(formDataToSend);
+            return true
 
         } catch (error) {
             console.error('Failed to create post:', error)

@@ -1,35 +1,252 @@
-.search-page {
-    max-width: 600px;
-    margin: 20px auto;
-    padding: 0 15px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+/* ===================================
+   SEARCH + EXPLORE PAGE (Instagram style)
+   ================================== */
+
+.search-explore-page {
+    width: 100%;
+    max-width: 935px;
+    margin: 0 auto;
+    padding: 20px 20px 0;
 }
 
-.search-container {
-    width: 100%;
+/* ── Search Bar ── */
+.search-bar-wrapper {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    padding: 8px 0 16px;
+    background-color: var(--ig-background);
 }
 
-.search-input {
-    width: 100%;
-    padding: 12px 16px;
-    font-size: 16px;
-    border: 1px solid #dbdbdb;
+.search-bar {
+    display: flex;
+    align-items: center;
+    background-color: var(--ig-hover-background);
+    border: 1px solid var(--ig-border-color);
     border-radius: 8px;
-    background-color: #fafafa;
-    box-sizing: border-box; /* Quan trọng để padding không làm tăng kích thước */
+    padding: 0 16px;
+    height: 40px;
+    transition: border-color 0.2s;
 }
 
-.search-input:focus {
+.search-bar:focus-within {
+    border-color: var(--ig-secondary-text);
+}
+
+.search-bar-icon {
+    color: var(--ig-secondary-text);
+    flex-shrink: 0;
+}
+
+.search-bar-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    color: var(--ig-primary-text);
+    padding: 0 12px;
     outline: none;
-    border-color: #a8a8a8;
+    font-family: inherit;
 }
 
-.search-results {
-    margin-top: 20px;
+.search-bar-input::placeholder {
+    color: var(--ig-secondary-text);
 }
 
-.status-message {
+.search-bar-clear {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background-color: var(--ig-secondary-text);
+    color: var(--ig-surface);
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.search-bar-clear:hover {
+    opacity: 0.8;
+}
+
+/* ── Search Results ── */
+.search-results-section {
+    background-color: var(--ig-surface);
+    border: 1px solid var(--ig-border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.search-status-message {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 32px 20px;
+    color: var(--ig-secondary-text);
+    font-size: 14px;
+}
+
+.search-results-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* ── Explore Grid ── */
+.explore-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: 1fr;
+    gap: 4px;
+}
+
+.explore-grid-item {
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+    aspect-ratio: 1;
+    background-color: var(--ig-hover-background);
+}
+
+.explore-grid-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.2s;
+}
+
+/* Large item spanning 2 cols and 2 rows */
+.explore-grid-item-large {
+    grid-column: span 2;
+    grid-row: span 2;
+}
+
+/* Hover overlay with stats */
+.explore-grid-overlay {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.explore-grid-item:hover .explore-grid-overlay {
+    opacity: 1;
+}
+
+.explore-grid-stats {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.explore-stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+/* ── Explore States ── */
+.explore-grid-loading,
+.explore-grid-loading-more {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 0;
+}
+
+.explore-grid-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 60px 20px;
     text-align: center;
-    color: #8e8e8e;
-    padding: 20px;
+    color: var(--ig-secondary-text);
+    font-size: 14px;
+}
+
+.explore-grid-retry-btn {
+    background-color: var(--ig-button-primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.explore-grid-retry-btn:hover {
+    background-color: var(--ig-button-primary-hover);
+}
+
+.explore-grid-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    text-align: center;
+}
+
+.explore-grid-empty svg {
+    margin-bottom: 16px;
+    opacity: 0.4;
+}
+
+.explore-grid-empty h3 {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--ig-primary-text);
+    margin: 0 0 8px 0;
+}
+
+.explore-grid-empty p {
+    font-size: 14px;
+    color: var(--ig-secondary-text);
+    margin: 0;
+}
+
+.explore-load-trigger {
+    min-height: 20px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 735px) {
+    .search-explore-page {
+        padding: 12px 4px 0;
+    }
+
+    .search-bar-wrapper {
+        padding: 4px 8px 12px;
+    }
+
+    .explore-grid {
+        gap: 2px;
+    }
+
+    .explore-stat {
+        font-size: 13px;
+        gap: 4px;
+    }
+
+    .explore-stat svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .explore-grid-stats {
+        gap: 16px;
+    }
 }

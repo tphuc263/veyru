@@ -2,7 +2,8 @@ import {useState} from 'react'
 import {Link, useNavigate} from 'react-router-dom'
 import {useAuthContext} from '../../context/AuthContext'
 import {Eye, EyeOff} from 'lucide-react';
-import {validateRegistration} from "../../utils/helpers.js";
+import {validateRegistration} from "../../utils/helpers";
+import {toastSuccess, toastError} from '../../utils/toastService.js';
 import '../../assets/styles/pages/authPage.css'
 
 
@@ -21,7 +22,7 @@ const Register = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)  // Confirm password visibility
 
     // Get auth context and navigation
-    const {register, loading} = useAuthContext()
+    const {register, operationLoading: loading} = useAuthContext()
     const navigate = useNavigate()
 
     /**
@@ -85,24 +86,25 @@ const Register = () => {
             // Step 4: Handle registration result
             if (result.success) {
                 // Registration successful - navigate to login with success message
-                console.log('Registration successful')
+                toastSuccess.registerSuccess();
                 navigate('/login', {
                     replace: true,
                     state: {
-                        message: 'Registration successful! Please sign in with your new account.'
+                        message: 'Đăng ký thành công! Vui lòng đăng nhập với tài khoản mới.'
                     }
                 })
             } else {
                 // Registration failed - show error message
+                toastError.registerFailed(result.error);
                 setErrors({
-                    submit: result.error || 'Registration failed. Please try again.'
+                    submit: result.error || 'Đăng ký thất bại. Vui lòng thử lại.'
                 })
             }
         } catch (error) {
             // Handle unexpected errors
-            console.error('Registration submission error:', error)
+            toastError.general();
             setErrors({
-                submit: 'An unexpected error occurred. Please try again.'
+                submit: 'Đã có lỗi không mong muốn. Vui lòng thử lại.'
             })
         }
     }

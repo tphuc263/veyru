@@ -1,0 +1,257 @@
+/* ===================================
+   AI INLINE ASSISTANT - Instagram Style
+   ================================== */
+
+/* ===== Inline Container ===== */
+.ai-inline {
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ===== Mood Row ===== */
+.ai-mood-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ai-mood-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #8e8e8e;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ai-mood-scroll {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 2px 0;
+}
+
+.ai-mood-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.ai-mood-pill {
+    padding: 5px 10px;
+    border: 1px solid #dbdbdb;
+    border-radius: 20px;
+    background: #fff;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #262626;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ai-mood-pill:hover {
+    border-color: #0095f6;
+    background: #f0f8ff;
+}
+
+.ai-mood-pill.active {
+    background: #0095f6;
+    color: #fff;
+    border-color: #0095f6;
+}
+
+/* ===== AI Suggest Button ===== */
+.ai-suggest-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D, #F56040, #F77737, #FCAF45, #FFDC80);
+    background-size: 300% 300%;
+    animation: gradientShift 5s ease infinite;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.ai-suggest-btn:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: scale(1.01);
+}
+
+.ai-suggest-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ===== Spinner Small ===== */
+.ai-spinner-sm {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    display: inline-block;
+    animation: aiSpin 0.8s linear infinite;
+}
+
+@keyframes aiSpin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== Inline Error ===== */
+.ai-inline-error {
+    color: #ed4956;
+    font-size: 12px;
+    margin: 0;
+    padding: 6px 10px;
+    background: #fff0f0;
+    border-radius: 6px;
+    text-align: center;
+}
+
+/* ===== Caption Results ===== */
+.ai-caption-results {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ai-caption-card {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #fafafa;
+    border: 1px solid #efefef;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ai-caption-card:hover {
+    background: #f0f8ff;
+    border-color: #0095f6;
+}
+
+.ai-caption-preview {
+    margin: 0;
+    font-size: 13px;
+    color: #262626;
+    line-height: 1.5;
+    flex: 1;
+}
+
+.ai-apply-tag {
+    flex-shrink: 0;
+    padding: 3px 10px;
+    background: #0095f6;
+    color: #fff;
+    border-radius: 14px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+/* ===== Section Labels ===== */
+.ai-section-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #262626;
+    margin-bottom: 8px;
+}
+
+/* ===== Tag Row (shared for suggested & trending) ===== */
+.ai-tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* ===== AI Suggested Tags ===== */
+.ai-suggested-tags {
+    padding-top: 2px;
+}
+
+.ai-tag-pill {
+    padding: 5px 10px;
+    background: #f0f0ff;
+    color: #5851DB;
+    border-radius: 14px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    border: 1px solid transparent;
+}
+
+.ai-tag-pill:hover {
+    background: #5851DB;
+    color: #fff;
+}
+
+.ai-tag-pill.selected {
+    background: #5851DB;
+    color: #fff;
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* ===== Trending Tags ===== */
+.ai-trending-tags {
+    padding-top: 2px;
+}
+
+.ai-trending-pill {
+    padding: 5px 10px;
+    background: #fff4f0;
+    color: #E1306C;
+    border-radius: 14px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    border: 1px solid transparent;
+}
+
+.ai-trending-pill:hover {
+    background: #E1306C;
+    color: #fff;
+}
+
+.ai-trending-pill.selected {
+    background: #E1306C;
+    color: #fff;
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 480px) {
+    .ai-mood-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    .ai-mood-scroll {
+        width: 100%;
+    }
+}
