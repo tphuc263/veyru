@@ -28,6 +28,7 @@ public class Photo {
 
     private long likeCount;
     private long commentCount;
+    private long shareCount;
 
     @Data
     @NoArgsConstructor

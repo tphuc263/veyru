@@ -22,7 +22,7 @@ COPY --from=build /app/target/*.jar app.jar
 RUN mkdir -p /app/logs && chown -R spring:spring /app
 
 USER spring
-EXPOSE 8080
+EXPOSE 8080 9092
 
 # Healthcheck đã được move sang docker-compose.yml để dễ config hơn
 # Nhưng giữ lại ở đây để khi chạy standalone vẫn có

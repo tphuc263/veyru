@@ -97,6 +97,10 @@ newsfeed:
   batch:
     size: 50
 
+socketio:
+  host: ${SOCKETIO_HOST:0.0.0.0}
+  port: ${SOCKETIO_PORT:9092}
+
 management:
   endpoints:
     web:

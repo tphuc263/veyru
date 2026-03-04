@@ -28,6 +28,7 @@
     import share_app.tphucshareapp.repository.FavoriteRepository;
     import share_app.tphucshareapp.repository.LikeRepository;
     import share_app.tphucshareapp.repository.PhotoRepository;
+    import share_app.tphucshareapp.repository.ShareRepository;
     import share_app.tphucshareapp.service.tag.TagService;
     import share_app.tphucshareapp.service.user.UserService;
 
@@ -47,6 +48,7 @@
         private final LikeRepository likeRepository;
         private final FavoriteRepository favoriteRepository;
         private final CommentRepository commentRepository;
+        private final ShareRepository shareRepository;
         private final TagService tagService;
         private final PhotoConversionService photoConversionService;
         private final ApplicationEventPublisher eventPublisher;
@@ -176,7 +178,8 @@
                 likeRepository.deleteAllByPhotoId(photoId);
                 commentRepository.deleteAllByPhotoId(photoId);
                 favoriteRepository.deleteAllByPhotoId(photoId);
-                log.info("Deleted all likes, comments, and favorites for photo ID: {}", photoId);
+                shareRepository.deleteAllByPhotoId(photoId);
+                log.info("Deleted all likes, comments, favorites and shares for photo ID: {}", photoId);
 
                 photoRepository.deleteById(photoId);
 
@@ -201,6 +204,7 @@
             }
             response.setLikeCount((int) photo.getLikeCount());
             response.setCommentCount((int) photo.getCommentCount());
+            response.setShareCount((int) photo.getShareCount());
 
             try {
                 User currentUser = userService.getCurrentUser();

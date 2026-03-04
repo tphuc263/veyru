@@ -28,6 +28,7 @@ public class PhotoConversionService {
         }
         response.setLikeCount((int) photo.getLikeCount());
         response.setCommentCount((int) photo.getCommentCount());
+        response.setShareCount((int) photo.getShareCount());
         response.setTags(photo.getTags());
 
         if (currentUser != null) {

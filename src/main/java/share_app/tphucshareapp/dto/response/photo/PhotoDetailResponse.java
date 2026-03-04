@@ -19,6 +19,7 @@ public class PhotoDetailResponse {
     private Instant createdAt;
     private int likeCount;
     private int commentCount;
+    private int shareCount;
 
     @JsonProperty("isLikedByCurrentUser")
     private boolean isLikedByCurrentUser;
