@@ -13,8 +13,8 @@
 }
 
 .sidebar-brand {
-    padding: var(--ig-spacing-lg) var(--ig-spacing-md);
-    margin-bottom: var(--ig-spacing-xl);
+    padding: var(--ig-spacing-md) var(--ig-spacing-md) var(--ig-spacing-sm);
+    margin-bottom: var(--ig-spacing-sm);
 }
 
 .sidebar-brand h2 {

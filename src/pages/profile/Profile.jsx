@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "../../assets/styles/pages/profilePage.css";
 import { useAuthContext } from "../../context/AuthContext.jsx";
 import { useUserProfile } from "../../hooks/useUserProfile.js";
@@ -12,6 +12,7 @@ import FollowListModal from "../../components/features/FollowListModal.jsx";
 const ProfilePage = () => {
   const { profile, posts, handleLoadMore, setProfile, setPosts } = useUserProfile();
   const { user: currentUser } = useAuthContext();
+  const navigate = useNavigate();
 
   const [isFollowLoading, setIsFollowLoading] = useState(false);
   const [selectedPhotoId, setSelectedPhotoId] = useState(null);
@@ -154,6 +155,14 @@ const ProfilePage = () => {
                   : profile.data.followingByCurrentUser
                   ? "Following"
                   : "Follow"}
+              </button>
+            )}
+            {showFollowButton && (
+              <button
+                className="message-profile-button"
+                onClick={() => navigate(`/messages?userId=${profile.data.id}`)}
+              >
+                Message
               </button>
             )}
           </div>

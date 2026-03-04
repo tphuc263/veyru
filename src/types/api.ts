@@ -148,3 +148,15 @@ export interface PostTimingSuggestionResponse {
   bestTimes: TimingSlot[];
   aiSummary: string;
 }
+
+// ==================== Recommendation Types ====================
+export interface RecommendedUser {
+  id: string;
+  username: string;
+  imageUrl: string;
+  bio?: string;
+  followerCount: number;
+  photoCount: number;
+  similarityScore: number;
+  reason: string;
+}

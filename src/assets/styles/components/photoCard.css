@@ -91,6 +91,10 @@
     color: var(--ig-primary-text);
 }
 
+.photo-card-shares-inline {
+    color: var(--ig-secondary-text);
+}
+
 .photo-card-caption {
     padding: 0 16px 12px;
     font-size: 14px;

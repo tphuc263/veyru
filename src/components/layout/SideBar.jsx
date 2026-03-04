@@ -1,7 +1,7 @@
 import {NavLink} from 'react-router-dom'
 import {useAuthContext} from '../../context/AuthContext'
 import {useState, useEffect, useRef} from 'react'
-import {Compass, Heart, Home, LogOut, Menu, MessageCircle, Moon, PlusSquare, Search, Sun, User} from 'lucide-react'
+import {Heart, Home, LogOut, Menu, MessageCircle, Moon, PlusSquare, Search, Sun, User} from 'lucide-react'
 
 const SideBar = () => {
     const {user, logout, isAuthenticated} = useAuthContext()
@@ -33,7 +33,7 @@ const SideBar = () => {
     // Navigation items for authenticated users
     const navItems = [
         {path: '/', label: 'Home', icon: <Home size={24}/>},
-        {path: '/search', label: 'Explore', icon: <Compass size={24}/>},
+        {path: '/search', label: 'Search', icon: <Search size={24}/>},
         {path: '/messages', label: 'Messages', icon: <MessageCircle size={24}/>},
         {path: '/notifications', label: 'Notifications', icon: <Heart size={24}/>},
         {path: '/create', label: 'Create', icon: <PlusSquare size={24}/>},

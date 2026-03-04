@@ -1,4 +1,5 @@
-import {useState, useEffect, useRef} from "react";
+import {useState, useEffect, useRef, useCallback} from "react";
+import Cropper from "react-easy-crop";
 import {useAuthContext} from "../../context/AuthContext.jsx";
 import {
   updateUserProfile,
@@ -6,6 +7,32 @@ import {
 } from "../../services/userService";
 import {toastSuccess, toastError} from '../../utils/toastService.js';
 import '../../assets/styles/pages/editProfile.css';
+
+const createImage = (url) =>
+    new Promise((resolve, reject) => {
+        const img = new Image();
+        img.addEventListener("load", () => resolve(img));
+        img.addEventListener("error", (e) => reject(e));
+        img.src = url;
+    });
+
+async function getCroppedImg(imageSrc, pixelCrop) {
+    const image = await createImage(imageSrc);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = pixelCrop.width;
+    canvas.height = pixelCrop.height;
+    ctx.drawImage(
+        image,
+        pixelCrop.x, pixelCrop.y,
+        pixelCrop.width, pixelCrop.height,
+        0, 0,
+        pixelCrop.width, pixelCrop.height
+    );
+    return new Promise((resolve) => {
+        canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.9);
+    });
+}
 
 const EditProfileForm = () => {
     const {user: currentUser, setUser} = useAuthContext();
@@ -22,6 +49,17 @@ const EditProfileForm = () => {
     const [avatarFile, setAvatarFile] = useState(null);
     const [avatarPreview, setAvatarPreview] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Crop state
+    const [cropModalOpen, setCropModalOpen] = useState(false);
+    const [rawImageSrc, setRawImageSrc] = useState(null);
+    const [crop, setCrop] = useState({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
+    const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
+    const onCropComplete = useCallback((_, croppedPixels) => {
+        setCroppedAreaPixels(croppedPixels);
+    }, []);
 
     useEffect(() => {
       const fetchProfileForEditing = async () => {
@@ -70,9 +108,31 @@ const EditProfileForm = () => {
                 return;
             }
             
-            setAvatarFile(file);
-            setAvatarPreview( URL.createObjectURL(file));
+            const objectUrl = URL.createObjectURL(file);
+            setRawImageSrc(objectUrl);
+            setCrop({ x: 0, y: 0 });
+            setZoom(1);
+            setCropModalOpen(true);
+            // Reset input so same file can be re-selected
+            e.target.value = "";
         }
+    };
+
+    const handleCropConfirm = async () => {
+        try {
+            const blob = await getCroppedImg(rawImageSrc, croppedAreaPixels);
+            const croppedFile = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+            setAvatarFile(croppedFile);
+            setAvatarPreview(URL.createObjectURL(blob));
+            setCropModalOpen(false);
+        } catch (err) {
+            console.error("Crop failed:", err);
+        }
+    };
+
+    const handleCropCancel = () => {
+        setCropModalOpen(false);
+        setRawImageSrc(null);
     };
 
     const handleSubmit = async (e) => {
@@ -117,6 +177,44 @@ const EditProfileForm = () => {
 
     return (
       <>
+        {/* Crop Modal */}
+        {cropModalOpen && (
+          <div className="crop-modal-overlay">
+            <div className="crop-modal">
+              <h3 className="crop-modal-title">Crop your photo</h3>
+              <div className="crop-container">
+                <Cropper
+                  image={rawImageSrc}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  cropShape="round"
+                  showGrid={false}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={onCropComplete}
+                />
+              </div>
+              <div className="crop-zoom-control">
+                <span>Zoom</span>
+                <input
+                  type="range"
+                  min={1}
+                  max={3}
+                  step={0.05}
+                  value={zoom}
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  className="crop-zoom-slider"
+                />
+              </div>
+              <div className="crop-modal-actions">
+                <button className="crop-btn crop-btn-cancel" onClick={handleCropCancel}>Cancel</button>
+                <button className="crop-btn crop-btn-confirm" onClick={handleCropConfirm}>Apply</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="edit-profile-container">
           <form onSubmit={handleSubmit} className="edit-profile-form">
             <div className="form-row form-row-avatar">

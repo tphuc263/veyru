@@ -16,13 +16,7 @@ import Search from './pages/search/Search'
 import Create from './pages/create/Create'
 import Profile from './pages/profile/Profile'
 import EditProfileForm from './pages/profile/EditProfileForm.jsx'
-
-const MessagesPage = () => (
-    <div className="page-placeholder">
-        <h2>💬 Messages Page</h2>
-        <p>Direct messaging feature coming soon...</p>
-    </div>
-)
+import Messages from './pages/messages/Messages'
 
 const NotificationsPage = () => (
     <div className="page-placeholder">
@@ -71,19 +65,20 @@ function App() {
                     <Route path="/terms" element={<TermsPage />} />
                     <Route path="/privacy" element={<PrivacyPage />} />
 
+                    {/* Open routes — accessible regardless of auth state */}
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
+
                     <Route element={<PublicRoute />}>
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
-                        <Route path="/forgot-password" element={<ForgotPassword />} />
-                        <Route path="/reset-password" element={<ResetPassword />} />
                         <Route path="/auth/oauth2/redirect" element={<OAuth2RedirectHandler />} />
                     </Route>
 
                     <Route element={<ProtectedRoute />}>
                         <Route path="/home" element={<Home />} />
                         <Route path="/search" element={<Search />} />
-                        <Route path="/explore" element={<Navigate to="/search" replace />} />
-                        <Route path="/messages" element={<MessagesPage />} />
+                        <Route path="/messages" element={<Messages />} />
                         <Route path="/notifications" element={<NotificationsPage />} />
                         <Route path="/create" element={<Create />} />
                         <Route path="/profile" element={<Profile />} />

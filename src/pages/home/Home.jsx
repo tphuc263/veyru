@@ -2,6 +2,7 @@ import {useEffect, useState} from "react";
 import {getNewsfeed} from "../../services/newsfeedService";
 import PhotoCard from '../../components/features/PhotoCard.jsx';
 import PhotoModal from '../../components/features/PhotoModal.jsx';
+import SuggestedUsers from '../../components/features/SuggestedUsers.jsx';
 import {Loader} from '../../components/common/Loader.jsx'
 import '../../assets/styles/pages/homePage.css';
 
@@ -111,13 +112,13 @@ const Home = () => {
                         caption={post.caption}
                         likesCount={post.likeCount}
                         commentsCount={post.commentCount}
+                        sharesCount={post.shareCount || 0}
                         isLiked={post.isLikedByCurrentUser}
                         isSaved={post.isSavedByCurrentUser}
                         createdAt={post.createdAt}
                         tags={post.tags}
                         onPhotoClick={() => setSelectedPhotoId(post.id)}
                         onPhotoUpdate={(photoId, updatedPhoto) => {
-                            // Facebook pattern: Update entire photo object in feed
                             setFeed(prevFeed => 
                                 prevFeed.map(p => 
                                     p.id === photoId 
@@ -125,7 +126,8 @@ const Home = () => {
                                             ...p, 
                                             isLikedByCurrentUser: updatedPhoto.isLikedByCurrentUser,
                                             likeCount: updatedPhoto.likeCount,
-                                            commentCount: updatedPhoto.commentCount || p.commentCount
+                                            commentCount: updatedPhoto.commentCount || p.commentCount,
+                                            shareCount: updatedPhoto.shareCount ?? p.shareCount
                                           }
                                         : p
                                 )
@@ -158,6 +160,11 @@ const Home = () => {
                 )}
             </main>
 
+            {/* Suggested Users sidebar (Instagram style) */}
+            <aside className="home-sidebar">
+                <SuggestedUsers />
+            </aside>
+
             {/* Scroll to Top Button */}
             {showScrollTop && (
                 <button onClick={scrollToTop} className="scroll-to-top" title="Về đầu trang">
@@ -180,7 +187,8 @@ const Home = () => {
                                             ...post, 
                                             isLikedByCurrentUser: updatedPhoto.isLikedByCurrentUser,
                                             likeCount: updatedPhoto.likeCount,
-                                            commentCount: updatedPhoto.commentCount || post.commentCount
+                                            commentCount: updatedPhoto.commentCount || post.commentCount,
+                                            shareCount: updatedPhoto.shareCount ?? post.shareCount
                                           }
                                         : post
                                 )

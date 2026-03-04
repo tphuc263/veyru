@@ -3,9 +3,12 @@ import '../../assets/styles/components/photoModal.css';
 import { getPhotoById } from '../../services/photoService';
 import { createComment } from '../../services/commentService';
 import { toggleFavorite } from '../../services/favoriteService';
+import { getRelatedPhotos } from '../../services/recommendationService';
 import { showToast } from '../../utils/toastService';
 import { Loader } from '../common/Loader';
 import { useOptimisticLike } from '../../hooks/useOptimisticLike';
+import { Heart, MessageCircle } from 'lucide-react';
+import ShareModal from './ShareModal';
 
 const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
   const [photoDetail, setPhotoDetail] = useState(null);
@@ -16,6 +19,10 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
   const [comments, setComments] = useState([]);
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [relatedPhotos, setRelatedPhotos] = useState([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [localShareCount, setLocalShareCount] = useState(0);
 
   // Pass actual photoDetail values directly - the hook will sync when they change
   const { isLiked, likesCount, isProcessing, handleLike } = useOptimisticLike(
@@ -33,6 +40,7 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
         setPhotoDetail(response);
         setComments(response.comments || []);
         setIsSaved(response.isSavedByCurrentUser ?? false);
+        setLocalShareCount(response.shareCount || 0);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -43,6 +51,23 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
     if (photoId) {
       fetchPhotoDetail();
     }
+  }, [photoId]);
+
+  // Load related photos (AI recommendation)
+  useEffect(() => {
+    const fetchRelatedPhotos = async () => {
+      if (!photoId) return;
+      setRelatedLoading(true);
+      try {
+        const photos = await getRelatedPhotos(photoId, 6);
+        setRelatedPhotos(photos);
+      } catch (err) {
+        console.error('Failed to load related photos:', err);
+      } finally {
+        setRelatedLoading(false);
+      }
+    };
+    fetchRelatedPhotos();
   }, [photoId]);
 
   useEffect(() => {
@@ -87,10 +112,11 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
     
     try {
       const response = await createComment(photoId, { content: newComment.trim() });
-      // Ensure createdAt exists so formatDate doesn't produce "Invalid Date"
+      // API trả về { data: {...}, message: "..." } — lấy response.data
+      const commentData = response.data ?? response;
       const newCommentEntry = {
-        ...response,
-        createdAt: response.createdAt ?? new Date().toISOString(),
+        ...commentData,
+        createdAt: commentData.createdAt ?? new Date().toISOString(),
       };
       const updatedComments = [...comments, newCommentEntry];
       setComments(updatedComments);
@@ -239,6 +265,16 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
                       <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
                     </svg>
                   </button>
+                  <button 
+                    className="action-btn"
+                    onClick={() => setShowShareModal(true)}
+                    aria-label="Share"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="22" y1="2" x2="11" y2="13"></line>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                  </button>
                 </div>
                 <button 
                   className={`action-btn save-btn ${isSaved ? 'saved' : ''}`}
@@ -254,6 +290,9 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
               
               <div className="likes-count">
                 <strong>{likesCount}</strong> lượt thích
+                {localShareCount > 0 && (
+                    <span className="shares-count-inline"> · <strong>{localShareCount}</strong> lượt chia sẻ</span>
+                )}
               </div>
               
               <div className="post-date">
@@ -293,7 +332,59 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
             </div>
           </div>
         </div>
+
+        {/* Related Photos Section */}
+        {relatedPhotos.length > 0 && (
+          <div className="related-photos-section">
+            <div className="related-photos-header">
+              <h4>More posts like this</h4>
+            </div>
+            <div className="related-photos-grid">
+              {relatedPhotos.map(photo => (
+                <div
+                  key={photo.id}
+                  className="related-photo-item"
+                  onClick={() => {
+                    // Navigate to this photo (re-open modal)
+                    setRelatedPhotos([]);
+                    setPhotoDetail(null);
+                    setLoading(true);
+                    // Trigger re-fetch by changing photoId equivalent
+                    window.dispatchEvent(new CustomEvent('openPhotoModal', { detail: photo.id }));
+                  }}
+                >
+                  <img src={photo.imageUrl} alt={photo.caption || 'Related photo'} loading="lazy" />
+                  <div className="related-photo-overlay">
+                    <div className="related-photo-stats">
+                      <span><Heart size={16} fill="white" stroke="white" /> {photo.likeCount}</span>
+                      <span><MessageCircle size={16} fill="white" stroke="white" /> {photo.commentCount}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {relatedLoading && (
+          <div className="related-photos-loading">
+            <Loader />
+          </div>
+        )}
       </div>
+
+      {showShareModal && (
+        <ShareModal
+          photoId={photoId}
+          photoSrc={photoDetail?.imageUrl}
+          onClose={() => setShowShareModal(false)}
+          onShareSuccess={(updatedPhoto) => {
+            setLocalShareCount(prev => prev + 1);
+            if (onPhotoUpdate && updatedPhoto) {
+              onPhotoUpdate(photoId, updatedPhoto);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

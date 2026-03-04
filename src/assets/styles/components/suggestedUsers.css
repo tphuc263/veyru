@@ -1,0 +1,241 @@
+/* ===================================
+   SUGGESTED USERS (Instagram-style sidebar)
+   =================================== */
+
+.suggested-users-container {
+    position: sticky;
+    top: 30px;
+    width: 300px;
+    padding: 8px 0;
+}
+
+/* ── Current user mini profile ── */
+.current-user-mini {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 4px;
+    margin-bottom: 12px;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: background-color 0.15s;
+}
+
+.current-user-mini:hover {
+    background-color: var(--ig-hover-background);
+}
+
+.current-user-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.current-user-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.current-user-username {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ig-primary-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.current-user-name {
+    font-size: 12px;
+    color: var(--ig-secondary-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Header ── */
+.suggested-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 4px 8px;
+}
+
+.suggested-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ig-secondary-text);
+}
+
+.suggested-see-all {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ig-primary-text);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    transition: opacity 0.15s;
+}
+
+.suggested-see-all:hover {
+    opacity: 0.7;
+}
+
+/* ── User list ── */
+.suggested-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.suggested-user-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 4px;
+    border-radius: 8px;
+    transition: background-color 0.15s;
+}
+
+.suggested-user-item:hover {
+    background-color: var(--ig-hover-background);
+}
+
+.suggested-user-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    min-width: 0;
+    flex: 1;
+}
+
+.suggested-user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.suggested-user-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.suggested-user-username {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ig-primary-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.suggested-user-reason {
+    font-size: 12px;
+    color: var(--ig-secondary-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Follow button ── */
+.suggested-follow-btn {
+    font-size: 12px;
+    font-weight: 600;
+    color: #0095f6;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    flex-shrink: 0;
+    transition: color 0.15s;
+}
+
+.suggested-follow-btn:hover {
+    color: #00376b;
+}
+
+.suggested-following-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ig-secondary-text);
+    padding: 4px 8px;
+    flex-shrink: 0;
+}
+
+/* ── Footer ── */
+.suggested-footer {
+    padding: 24px 4px 8px;
+}
+
+.suggested-footer p {
+    font-size: 11px;
+    color: var(--ig-tertiary-text, #c7c7c7);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0;
+}
+
+/* ── Loading skeleton ── */
+.suggested-loading {
+    padding: 4px 0;
+}
+
+.suggested-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.suggested-skeleton-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px;
+}
+
+.skeleton-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--ig-hover-background);
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-text {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+}
+
+.skeleton-line {
+    height: 10px;
+    border-radius: 4px;
+    background: var(--ig-hover-background);
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+    width: 60%;
+}
+
+.skeleton-line.short {
+    width: 40%;
+}
+
+@keyframes skeleton-pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+}
+
+/* ── Hide on small screens ── */
+@media (max-width: 999px) {
+    .suggested-users-container {
+        display: none;
+    }
+}
