@@ -24,6 +24,25 @@ services:
     networks:
       - share-app-network
 
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: share-app-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - share-app-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   # Spring Boot Application
   share-app:
     build: .
@@ -39,6 +58,12 @@ services:
       # Redis Configuration
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      
+      # RabbitMQ Configuration
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=guest
+      - RABBITMQ_PASSWORD=guest
       
       # Cloudinary Configuration
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
@@ -69,6 +94,8 @@ services:
         condition: service_started
       redis:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
     networks:
       - share-app-network
     volumes:
@@ -84,6 +111,7 @@ services:
 volumes:
   mongo-data:
   redis-data:
+  rabbitmq-data:
 
 networks:
   share-app-network:

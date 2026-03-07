@@ -83,10 +83,12 @@ public class SocketIOHandler {
     @SuppressWarnings("unchecked")
     private DataListener<Map> onSendMessage() {
         return (client, data, ackSender) -> {
+            log.info("Socket.IO: Received send_message event. Data: {}", data);
             try {
                 String senderId = client.get("userId");
                 String receiverId = (String) data.get("receiverId");
                 String text = (String) data.get("text");
+                log.info("Socket.IO: Processing message from {} to {}", senderId, receiverId);
 
                 if (senderId == null || receiverId == null || text == null || text.trim().isEmpty()) {
                     log.warn("Socket.IO: invalid message data");
@@ -98,11 +100,18 @@ public class SocketIOHandler {
 
                 // Send to sender (confirmation)
                 client.sendEvent("new_message", messageResponse);
+                log.info("Socket.IO: Sent new_message to sender {}", senderId);
 
                 // Send to receiver if online
                 SocketIOClient receiverClient = onlineUsers.get(receiverId);
+                log.info("Socket.IO: Looking for receiver {} in onlineUsers. Found: {}, Online users: {}", 
+                    receiverId, receiverClient != null, onlineUsers.keySet());
+                    
                 if (receiverClient != null && receiverClient.isChannelOpen()) {
                     receiverClient.sendEvent("new_message", messageResponse);
+                    log.info("Socket.IO: Sent new_message to receiver {}", receiverId);
+                } else {
+                    log.info("Socket.IO: Receiver {} is offline or not connected", receiverId);
                 }
 
                 log.debug("Socket.IO: Message sent from {} to {}", senderId, receiverId);

@@ -16,6 +16,7 @@ import share_app.tphucshareapp.model.User;
 import share_app.tphucshareapp.repository.LikeRepository;
 import share_app.tphucshareapp.repository.PhotoRepository;
 import share_app.tphucshareapp.repository.UserRepository;
+import share_app.tphucshareapp.service.notification.INotificationService;
 import share_app.tphucshareapp.service.photo.PhotoConversionService;
 import share_app.tphucshareapp.service.user.UserService;
 
@@ -35,6 +36,7 @@ public class LikeService implements ILikeService {
     private final ModelMapper modelMapper;
     private final MongoTemplate mongoTemplate;
     private final PhotoConversionService photoConversionService;
+    private final INotificationService notificationService;
 
     @Override
     public PhotoResponse toggleLike(String photoId) {
@@ -69,6 +71,16 @@ public class LikeService implements ILikeService {
             mongoTemplate.updateFirst(query, update, Photo.class);
             photo.setLikeCount(photo.getLikeCount() + 1);
             
+            // Send notification to photo owner
+            if (photo.getUser() != null) {
+                notificationService.sendLikePhotoNotification(
+                        photo.getUser().getUserId(),
+                        currentUser,
+                        photoId,
+                        photo.getImageUrl()
+                );
+            }
+            
             log.info("User {} liked photo {}", currentUser.getId(), photoId);
         }
         
@@ -79,7 +91,7 @@ public class LikeService implements ILikeService {
     @Override
     public void like(String photoId) {
         User currentUser = userService.getCurrentUser();
-        photoRepository.findById(photoId)
+        Photo photo = photoRepository.findById(photoId)
                 .orElseThrow(() -> new RuntimeException("Photo not found with ID: " + photoId));
 
         boolean alreadyLiked = likeRepository.existsByPhotoIdAndUserId(photoId, currentUser.getId());
@@ -99,6 +111,16 @@ public class LikeService implements ILikeService {
         Query query = new Query(Criteria.where("_id").is(photoId));
         Update update = new Update().inc("likeCount", 1);
         mongoTemplate.updateFirst(query, update, Photo.class);
+        
+        // Send notification
+        if (photo.getUser() != null) {
+            notificationService.sendLikePhotoNotification(
+                    photo.getUser().getUserId(),
+                    currentUser,
+                    photoId,
+                    photo.getImageUrl()
+            );
+        }
 
         log.info("User {} liked photo {}", currentUser.getId(), photoId);
     }

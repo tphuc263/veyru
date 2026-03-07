@@ -14,8 +14,12 @@ public interface ICommentService {
     void deleteComment(String commentId);
 
     List<CommentResponse> getPhotoComments(String photoId);
+    
+    List<CommentResponse> getCommentReplies(String commentId, int page, int size);
 
     long getPhotoCommentsCount(String photoId);
 
     CommentResponse getComment(String commentId);
+    
+    CommentResponse toggleCommentLike(String commentId);
 }

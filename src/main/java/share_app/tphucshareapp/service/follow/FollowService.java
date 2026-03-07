@@ -20,6 +20,7 @@ import share_app.tphucshareapp.model.User;
 import share_app.tphucshareapp.repository.FollowRepository;
 import share_app.tphucshareapp.repository.UserRepository;
 import share_app.tphucshareapp.security.userdetails.AppUserDetails;
+import share_app.tphucshareapp.service.notification.INotificationService;
 import share_app.tphucshareapp.service.photo.NewsfeedService;
 
 import java.time.Instant;
@@ -37,6 +38,7 @@ public class FollowService implements IFollowService {
     private final UserRepository userRepository;
     private final ModelMapper modelMapper;
     private final MongoTemplate mongoTemplate;
+    private final INotificationService notificationService;
 
     @Override
     public void follow(String targetUserId) {
@@ -64,6 +66,9 @@ public class FollowService implements IFollowService {
         Query followingQuery = new Query(Criteria.where("_id").is(targetUserId));
         Update followingUpdate = new Update().inc("followerCount", 1);
         mongoTemplate.updateFirst(followingQuery, followingUpdate, User.class);
+        
+        // Send notification to the user being followed
+        notificationService.sendNewFollowerNotification(targetUserId, currentUser);
 
         log.info("User {} followed user {}", currentUser.getId(), targetUserId);
 

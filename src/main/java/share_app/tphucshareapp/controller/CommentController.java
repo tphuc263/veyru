@@ -18,7 +18,7 @@ import java.util.List;
 public class CommentController {
     private final CommentService commentService;
 
-    // Create a comment on a photo
+    // Create a comment on a photo (supports nested comments via parentCommentId in request body)
     @PostMapping("/photo/{photoId}")
     public ResponseEntity<ApiResponse<CommentResponse>> createComment(
             @PathVariable String photoId,
@@ -43,12 +43,22 @@ public class CommentController {
         return ResponseEntity.ok(ApiResponse.success(null, "Comment deleted successfully"));
     }
 
-    // Get all comments for a photo -> pagnition ?
+    // Get all comments for a photo (top-level comments with nested replies)
     @GetMapping("/photo/{photoId}")
     public ResponseEntity<ApiResponse<List<CommentResponse>>> getPhotoComments(
             @PathVariable String photoId) {
         List<CommentResponse> comments = commentService.getPhotoComments(photoId);
         return ResponseEntity.ok(ApiResponse.success(comments, "Photo comments retrieved successfully"));
+    }
+    
+    // Get replies for a specific comment
+    @GetMapping("/{commentId}/replies")
+    public ResponseEntity<ApiResponse<List<CommentResponse>>> getCommentReplies(
+            @PathVariable String commentId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        List<CommentResponse> replies = commentService.getCommentReplies(commentId, page, size);
+        return ResponseEntity.ok(ApiResponse.success(replies, "Comment replies retrieved successfully"));
     }
 
     // Get comments count for a photo
@@ -63,5 +73,12 @@ public class CommentController {
     public ResponseEntity<ApiResponse<CommentResponse>> getComment(@PathVariable String commentId) {
         CommentResponse comment = commentService.getComment(commentId);
         return ResponseEntity.ok(ApiResponse.success(comment, "Comment retrieved successfully"));
+    }
+    
+    // Toggle like on a comment
+    @PostMapping("/{commentId}/like")
+    public ResponseEntity<ApiResponse<CommentResponse>> toggleCommentLike(@PathVariable String commentId) {
+        CommentResponse comment = commentService.toggleCommentLike(commentId);
+        return ResponseEntity.ok(ApiResponse.success(comment, "Comment like toggled successfully"));
     }
 }
