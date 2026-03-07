@@ -1,4 +1,5 @@
 import {useEffect, useState} from "react";
+import {useSearchParams} from "react-router-dom";
 import {getNewsfeed} from "../../services/newsfeedService";
 import PhotoCard from '../../components/features/PhotoCard.jsx';
 import PhotoModal from '../../components/features/PhotoModal.jsx';
@@ -8,6 +9,7 @@ import '../../assets/styles/pages/homePage.css';
 
 
 const Home = () => {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [feed, setFeed] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -15,6 +17,28 @@ const Home = () => {
     const [hasMore, setHasMore] = useState(true);
     const [selectedPhotoId, setSelectedPhotoId] = useState(null);
     const [showScrollTop, setShowScrollTop] = useState(false);
+
+    // Restore photo modal from URL on page load
+    useEffect(() => {
+        const photoId = searchParams.get('photo');
+        if (photoId && !selectedPhotoId) {
+            // Keep photoId as string - API expects string ID
+            setSelectedPhotoId(photoId);
+        }
+    }, [searchParams]);
+
+    // Update URL when selectedPhotoId changes
+    const handlePhotoSelect = (photoId) => {
+        setSelectedPhotoId(photoId);
+        if (photoId) {
+            setSearchParams({ photo: photoId }, { replace: true });
+        }
+    };
+
+    const handlePhotoClose = () => {
+        setSelectedPhotoId(null);
+        setSearchParams({}, { replace: true });
+    };
 
     // Handle scroll to show/hide scroll-to-top button
     useEffect(() => {
@@ -117,7 +141,7 @@ const Home = () => {
                         isSaved={post.isSavedByCurrentUser}
                         createdAt={post.createdAt}
                         tags={post.tags}
-                        onPhotoClick={() => setSelectedPhotoId(post.id)}
+                        onPhotoClick={() => handlePhotoSelect(post.id)}
                         onPhotoUpdate={(photoId, updatedPhoto) => {
                             setFeed(prevFeed => 
                                 prevFeed.map(p => 
@@ -177,7 +201,7 @@ const Home = () => {
             {selectedPhotoId && (() => (
                     <PhotoModal 
                         photoId={selectedPhotoId}
-                        onClose={() => setSelectedPhotoId(null)}
+                        onClose={handlePhotoClose}
                         onPhotoUpdate={(photoId, updatedPhoto) => {
                             // Sync state between modal and feed
                             setFeed(prevFeed => 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuthContext } from '../../context/AuthContext';
+import { useSocketContext } from '../../context/SocketContext';
 import { useSearchParams } from 'react-router-dom';
 import {
     getConversations,
@@ -7,8 +8,6 @@ import {
     startConversation,
 } from '../../services/messageService';
 import {
-    connectSocket,
-    disconnectSocket,
     getSocket,
     sendSocketMessage,
     markMessagesRead,
@@ -16,10 +15,12 @@ import {
     sendStopTyping,
 } from '../../services/socketService';
 import { Search, Send, ArrowLeft, MoreHorizontal, Smile, Trash2, BellOff, User } from 'lucide-react';
+import EmojiPicker from 'emoji-picker-react';
 import '../../assets/styles/pages/messagesPage.css';
 
 const Messages = () => {
     const { user } = useAuthContext();
+    const { isConnected, onlineUsers, subscribeToMessages } = useSocketContext();
     const [searchParams, setSearchParams] = useSearchParams();
 
     // State
@@ -30,7 +31,6 @@ const Messages = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [messagesLoading, setMessagesLoading] = useState(false);
-    const [onlineUsers, setOnlineUsers] = useState(new Set());
     const [typingUsers, setTypingUsers] = useState(new Set());
     const [showMobileChat, setShowMobileChat] = useState(false);
     const [conversationMenu, setConversationMenu] = useState(null); // convId đang mở menu
@@ -44,137 +44,22 @@ const Messages = () => {
     const emojiPickerRef = useRef(null);
     // Refs để tránh stale closure trong socket listener
     const activeConversationRef = useRef(null);
-    const handleNewMessageRef = useRef(null);
     // Guard để tránh gọi handleStartConversation nhiều lần (StrictMode, fast re-render)
     const startingConversationRef = useRef(false);
 
     // Luôn giữ ref đồng bộ với state/callback mới nhất
     activeConversationRef.current = activeConversation;
 
-    // Emoji list
-    const EMOJI_LIST = [
-        '😀','😂','😍','🥰','😎','🤔','😢','😡','👍','❤️',
-        '🔥','🎉','✨','🙏','💪','👀','🤣','😊','😭','🤦',
-        '🤷','😤','🥺','😴','🤩','🥳','😏','🤗','😇','🫡',
-        '💀','🫶','🤝','👋','🎊','🌹','🍕','☕','🎮','💯',
-    ];
-
-    // Initialize Socket.IO
-    useEffect(() => {
-        if (!user?.id) return;
-
-        const socket = connectSocket(user.id);
-
-        socket.on('new_message', (message) => {
-            // Dùng ref để luôn gọi phiên bản mới nhất của handler
-            handleNewMessageRef.current?.(message);
-        });
-
-        socket.on('user_online', (userId) => {
-            setOnlineUsers((prev) => new Set([...prev, userId]));
-        });
-
-        socket.on('user_offline', (userId) => {
-            setOnlineUsers((prev) => {
-                const next = new Set(prev);
-                next.delete(userId);
-                return next;
-            });
-        });
-
-        socket.on('user_typing', ({ userId }) => {
-            setTypingUsers((prev) => new Set([...prev, userId]));
-        });
-
-        socket.on('user_stop_typing', ({ userId }) => {
-            setTypingUsers((prev) => {
-                const next = new Set(prev);
-                next.delete(userId);
-                return next;
-            });
-        });
-
-        socket.on('messages_read', ({ conversationId }) => {
-            setMessages((prev) =>
-                prev.map((msg) =>
-                    msg.conversationId === conversationId ? { ...msg, read: true } : msg
-                )
-            );
-        });
-
-        return () => {
-            disconnectSocket();
-        };
-    }, [user?.id]);
-
-    // Đóng menu/emoji khi click ra ngoài
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (convMenuRef.current && !convMenuRef.current.contains(e.target)) {
-                setConversationMenu(null);
-            }
-            if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) {
-                setShowEmojiPicker(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    // Load conversations
-    useEffect(() => {
-        loadConversations();
-    }, []);
-
-    // Handle URL param for starting a conversation
-    useEffect(() => {
-        const userId = searchParams.get('userId');
-        if (userId && user?.id && !startingConversationRef.current) {
-            startingConversationRef.current = true;
-            handleStartConversation(userId).finally(() => {
-                startingConversationRef.current = false;
-            });
-            setSearchParams({}, { replace: true });
-        }
-    }, [searchParams, user?.id]);
-
-    // Scroll to bottom on new messages
-    useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
-
-    const loadConversations = async () => {
-        try {
-            setLoading(true);
-            const data = await getConversations();
-            setConversations(data || []);
-        } catch (error) {
-            console.error('Failed to load conversations:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const loadMessages = async (conversationId) => {
-        try {
-            setMessagesLoading(true);
-            const data = await getMessages(conversationId);
-            // Messages come in DESC order, reverse for display
-            setMessages((data?.content || []).reverse());
-        } catch (error) {
-            console.error('Failed to load messages:', error);
-        } finally {
-            setMessagesLoading(false);
-        }
-    };
-
+    // Handle new message callback - will be used by SocketContext
     const handleNewMessage = useCallback(
         (message) => {
-            // Đọc từ ref để luôn có giá trị mới nhất, không bị stale
             const currentConversation = activeConversationRef.current;
+            console.log('[handleNewMessage] Called with:', message);
+            console.log('[handleNewMessage] Current conversation:', currentConversation?.id);
 
             // Chỉ update messages khi tin nhắn thuộc đúng conversation đang mở
             if (currentConversation?.id === message.conversationId) {
+                console.log('[handleNewMessage] Updating messages for current conversation');
                 setMessages((prev) => {
                     // Nếu đã có real message này rồi thì bỏ qua
                     if (prev.some((m) => m.id === message.id)) return prev;
@@ -223,14 +108,137 @@ const Messages = () => {
                 markMessagesRead(message.conversationId, message.senderId);
             }
         },
-        [user?.id] // Không cần activeConversation trong deps nữa, dùng ref
+        [user?.id]
     );
-    // Giữ ref luôn trỏ đến phiên bản mới nhất của handler
-    handleNewMessageRef.current = handleNewMessage;
+
+    // Subscribe to messages from SocketContext
+    useEffect(() => {
+        if (!subscribeToMessages) return;
+        
+        console.log('[Messages] Subscribing to socket messages');
+        const unsubscribe = subscribeToMessages(handleNewMessage);
+        
+        return () => {
+            console.log('[Messages] Unsubscribing from socket messages');
+            unsubscribe();
+        };
+    }, [subscribeToMessages, handleNewMessage]);
+
+    // Set up typing listeners (these are page-specific, not global)
+    useEffect(() => {
+        const socket = getSocket();
+        if (!socket) return;
+
+        const onUserTyping = ({ userId }) => {
+            setTypingUsers((prev) => new Set([...prev, userId]));
+        };
+        
+        const onUserStopTyping = ({ userId }) => {
+            setTypingUsers((prev) => {
+                const next = new Set(prev);
+                next.delete(userId);
+                return next;
+            });
+        };
+        
+        const onMessagesRead = ({ conversationId }) => {
+            setMessages((prev) =>
+                prev.map((msg) =>
+                    msg.conversationId === conversationId ? { ...msg, read: true } : msg
+                )
+            );
+        };
+
+        socket.on('user_typing', onUserTyping);
+        socket.on('user_stop_typing', onUserStopTyping);
+        socket.on('messages_read', onMessagesRead);
+
+        return () => {
+            socket.off('user_typing', onUserTyping);
+            socket.off('user_stop_typing', onUserStopTyping);
+            socket.off('messages_read', onMessagesRead);
+        };
+    }, [isConnected]);
+
+    // Đóng menu/emoji khi click ra ngoài
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (convMenuRef.current && !convMenuRef.current.contains(e.target)) {
+                setConversationMenu(null);
+            }
+            if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) {
+                setShowEmojiPicker(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Load conversations
+    useEffect(() => {
+        loadConversations();
+    }, []);
+
+    // Handle URL param for starting a conversation
+    useEffect(() => {
+        const userId = searchParams.get('userId');
+        if (userId && user?.id && !startingConversationRef.current) {
+            startingConversationRef.current = true;
+            handleStartConversation(userId).finally(() => {
+                startingConversationRef.current = false;
+            });
+            setSearchParams({}, { replace: true });
+        }
+    }, [searchParams, user?.id]);
+
+    // Handle URL param for restoring active conversation on reload
+    useEffect(() => {
+        const conversationId = searchParams.get('conversation');
+        if (conversationId && conversations.length > 0 && !activeConversation) {
+            const conv = conversations.find(c => c.id === parseInt(conversationId, 10) || c.id === conversationId);
+            if (conv) {
+                handleSelectConversation(conv);
+            }
+        }
+    }, [conversations, searchParams]);
+
+    // Scroll to bottom on new messages
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
+
+    const loadConversations = async () => {
+        try {
+            setLoading(true);
+            const data = await getConversations();
+            setConversations(data || []);
+        } catch (error) {
+            console.error('Failed to load conversations:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadMessages = async (conversationId) => {
+        try {
+            setMessagesLoading(true);
+            const data = await getMessages(conversationId);
+            // Messages come in DESC order, reverse for display
+            setMessages((data?.content || []).reverse());
+        } catch (error) {
+            console.error('Failed to load messages:', error);
+        } finally {
+            setMessagesLoading(false);
+        }
+    };
 
     const handleSelectConversation = async (conversation) => {
         setActiveConversation(conversation);
         setShowMobileChat(true);
+        
+        // Update URL to track the active conversation
+        setSearchParams({ conversation: conversation.id }, { replace: true });
+        
         await loadMessages(conversation.id);
 
         // Mark messages as read
@@ -268,6 +276,7 @@ const Messages = () => {
             setActiveConversation(null);
             setMessages([]);
             setShowMobileChat(false);
+            setSearchParams({}, { replace: true });
         }
         setConversationMenu(null);
     };
@@ -282,8 +291,9 @@ const Messages = () => {
         setConversationMenu(null);
     };
 
-    const insertEmoji = (emoji) => {
-        setNewMessage((prev) => prev + emoji);
+    const onEmojiClick = (emojiData) => {
+        setNewMessage((prev) => prev + emojiData.emoji);
+        setShowEmojiPicker(false);
         messageInputRef.current?.focus();
     };
 
@@ -292,6 +302,7 @@ const Messages = () => {
         if (!newMessage.trim() || !activeConversation) return;
 
         const text = newMessage.trim();
+        console.log('[handleSendMessage] Sending message:', { text, receiverId: activeConversation.participantId });
 
         // Optimistic update: hiển thị tin nhắn ngay lập tức trước khi server xác nhận
         const optimisticMessage = {
@@ -508,6 +519,7 @@ const Messages = () => {
                                 onClick={() => {
                                     setShowMobileChat(false);
                                     setActiveConversation(null);
+                                    setSearchParams({}, { replace: true });
                                 }}
                             >
                                 <ArrowLeft size={24} />
@@ -632,20 +644,16 @@ const Messages = () => {
                                     <Smile size={20} />
                                 </button>
                                 {showEmojiPicker && (
-                                    <div className="emoji-picker">
-                                        {EMOJI_LIST.map((emoji) => (
-                                            <button
-                                                key={emoji}
-                                                type="button"
-                                                className="emoji-btn"
-                                                onClick={() => {
-                                                    insertEmoji(emoji);
-                                                    setShowEmojiPicker(false);
-                                                }}
-                                            >
-                                                {emoji}
-                                            </button>
-                                        ))}
+                                    <div className="emoji-picker-container">
+                                        <EmojiPicker
+                                            onEmojiClick={onEmojiClick}
+                                            width={350}
+                                            height={400}
+                                            searchPlaceHolder="Search emoji..."
+                                            previewConfig={{ showPreview: false }}
+                                            skinTonesDisabled
+                                            lazyLoadEmojis
+                                        />
                                     </div>
                                 )}
                             </div>

@@ -2,14 +2,37 @@ import {NavLink} from 'react-router-dom'
 import {useAuthContext} from '../../context/AuthContext'
 import {useState, useEffect, useRef} from 'react'
 import {Heart, Home, LogOut, Menu, MessageCircle, Moon, PlusSquare, Search, Sun, User} from 'lucide-react'
+import NotificationDropdown from '../features/NotificationDropdown'
+import { getUnreadCount } from '../../services/notificationService'
 
 const SideBar = () => {
     const {user, logout, isAuthenticated} = useAuthContext()
     const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+    const [notificationOpen, setNotificationOpen] = useState(false)
+    const [unreadNotifications, setUnreadNotifications] = useState(0)
     const [theme, setTheme] = useState(() => {
         return localStorage.getItem('theme') || 'dark'
     })
     const menuRef = useRef(null)
+    const notificationRef = useRef(null)
+
+    // Fetch unread notification count
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        
+        const fetchUnread = async () => {
+            try {
+                const response = await getUnreadCount();
+                setUnreadNotifications(response.data ?? response ?? 0);
+            } catch (error) {
+                console.error('Failed to fetch unread count:', error);
+            }
+        };
+        
+        fetchUnread();
+        const interval = setInterval(fetchUnread, 30000);
+        return () => clearInterval(interval);
+    }, [isAuthenticated]);
 
     // Apply theme on mount and change
     useEffect(() => {
@@ -23,22 +46,15 @@ const SideBar = () => {
             if (menuRef.current && !menuRef.current.contains(e.target)) {
                 setMoreMenuOpen(false)
             }
+            if (notificationRef.current && !notificationRef.current.contains(e.target)) {
+                setNotificationOpen(false)
+            }
         }
-        if (moreMenuOpen) {
+        if (moreMenuOpen || notificationOpen) {
             document.addEventListener('mousedown', handleClickOutside)
         }
         return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [moreMenuOpen])
-
-    // Navigation items for authenticated users
-    const navItems = [
-        {path: '/', label: 'Home', icon: <Home size={24}/>},
-        {path: '/search', label: 'Search', icon: <Search size={24}/>},
-        {path: '/messages', label: 'Messages', icon: <MessageCircle size={24}/>},
-        {path: '/notifications', label: 'Notifications', icon: <Heart size={24}/>},
-        {path: '/create', label: 'Create', icon: <PlusSquare size={24}/>},
-        {path: '/profile', label: 'Profile', icon: <User size={24}/>},
-    ]
+    }, [moreMenuOpen, notificationOpen])
 
     const handleLogout = () => {
         setMoreMenuOpen(false)
@@ -60,20 +76,61 @@ const SideBar = () => {
                 <h2>Share App</h2>
             </div>
 
-            {/* Navigation Links */}
+            {/* Navigation Links - Instagram order: Home, Search, Messages, Notifications, Create, Profile */}
             <nav className="sidebar-nav">
-                {navItems.map((item) => (
-                    <NavLink
-                        key={item.path}
-                        to={item.path}
-                        className={({isActive}) =>
-                            `nav-item ${isActive ? 'active' : ''}`
-                        }
+                {/* Home */}
+                <NavLink to="/home" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+                    <span className="nav-icon"><Home size={24}/></span>
+                    <span className="nav-label">Home</span>
+                </NavLink>
+                
+                {/* Search */}
+                <NavLink to="/search" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+                    <span className="nav-icon"><Search size={24}/></span>
+                    <span className="nav-label">Search</span>
+                </NavLink>
+                
+                {/* Messages */}
+                <NavLink to="/messages" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+                    <span className="nav-icon"><MessageCircle size={24}/></span>
+                    <span className="nav-label">Messages</span>
+                </NavLink>
+                
+                {/* Notifications with Dropdown */}
+                <div className="notification-nav-wrapper" ref={notificationRef}>
+                    <button
+                        className={`nav-item ${notificationOpen ? 'active' : ''}`}
+                        onClick={() => setNotificationOpen(prev => !prev)}
                     >
-                        <span className="nav-icon">{item.icon}</span>
-                        <span className="nav-label">{item.label}</span>
-                    </NavLink>
-                ))}
+                        <span className="nav-icon">
+                            <Heart size={24}/>
+                            {unreadNotifications > 0 && (
+                                <span className="notification-badge-sidebar">
+                                    {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                                </span>
+                            )}
+                        </span>
+                        <span className="nav-label">Notifications</span>
+                    </button>
+                    {notificationOpen && (
+                        <NotificationDropdown 
+                          isControlled={true} 
+                          onClose={() => setNotificationOpen(false)} 
+                        />
+                    )}
+                </div>
+                
+                {/* Create */}
+                <NavLink to="/create" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+                    <span className="nav-icon"><PlusSquare size={24}/></span>
+                    <span className="nav-label">Create</span>
+                </NavLink>
+                
+                {/* Profile */}
+                <NavLink to="/profile" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+                    <span className="nav-icon"><User size={24}/></span>
+                    <span className="nav-label">Profile</span>
+                </NavLink>
             </nav>
 
             {/* More Menu (Instagram-style) */}

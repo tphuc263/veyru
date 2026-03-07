@@ -4,7 +4,8 @@
 
 .messages-container {
     display: flex;
-    height: calc(100vh - 0px);
+    height: calc(100vh - 32px); /* Account for main-content padding (8px top + 24px bottom) */
+    max-height: calc(100vh - 32px);
     max-width: 935px;
     margin: 0 auto;
     border: 1px solid var(--ig-border-color);
@@ -358,38 +359,33 @@
     background: var(--ig-hover-background);
 }
 
-.emoji-picker {
+.emoji-picker-container {
     position: absolute;
     bottom: calc(100% + 8px);
     left: 0;
-    background: var(--ig-surface);
-    border: 1px solid var(--ig-border-color);
-    border-radius: 16px;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.18);
-    padding: 12px;
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 2px;
     z-index: 200;
-    width: 272px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+    border-radius: 12px;
+    overflow: hidden;
 }
 
-.emoji-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 22px;
-    padding: 4px;
-    border-radius: 6px;
-    transition: background 0.1s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
+/* Override emoji-picker-react default styles to match Instagram theme */
+.EmojiPickerReact {
+    --epr-bg-color: var(--ig-surface) !important;
+    --epr-category-label-bg-color: var(--ig-surface) !important;
+    --epr-text-color: var(--ig-primary-text) !important;
+    --epr-hover-bg-color: var(--ig-hover-background) !important;
+    --epr-search-input-bg-color: var(--ig-hover-background) !important;
+    --epr-picker-border-radius: 12px !important;
+    border: 1px solid var(--ig-border-color) !important;
 }
 
-.emoji-btn:hover {
-    background: var(--ig-hover-background);
+[data-theme="dark"] .EmojiPickerReact {
+    --epr-bg-color: var(--ig-surface) !important;
+    --epr-category-label-bg-color: var(--ig-surface) !important;
+    --epr-text-color: var(--ig-primary-text) !important;
+    --epr-hover-bg-color: var(--ig-hover-background) !important;
+    --epr-search-input-bg-color: var(--ig-hover-background) !important;
 }
 
 /* ===================================
@@ -693,6 +689,7 @@
         border: none;
         border-radius: 0;
         height: 100vh;
+        max-height: 100vh;
     }
 
     .conversations-panel {
@@ -725,6 +722,17 @@
 
     .message-wrapper {
         max-width: 80%;
+    }
+
+    /* Adjust emoji picker for mobile */
+    .emoji-picker-container {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .EmojiPickerReact {
+        width: 300px !important;
+        height: 350px !important;
     }
 }
 

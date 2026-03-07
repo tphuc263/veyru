@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import '../../assets/styles/components/photoModal.css';
 import { getPhotoById } from '../../services/photoService';
-import { createComment } from '../../services/commentService';
+import { getPhotoComments, createComment } from '../../services/commentService';
 import { toggleFavorite } from '../../services/favoriteService';
 import { getRelatedPhotos } from '../../services/recommendationService';
 import { showToast } from '../../utils/toastService';
@@ -9,13 +9,13 @@ import { Loader } from '../common/Loader';
 import { useOptimisticLike } from '../../hooks/useOptimisticLike';
 import { Heart, MessageCircle } from 'lucide-react';
 import ShareModal from './ShareModal';
+import CommentSection from './CommentSection';
+import { useAuth } from '../../hooks/useAuth';
 
 const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
   const [photoDetail, setPhotoDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [newComment, setNewComment] = useState('');
-  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [comments, setComments] = useState([]);
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -23,6 +23,12 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [localShareCount, setLocalShareCount] = useState(0);
+  const [localCommentCount, setLocalCommentCount] = useState(0);
+  const [newComment, setNewComment] = useState('');
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const commentInputRef = useRef(null);
+  const { user } = useAuth();
 
   // Pass actual photoDetail values directly - the hook will sync when they change
   const { isLiked, likesCount, isProcessing, handleLike } = useOptimisticLike(
@@ -38,9 +44,18 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
         setLoading(true);
         const response = await getPhotoById(photoId);
         setPhotoDetail(response);
-        setComments(response.comments || []);
         setIsSaved(response.isSavedByCurrentUser ?? false);
         setLocalShareCount(response.shareCount || 0);
+        setLocalCommentCount(response.commentCount || 0);
+        
+        // Fetch comments with nested structure
+        try {
+          const commentsResponse = await getPhotoComments(photoId);
+          setComments(commentsResponse.data ?? commentsResponse ?? []);
+        } catch (err) {
+          console.error('Failed to load comments:', err);
+          setComments([]);
+        }
       } catch (err) {
         setError(err.message);
       } finally {
@@ -103,41 +118,70 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
     });
   };
 
-  const handleSubmitComment = async (e) => {
-    e.preventDefault();
-    
-    if (!newComment.trim() || isSubmittingComment) return;
-    
-    setIsSubmittingComment(true);
-    
-    try {
-      const response = await createComment(photoId, { content: newComment.trim() });
-      // API trả về { data: {...}, message: "..." } — lấy response.data
-      const commentData = response.data ?? response;
-      const newCommentEntry = {
-        ...commentData,
-        createdAt: commentData.createdAt ?? new Date().toISOString(),
+  const handleCommentAdded = (newCommentData) => {
+    setLocalCommentCount(prev => prev + 1);
+    if (onPhotoUpdate && photoDetail) {
+      const updatedPhoto = {
+        ...photoDetail,
+        commentCount: localCommentCount + 1,
+        isLikedByCurrentUser: isLiked,
+        likeCount: likesCount
       };
-      const updatedComments = [...comments, newCommentEntry];
-      setComments(updatedComments);
-      setNewComment('');
-      
-      if (onPhotoUpdate && photoDetail) {
-        const updatedPhoto = {
-          ...photoDetail,
-          commentCount: updatedComments.length,
-          isLikedByCurrentUser: isLiked,
-          likeCount: likesCount
-        };
-        onPhotoUpdate(photoId, updatedPhoto);
+      onPhotoUpdate(photoId, updatedPhoto);
+    }
+  };
+
+  const handleReplyClick = (comment) => {
+    setReplyingTo(comment);
+    setNewComment(`@${comment.username} `);
+    commentInputRef.current?.focus();
+  };
+
+  const handleCommentSubmit = async (e) => {
+    e.preventDefault();
+    if (!newComment.trim() || isSubmittingComment) return;
+
+    setIsSubmittingComment(true);
+    try {
+      const commentData = {
+        content: newComment.trim(),
+        parentCommentId: replyingTo?.id || null,
+      };
+
+      const response = await createComment(photoId, commentData);
+      const newCommentData = response.data ?? response;
+
+      if (replyingTo) {
+        setComments(prevComments => 
+          prevComments.map(comment => {
+            if (comment.id === replyingTo.id) {
+              return {
+                ...comment,
+                replyCount: (comment.replyCount || 0) + 1,
+                replies: [...(comment.replies || []), newCommentData]
+              };
+            }
+            return comment;
+          })
+        );
+      } else {
+        setComments(prev => [...prev, { ...newCommentData, replies: [] }]);
       }
-      
+
+      setNewComment('');
+      setReplyingTo(null);
+      handleCommentAdded(newCommentData);
       showToast('success', 'Đã thêm bình luận');
     } catch (error) {
-      showToast('error', 'Không thể thêm bình luận. Vui lòng thử lại.');
+      showToast('error', 'Không thể thêm bình luận');
     } finally {
       setIsSubmittingComment(false);
     }
+  };
+
+  const cancelReply = () => {
+    setReplyingTo(null);
+    setNewComment('');
   };
 
   const handleSave = async () => {
@@ -223,27 +267,16 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
                 </div>
               )}
 
-              {/* Comments */}
-              <div className="photo-modal-comments">
-                {comments && comments.length > 0 ? (
-                  comments.map((comment, index) => (
-                    <div key={comment.id ?? index} className="comment-item">
-                      <img 
-                        src={comment.userImageUrl} 
-                        alt={comment.username} 
-                        className="user-avatar-small"
-                      />
-                      <div className="comment-content">
-                        <span className="username">{comment.username}</span>
-                        <p className="comment-text">{comment.text}</p>
-                        <span className="timestamp">{formatDate(comment.createdAt)}</span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="no-comments">Chưa có bình luận nào</p>
-                )}
-              </div>
+              {/* Comments Section - list only, form is in footer */}
+              <CommentSection
+                photoId={photoId}
+                comments={comments}
+                onCommentAdded={handleCommentAdded}
+                formatDate={formatDate}
+                currentUserId={user?.id}
+                hideForm={true}
+                onReplyClick={handleReplyClick}
+              />
             </div>
 
             {/* Footer - Actions */}
@@ -308,13 +341,20 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
                 </div>
               )}
 
-              {/* Add Comment Input */}
-              <form onSubmit={handleSubmitComment} className="comment-form">
+              {/* Reply indicator */}
+              {replyingTo && (
+                <div className="replying-to">
+                  <span>Đang trả lời <strong>@{replyingTo.username}</strong></span>
+                  <button onClick={cancelReply} className="cancel-reply-btn">✕</button>
+                </div>
+              )}
+
+              {/* Comment input */}
+              <form onSubmit={handleCommentSubmit} className="comment-form">
                 <input
-                  id="modal-comment-input"
-                  name="comment"
+                  ref={commentInputRef}
                   type="text"
-                  placeholder="Thêm bình luận..."
+                  placeholder={replyingTo ? `Trả lời @${replyingTo.username}...` : 'Thêm bình luận...'}
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   disabled={isSubmittingComment}

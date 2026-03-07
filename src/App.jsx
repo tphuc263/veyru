@@ -1,5 +1,6 @@
 import {Route, Routes, Navigate} from 'react-router-dom'
 import {AuthProvider} from './context/AuthContext'
+import {SocketProvider} from './context/SocketContext'
 import Layout from './components/layout/Layout'
 import ProtectedRoute, {PublicRoute} from './utils/ProtectedRoute.jsx'
 import { ToastContainer } from 'react-toastify'
@@ -59,50 +60,52 @@ const NotFoundPage = () => (
 function App() {
     return (
         <AuthProvider>
-            <Layout>
-                <Routes>
-                    <Route path="/" element={<Navigate to="/login" replace/>} />
-                    <Route path="/terms" element={<TermsPage />} />
-                    <Route path="/privacy" element={<PrivacyPage />} />
+            <SocketProvider>
+                <Layout>
+                    <Routes>
+                        <Route path="/" element={<Navigate to="/login" replace/>} />
+                        <Route path="/terms" element={<TermsPage />} />
+                        <Route path="/privacy" element={<PrivacyPage />} />
 
-                    {/* Open routes — accessible regardless of auth state */}
-                    <Route path="/forgot-password" element={<ForgotPassword />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
+                        {/* Open routes — accessible regardless of auth state */}
+                        <Route path="/forgot-password" element={<ForgotPassword />} />
+                        <Route path="/reset-password" element={<ResetPassword />} />
 
-                    <Route element={<PublicRoute />}>
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/register" element={<Register />} />
-                        <Route path="/auth/oauth2/redirect" element={<OAuth2RedirectHandler />} />
-                    </Route>
+                        <Route element={<PublicRoute />}>
+                            <Route path="/login" element={<Login />} />
+                            <Route path="/register" element={<Register />} />
+                            <Route path="/auth/oauth2/redirect" element={<OAuth2RedirectHandler />} />
+                        </Route>
 
-                    <Route element={<ProtectedRoute />}>
-                        <Route path="/home" element={<Home />} />
-                        <Route path="/search" element={<Search />} />
-                        <Route path="/messages" element={<Messages />} />
-                        <Route path="/notifications" element={<NotificationsPage />} />
-                        <Route path="/create" element={<Create />} />
-                        <Route path="/profile" element={<Profile />} />
-                        <Route path="/profile/:userId" element={<Profile />} />
-                        <Route path="/edit-profile" element={<EditProfileForm />} />
-                        <Route path="/settings" element={<SettingsPage />} />
-                        <Route path="/help" element={<HelpPage />} />
-                    </Route>
+                        <Route element={<ProtectedRoute />}>
+                            <Route path="/home" element={<Home />} />
+                            <Route path="/search" element={<Search />} />
+                            <Route path="/messages" element={<Messages />} />
+                            <Route path="/notifications" element={<NotificationsPage />} />
+                            <Route path="/create" element={<Create />} />
+                            <Route path="/profile" element={<Profile />} />
+                            <Route path="/profile/:userId" element={<Profile />} />
+                            <Route path="/edit-profile" element={<EditProfileForm />} />
+                            <Route path="/settings" element={<SettingsPage />} />
+                            <Route path="/help" element={<HelpPage />} />
+                        </Route>
 
-                    <Route path="*" element={<NotFoundPage />} />
-                </Routes>
-            </Layout>
-            <ToastContainer 
-                position="top-right"
-                autoClose={3000}
-                hideProgressBar={false}
-                newestOnTop
-                closeOnClick
-                rtl={false}
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-                theme="light"
-            />
+                        <Route path="*" element={<NotFoundPage />} />
+                    </Routes>
+                </Layout>
+                <ToastContainer 
+                    position="top-right"
+                    autoClose={3000}
+                    hideProgressBar={false}
+                    newestOnTop
+                    closeOnClick
+                    rtl={false}
+                    pauseOnFocusLoss
+                    draggable
+                    pauseOnHover
+                    theme="light"
+                />
+            </SocketProvider>
         </AuthProvider>
     )
 }

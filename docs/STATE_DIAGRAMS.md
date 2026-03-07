@@ -12,6 +12,7 @@
 - [6. Profile Page](#6-profile-page)
 - [7. Search & Explore](#7-search--explore)
 - [8. App Navigation](#8-app-navigation)
+- [9. Socket.IO Global Connection Lifecycle](#9-socketio-global-connection-lifecycle-new---fixed-architecture)
 
 ---
 
@@ -452,6 +453,223 @@
 | `◄───►` | Bidirectional transition |
 | `│` | Connection line |
 | `▼` | Direction indicator |
+
+---
+
+## 9. Socket.IO Global Connection Lifecycle (NEW - Fixed Architecture)
+
+> **Problem Solved**: Previously, socket was only connected when Messages component was mounted.
+> Users had to reload to see new messages because navigating away disconnected the socket.
+>
+> **Solution**: Global SocketContext maintains connection throughout the entire authenticated session.
+
+### 9.1 App-Level Socket Connection Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         APPLICATION LIFECYCLE                               │
+│                                                                             │
+│  ┌─────────────┐                                                           │
+│  │  APP_START  │                                                           │
+│  └──────┬──────┘                                                           │
+│         │                                                                   │
+│         ▼                                                                   │
+│  ┌─────────────────┐                                                       │
+│  │  AuthProvider   │                                                       │
+│  │  (check token)  │                                                       │
+│  └────────┬────────┘                                                       │
+│           │                                                                 │
+│    ┌──────┴──────┐                                                         │
+│    │             │                                                         │
+│    ▼             ▼                                                         │
+│ ┌──────────┐  ┌──────────────────────────────────────────────────────┐    │
+│ │NOT_AUTH  │  │              AUTHENTICATED                           │    │
+│ │          │  │  ┌─────────────────────────────────────────────┐    │    │
+│ │ (socket  │  │  │           SocketProvider                     │    │    │
+│ │  = null) │  │  │   (wrapped inside AuthProvider)              │    │    │
+│ │          │  │  │                                               │    │    │
+│ │          │  │  │  ┌─────────────┐    ┌────────────────────┐   │    │    │
+│ │          │  │  │  │ CONNECTING  │───►│     CONNECTED      │   │    │    │
+│ │          │  │  │  │             │    │                    │   │    │    │
+│ │          │  │  │  │ connectSocket│   │ - Socket active    │   │    │    │
+│ │          │  │  │  │ (userId)    │    │ - In onlineUsers   │   │    │    │
+│ │          │  │  │  └─────────────┘    │ - Receives events  │   │    │    │
+│ │          │  │  │        ▲            │                    │   │    │    │
+│ │          │  │  │        │            └─────────┬──────────┘   │    │    │
+│ │          │  │  │        │ reconnect            │              │    │    │
+│ │          │  │  │        │            ┌─────────▼──────────┐   │    │    │
+│ │          │  │  │        └────────────│   DISCONNECTED     │   │    │    │
+│ │          │  │  │                     │  (auto reconnect)  │   │    │    │
+│ │          │  │  │                     └────────────────────┘   │    │    │
+│ │          │  │  │                                               │    │    │
+│ │          │  │  └───────────────────────────────────────────────┘    │    │
+│ │          │  │                          │                            │    │
+│ │          │  │                          │ logout                     │    │
+│ │          │  │                          ▼                            │    │
+│ │          │  │                   ┌────────────────┐                  │    │
+│ │          │  │                   │ disconnectSocket│                 │    │
+│ │◄─────────┼──┼───────────────────│ (cleanup)      │                  │    │
+│ │          │  │                   └────────────────┘                  │    │
+│ └──────────┘  └───────────────────────────────────────────────────────┘    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 9.2 Page Navigation - Socket Stays Connected
+
+```
+                    ┌─────────────────────────────────────────────────┐
+                    │              GLOBAL SOCKET (Always Connected)   │
+                    │                                                 │
+                    │   User authenticated → Socket connected         │
+                    │   Receives: new_message, user_online, etc.      │
+                    │                                                 │
+                    └─────────────────────────────────────────────────┘
+                                          │
+                                          │ socket events broadcast
+                                          │ to all subscribed listeners
+                                          ▼
+    ┌────────────────────────────────────────────────────────────────────────┐
+    │                        PAGE NAVIGATION                                  │
+    │                                                                         │
+    │  HOME ──────────► SEARCH ──────────► MESSAGES ──────────► PROFILE      │
+    │     │                │                   │                    │         │
+    │     │                │                   │                    │         │
+    │     ▼                ▼                   ▼                    ▼         │
+    │  ┌──────┐        ┌──────┐         ┌──────────────┐      ┌──────┐       │
+    │  │Socket│        │Socket│         │ Subscribe to │      │Socket│       │
+    │  │stays │        │stays │         │ messages via │      │stays │       │
+    │  │active│        │active│         │SocketContext │      │active│       │
+    │  └──────┘        └──────┘         └──────────────┘      └──────┘       │
+    │                                                                         │
+    │        ◄──────────────────────────────────────────────────────►        │
+    │              Socket connection maintained across ALL pages              │
+    │                                                                         │
+    └────────────────────────────────────────────────────────────────────────┘
+```
+
+### 9.3 Real-time Message Delivery Flow (Fixed)
+
+```
+  User A (on any page)          Backend Server           User B (on any page)
+         │                           │                          │
+         │                           │                          │
+    [Socket Connected]          [Both users in               [Socket Connected]
+         │                       onlineUsers map]               │
+         │                           │                          │
+    ┌────┴────┐                      │                     ┌────┴────┐
+    │ Navigate│                      │                     │ Navigate│
+    │Messages │                      │                     │  Home   │
+    └────┬────┘                      │                     └────┬────┘
+         │                           │                          │
+         │ send_message ─────────────►                          │
+         │ (to: userB)               │                          │
+         │                           │                          │
+         │                    ┌──────┴──────┐                   │
+         │                    │ Check if B  │                   │
+         │                    │ in onlineUsers                  │
+         │                    └──────┬──────┘                   │
+         │                           │                          │
+         │                           │ ✓ B is online            │
+         │                           │ (socket connected)       │
+         │                           │                          │
+         │◄──────────new_message─────┤─────new_message─────────►│
+         │   (confirmation)          │      (delivery)          │
+         │                           │                          │
+    ┌────┴────┐                      │                     ┌────┴────┐
+    │ Update  │                      │                     │ Update  │
+    │Messages │                      │                     │ notif/  │
+    │  list   │                      │                     │ badge   │
+    └─────────┘                      │                     └─────────┘
+```
+
+### 9.4 SocketContext Subscription Pattern
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          SOCKET_CONTEXT                                     │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  │                    messageListeners (Set)                              │ │
+│  │                                                                        │ │
+│  │   ┌────────────┐  ┌────────────┐  ┌────────────┐                     │ │
+│  │   │ Messages   │  │ Notif      │  │ Any Future │                     │ │
+│  │   │ Component  │  │ Component  │  │ Component  │                     │ │
+│  │   │ Handler    │  │ Handler    │  │ Handler    │                     │ │
+│  │   └─────┬──────┘  └─────┬──────┘  └─────┬──────┘                     │ │
+│  │         │               │               │                             │ │
+│  │         │ subscribe     │ subscribe     │ subscribe                   │ │
+│  │         ▼               ▼               ▼                             │ │
+│  │   messageListenersRef.current.add(listener)                          │ │
+│  │                                                                        │ │
+│  └───────────────────────────────────────────────────────────────────────┘ │
+│                                    │                                        │
+│                                    │ new_message event                      │
+│                                    ▼                                        │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  │  messageListenersRef.current.forEach(listener => listener(message))  │ │
+│  │                                                                        │ │
+│  │           Broadcasts to ALL subscribed components                     │ │
+│  └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 9.5 Component Lifecycle Integration
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     MESSAGES COMPONENT LIFECYCLE                            │
+│                                                                             │
+│  ┌────────────────┐                                                        │
+│  │   COMPONENT    │                                                        │
+│  │    MOUNT       │                                                        │
+│  └───────┬────────┘                                                        │
+│          │                                                                  │
+│          │ useEffect with subscribeToMessages                              │
+│          ▼                                                                  │
+│  ┌────────────────────────────────────────────────────────────────────┐   │
+│  │  const unsubscribe = subscribeToMessages(handleNewMessage);        │   │
+│  │                                                                     │   │
+│  │  // Component is now receiving real-time messages                  │   │
+│  │  // Even if navigated from another page                            │   │
+│  └────────────────────────────────────────────────────────────────────┘   │
+│          │                                                                  │
+│          │ cleanup (unmount or deps change)                                │
+│          ▼                                                                  │
+│  ┌────────────────────────────────────────────────────────────────────┐   │
+│  │  return () => unsubscribe();                                        │   │
+│  │                                                                     │   │
+│  │  // Only removes listener, does NOT disconnect socket              │   │
+│  │  // Socket stays connected globally                                 │   │
+│  └────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Key Architecture Changes
+
+| Before (Broken) | After (Fixed) |
+|-----------------|---------------|
+| Socket connected only in Messages.jsx | Socket connected globally in SocketContext |
+| Navigating away → disconnectSocket() | Navigation → socket stays connected |
+| Both users must be on Messages page | Users can be on ANY page |
+| Required reload to see messages | Real-time delivery works everywhere |
+| onlineUsers map frequently empty | onlineUsers accurately tracks all users |
+
+### New Event Flow
+
+| Step | Component | Action |
+|------|-----------|--------|
+| 1 | AuthProvider | User logs in, sets authenticated state |
+| 2 | SocketProvider | Detects isAuthenticated=true, calls connectSocket(userId) |
+| 3 | Backend | Receives connection, stores in onlineUsers[userId] |
+| 4 | Messages.jsx | Mounts, calls subscribeToMessages(handler) |
+| 5 | SocketContext | Adds handler to messageListeners Set |
+| 6 | Backend | Receives message, looks up receiver in onlineUsers |
+| 7 | Backend | Sends new_message event to receiver's socket |
+| 8 | SocketContext | Receives event, broadcasts to all listeners |
+| 9 | Messages.jsx | Handler updates local messages state |
 
 ---
 

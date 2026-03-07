@@ -1,0 +1,238 @@
+/* Comment Section Styles */
+.comment-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.comments-list {
+  flex: 1;
+  padding: 12px 0;
+}
+
+/* Comment Item */
+.comment-item {
+  display: flex;
+  gap: 12px;
+  padding: 8px 0;
+  position: relative;
+}
+
+.comment-item.reply-item {
+  margin-left: 54px;
+  padding-left: 0;
+}
+
+.comment-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.reply-item .comment-avatar {
+  width: 28px;
+  height: 28px;
+}
+
+.comment-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-header {
+  line-height: 1.4;
+}
+
+.comment-username {
+  font-weight: 600;
+  font-size: 13px;
+  margin-right: 6px;
+  color: var(--text-primary, #262626);
+}
+
+.comment-text {
+  font-size: 14px;
+  color: var(--text-primary, #262626);
+  word-break: break-word;
+}
+
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-secondary, #8e8e8e);
+}
+
+.comment-time {
+  color: var(--text-secondary, #8e8e8e);
+}
+
+.comment-likes {
+  font-weight: 600;
+}
+
+.comment-action-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #8e8e8e);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  font-size: 12px;
+}
+
+.comment-action-btn:hover {
+  color: var(--text-primary, #262626);
+}
+
+/* Comment Like Button */
+.comment-like-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--text-secondary, #8e8e8e);
+  position: absolute;
+  right: 0;
+  top: 8px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.comment-like-btn:hover {
+  opacity: 1;
+}
+
+.comment-like-btn.liked {
+  color: #ed4956;
+  opacity: 1;
+}
+
+/* View Replies Button */
+.view-replies-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--text-secondary, #8e8e8e);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 0 4px;
+}
+
+.view-replies-btn:hover {
+  color: var(--text-primary, #262626);
+}
+
+/* Replies Container */
+.replies-container {
+  margin-top: 8px;
+}
+
+/* No Comments */
+.no-comments {
+  text-align: center;
+  color: var(--text-secondary, #8e8e8e);
+  padding: 20px;
+  font-size: 14px;
+}
+
+/* Replying To Indicator */
+.replying-to {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg-secondary, #fafafa);
+  border-top: 1px solid var(--border-color, #dbdbdb);
+  font-size: 13px;
+  color: var(--text-secondary, #8e8e8e);
+}
+
+.replying-to strong {
+  color: var(--primary-color, #0095f6);
+}
+
+.cancel-reply-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #8e8e8e);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 8px;
+}
+
+.cancel-reply-btn:hover {
+  color: var(--text-primary, #262626);
+}
+
+/* Comment Form */
+.comment-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border-color, #dbdbdb);
+}
+
+.comment-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  padding: 8px;
+  background: transparent;
+  color: var(--text-primary, #262626);
+}
+
+.comment-input::placeholder {
+  color: var(--text-secondary, #8e8e8e);
+}
+
+.comment-submit-btn {
+  background: none;
+  border: none;
+  color: var(--primary-color, #0095f6);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px;
+}
+
+.comment-submit-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.comment-submit-btn:not(:disabled):hover {
+  color: var(--primary-color-dark, #00376b);
+}
+
+/* Dark mode support */
+[data-theme="dark"] .comment-username,
+[data-theme="dark"] .comment-text {
+  color: #f5f5f5;
+}
+
+[data-theme="dark"] .comment-actions,
+[data-theme="dark"] .comment-time,
+[data-theme="dark"] .comment-action-btn,
+[data-theme="dark"] .view-replies-btn,
+[data-theme="dark"] .no-comments {
+  color: #a8a8a8;
+}
+
+[data-theme="dark"] .replying-to {
+  background: #262626;
+  border-color: #363636;
+}
+
+[data-theme="dark"] .comment-form {
+  border-color: #363636;
+}

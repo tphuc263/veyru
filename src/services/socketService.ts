@@ -4,14 +4,34 @@ import { getToken } from '../utils/storage';
 const SOCKET_URL = 'http://localhost:9092';
 
 let socket: Socket | null = null;
+let currentUserId: string | null = null;
 
 export const connectSocket = (userId: string): Socket => {
-    if (socket?.connected) {
+    // If already have a socket for the same user, return it
+    if (socket && currentUserId === userId) {
+        // If connected or connecting, return existing socket
+        if (socket.connected || socket.io._readyState === 'opening') {
+            console.log('[socketService] Reusing existing socket for user:', userId);
+            return socket;
+        }
+        // If disconnected, reconnect
+        console.log('[socketService] Reconnecting existing socket for user:', userId);
+        socket.connect();
         return socket;
     }
 
-    const token = getToken();
+    // If switching users, disconnect old socket first
+    if (socket && currentUserId !== userId) {
+        console.log('[socketService] Switching user from', currentUserId, 'to', userId);
+        socket.disconnect();
+        socket = null;
+    }
 
+    const token = getToken();
+    currentUserId = userId;
+
+    console.log('[socketService] Creating new socket connection for user:', userId);
+    
     socket = io(SOCKET_URL, {
         query: {
             token,
@@ -24,18 +44,27 @@ export const connectSocket = (userId: string): Socket => {
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
         timeout: 20000,
+        forceNew: false, // Reuse connection if possible
     });
 
     socket.on('connect', () => {
-        console.log('Socket.IO connected:', socket?.id);
+        console.log('[socketService] Socket.IO connected:', socket?.id);
     });
 
     socket.on('connect_error', (error) => {
-        console.error('Socket.IO connection error:', error.message);
+        console.error('[socketService] Socket.IO connection error:', error.message);
     });
 
     socket.on('disconnect', (reason) => {
-        console.log('Socket.IO disconnected:', reason);
+        console.log('[socketService] Socket.IO disconnected:', reason);
+    });
+
+    socket.on('reconnect', (attemptNumber) => {
+        console.log('[socketService] Socket.IO reconnected after', attemptNumber, 'attempts');
+    });
+
+    socket.on('reconnect_attempt', (attemptNumber) => {
+        console.log('[socketService] Socket.IO reconnection attempt:', attemptNumber);
     });
 
     return socket;
@@ -43,8 +72,10 @@ export const connectSocket = (userId: string): Socket => {
 
 export const disconnectSocket = (): void => {
     if (socket) {
+        console.log('[socketService] Disconnecting socket for user:', currentUserId);
         socket.disconnect();
         socket = null;
+        currentUserId = null;
     }
 };
 
@@ -54,8 +85,12 @@ export const getSocket = (): Socket | null => {
 
 // Send a message via Socket.IO
 export const sendSocketMessage = (receiverId: string, text: string): void => {
+    console.log('[Socket] sendSocketMessage called:', { receiverId, text, connected: socket?.connected, socketId: socket?.id });
     if (socket?.connected) {
         socket.emit('send_message', { receiverId, text });
+        console.log('[Socket] Emitted send_message event');
+    } else {
+        console.error('[Socket] Cannot send message - socket not connected!');
     }
 };
 
