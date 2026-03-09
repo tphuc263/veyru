@@ -1,5 +1,5 @@
-# Multi-stage build for Spring Boot Application
-FROM maven:3.9.9-eclipse-temurin-21 AS build
+# Multi-stage build for Spring Boot Application - RAM Optimized
+FROM maven:3.9.9-eclipse-temurin-21-alpine AS build
 
 WORKDIR /app
 COPY pom.xml .
@@ -7,26 +7,38 @@ RUN mvn dependency:go-offline -B
 COPY src ./src
 RUN mvn clean package -DskipTests
 
-# Runtime stage
-FROM eclipse-temurin:21-jre
+# Runtime stage - Using Alpine for smaller image size
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-# Cài đặt wget cho healthcheck (alpine-based images thì dùng apk, debian-based dùng apt-get)
-# eclipse-temurin là debian-based
-RUN apt-get update && \
-    apt-get install -y wget && \
-    rm -rf /var/lib/apt/lists/*
+# Install wget for healthcheck (alpine uses apk)
+RUN apk add --no-cache wget
 
-RUN groupadd -r spring && useradd -r -g spring spring
+# Create non-root user
+RUN addgroup -S spring && adduser -S spring -G spring
+
 COPY --from=build /app/target/*.jar app.jar
 RUN mkdir -p /app/logs && chown -R spring:spring /app
 
 USER spring
 EXPOSE 8080 9092
 
-# Healthcheck đã được move sang docker-compose.yml để dễ config hơn
-# Nhưng giữ lại ở đây để khi chạy standalone vẫn có
+# Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/v1/health || exit 1
 
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+# JVM Memory Optimization Flags for Low RAM VPS:
+# -XX:+UseContainerSupport: Respect container memory limits
+# -XX:MaxRAMPercentage=75: Use max 75% of container memory for heap
+# -XX:+UseG1GC: Use G1 garbage collector (efficient for limited memory)
+# -XX:+UseStringDeduplication: Reduce memory for duplicate strings
+# -Xss256k: Reduce thread stack size (default is 1MB)
+# -XX:+OptimizeStringConcat: Optimize string concatenation
+ENTRYPOINT ["java", \
+    "-XX:+UseContainerSupport", \
+    "-XX:MaxRAMPercentage=75.0", \
+    "-XX:+UseG1GC", \
+    "-XX:+UseStringDeduplication", \
+    "-Xss256k", \
+    "-Djava.security.egd=file:/dev/./urandom", \
+    "-jar", "/app/app.jar"]
