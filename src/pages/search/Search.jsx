@@ -5,7 +5,7 @@ import { searchUsers, getExploreFeed } from '../../services/searchService'
 import PhotoModal from '../../components/features/PhotoModal.jsx'
 import { Loader } from '../../components/common/Loader.jsx'
 import { Heart, MessageCircle, Search as SearchIcon, X } from 'lucide-react'
-import '../../assets/styles/pages/searchPage.css'
+import '../../assets/styles/pages/SearchPage.css'
 
 const Search = () => {
     // Search state

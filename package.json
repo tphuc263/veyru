@@ -6,10 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:docker": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@faker-js/faker": "^10.3.0",
     "axios": "^1.9.0",
     "emoji-picker-react": "^4.18.0",
     "lucide-react": "^0.511.0",

@@ -1,10 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import '../../assets/styles/components/photoModal.css';
 import { getPhotoById } from '../../services/photoService';
 import { getPhotoComments, createComment } from '../../services/commentService';
 import { toggleFavorite } from '../../services/favoriteService';
+import { follow, unfollow } from '../../services/followService';
 import { getRelatedPhotos } from '../../services/recommendationService';
 import { showToast } from '../../utils/toastService';
+import { DEFAULT_AVATAR } from '../../utils/constants';
 import { Loader } from '../common/Loader';
 import { useOptimisticLike } from '../../hooks/useOptimisticLike';
 import { Heart, MessageCircle } from 'lucide-react';
@@ -27,6 +30,8 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
   const [newComment, setNewComment] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowLoading, setIsFollowLoading] = useState(false);
   const commentInputRef = useRef(null);
   const { user } = useAuth();
 
@@ -45,6 +50,7 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
         const response = await getPhotoById(photoId);
         setPhotoDetail(response);
         setIsSaved(response.isSavedByCurrentUser ?? false);
+        setIsFollowing(response.followingByCurrentUser ?? false);
         setLocalShareCount(response.shareCount || 0);
         setLocalCommentCount(response.commentCount || 0);
         
@@ -242,11 +248,42 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
             {/* Header */}
             <div className="photo-modal-header">
               <img 
-                src={photoDetail.userImageUrl} 
+                src={photoDetail.userImageUrl || DEFAULT_AVATAR} 
                 alt={photoDetail.username} 
                 className="user-avatar"
+                onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}
               />
-              <span className="username">{photoDetail.username}</span>
+              <Link
+                to={`/profile/${photoDetail.userId}`}
+                className="modal-username-link"
+                onClick={onClose}
+              >
+                {photoDetail.username}
+              </Link>
+              {user && photoDetail.userId && String(user.id) !== String(photoDetail.userId) && (
+                <button
+                  className={`modal-follow-btn ${isFollowing ? 'following' : ''}`}
+                  disabled={isFollowLoading}
+                  onClick={async () => {
+                    setIsFollowLoading(true);
+                    try {
+                      if (isFollowing) {
+                        await unfollow(photoDetail.userId);
+                        setIsFollowing(false);
+                      } else {
+                        await follow(photoDetail.userId);
+                        setIsFollowing(true);
+                      }
+                    } catch (err) {
+                      console.error('Follow toggle failed:', err);
+                    } finally {
+                      setIsFollowLoading(false);
+                    }
+                  }}
+                >
+                  {isFollowLoading ? '...' : isFollowing ? 'Following' : 'Follow'}
+                </button>
+              )}
             </div>
 
             {/* Caption and Comments */}
@@ -255,12 +292,13 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
               {photoDetail.caption && (
                 <div className="photo-modal-caption">
                   <img 
-                    src={photoDetail.userImageUrl} 
+                    src={photoDetail.userImageUrl || DEFAULT_AVATAR} 
                     alt={photoDetail.username} 
                     className="user-avatar-small"
+                    onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}
                   />
                   <div className="caption-content">
-                    <span className="username">{photoDetail.username}</span>
+                    <Link to={`/profile/${photoDetail.userId}`} className="modal-username-link" onClick={onClose}>{photoDetail.username}</Link>
                     <p className="caption-text">{photoDetail.caption}</p>
                     <span className="timestamp">{formatDate(photoDetail.createdAt)}</span>
                   </div>

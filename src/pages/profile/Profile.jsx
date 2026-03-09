@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { DEFAULT_AVATAR } from "../../utils/constants";
 import "../../assets/styles/pages/profilePage.css";
 import { useAuthContext } from "../../context/AuthContext.jsx";
 import { useUserProfile } from "../../hooks/useUserProfile.js";
@@ -131,7 +132,11 @@ const ProfilePage = () => {
       <header className="profile-header">
         <div className="profile-avatar">
           <div className="avatar-wrapper">
-            <img src={displayData.imageUrl} alt="Avatar" />
+            <img
+              src={displayData.imageUrl || DEFAULT_AVATAR}
+              alt="Avatar"
+              onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}
+            />
           </div>
         </div>
         <div className="profile-info">

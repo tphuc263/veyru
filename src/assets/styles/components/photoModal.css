@@ -100,6 +100,55 @@
   object-fit: cover;
 }
 
+/* Clickable username link */
+.photo-modal-header .modal-username-link,
+.photo-modal-content-area .modal-username-link {
+  font-weight: 600;
+  color: #262626;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.photo-modal-header .modal-username-link:hover,
+.photo-modal-content-area .modal-username-link:hover {
+  text-decoration: underline;
+}
+
+/* Follow button inside modal header */
+.modal-follow-btn {
+  margin-left: auto;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background-color: #0095f6;
+  color: white;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.modal-follow-btn:hover {
+  background-color: #1877f2;
+}
+
+.modal-follow-btn.following {
+  background-color: transparent;
+  color: #262626;
+  border: 1px solid #dbdbdb;
+}
+
+.modal-follow-btn.following:hover {
+  background-color: #fafafa;
+}
+
+.modal-follow-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+}
+
 .photo-modal-header .username {
   font-weight: 600;
   color: #262626;

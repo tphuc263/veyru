@@ -184,6 +184,17 @@
     transform: translateX(18px);
 }
 
+/* Normalize button.nav-item so it renders identically to NavLink.nav-item */
+button.nav-item {
+    font-family: inherit;
+    font-weight: 400;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+}
+
 /* Notification Styles in Sidebar */
 .notification-nav-wrapper {
     position: relative;

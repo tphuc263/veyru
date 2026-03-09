@@ -2,7 +2,6 @@ import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
-// @ts-expect-error - typescript-eslint doesn't have types
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(

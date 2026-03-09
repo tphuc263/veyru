@@ -3,6 +3,7 @@ import { useOptimisticLike } from '../../hooks/useOptimisticLike';
 import { useState } from 'react';
 import { toggleFavorite } from '../../services/favoriteService';
 import ShareModal from './ShareModal';
+import { DEFAULT_AVATAR } from '../../utils/constants';
 
 const PhotoCard = ({
                        photoId,
@@ -48,7 +49,7 @@ const PhotoCard = ({
     return (
         <div className="photo-card">
             <div className="photo-card-header">
-                <img src={avatarSrc} alt={`${username}'s avatar`} className="avatar"/>
+                <img src={avatarSrc || DEFAULT_AVATAR} alt={`${username}'s avatar`} className="avatar" onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}/>
                 <span className="username">{username}</span>
             </div>
 

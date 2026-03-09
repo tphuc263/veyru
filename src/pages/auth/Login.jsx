@@ -4,6 +4,7 @@ import {useAuthContext} from '../../context/AuthContext'
 import {validateCredentials} from "../../utils/helpers";
 import {Loader} from "../../components/common/Loader.jsx";
 import {toastSuccess, toastError} from '../../utils/toastService.js';
+import {OAUTH_URL} from '../../utils/constants';
 import '../../assets/styles/pages/authPage.css'
 
 
@@ -159,7 +160,7 @@ const Login = () => {
                     className="google-login-btn"
                     disabled={loading}
                     onClick={() => {
-                        window.location.href = 'http://localhost:8080/oauth2/authorization/google';
+                        window.location.href = OAUTH_URL;
                     }}
                 >
                     <svg className="google-icon" viewBox="0 0 24 24" width="18" height="18">

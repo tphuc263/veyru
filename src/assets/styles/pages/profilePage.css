@@ -57,6 +57,28 @@
     margin-right: 20px;
 }
 
+/* Instagram-style Edit Profile button */
+.edit-profile-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ig-primary-text);
+    background-color: var(--ig-button-secondary, #efefef);
+    border: 1px solid var(--ig-border-color, #dbdbdb);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-right: 8px;
+}
+
+.edit-profile-button:hover {
+    background-color: var(--ig-border-color, #dbdbdb);
+}
+
 .follow-button {
     background-color: #0095f6;
     color: white;

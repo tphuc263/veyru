@@ -1,7 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import { getToken } from '../utils/storage';
-
-const SOCKET_URL = 'http://localhost:9092';
+import { SOCKET_URL } from '../utils/constants';
 
 let socket: Socket | null = null;
 let currentUserId: string | null = null;
