@@ -28,12 +28,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/v1/health || exit 1
 
 # JVM Memory Optimization Flags for Low RAM VPS:
-# -XX:+UseContainerSupport: Respect container memory limits
-# -XX:MaxRAMPercentage=75: Use max 75% of container memory for heap
-# -XX:+UseG1GC: Use G1 garbage collector (efficient for limited memory)
-# -XX:+UseStringDeduplication: Reduce memory for duplicate strings
-# -Xss256k: Reduce thread stack size (default is 1MB)
-# -XX:+OptimizeStringConcat: Optimize string concatenation
 ENTRYPOINT ["java", \
     "-XX:+UseContainerSupport", \
     "-XX:MaxRAMPercentage=75.0", \
