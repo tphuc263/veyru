@@ -55,4 +55,4 @@ jobs:
           script: |
             cd ~/projects/photo-sharing
             docker compose pull frontend
-            docker compose up -d frontend
+            docker compose up -d --no-deps frontend
