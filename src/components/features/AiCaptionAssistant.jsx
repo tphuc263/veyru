@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { suggestCaptions } from '../../services/aiService'
-import { getAllTags } from '../../services/tagService'
 import '../../assets/styles/components/aiAssistant.css'
 
 const AiCaptionAssistant = ({ onSelectCaption, onSelectTags, currentCaption, currentTags }) => {
@@ -8,7 +7,6 @@ const AiCaptionAssistant = ({ onSelectCaption, onSelectTags, currentCaption, cur
     const [mood, setMood] = useState('')
     const [captions, setCaptions] = useState([])
     const [suggestedTags, setSuggestedTags] = useState([])
-    const [trendingTags, setTrendingTags] = useState([])
     const [error, setError] = useState('')
     const [showCaptions, setShowCaptions] = useState(false)
 
@@ -20,21 +18,6 @@ const AiCaptionAssistant = ({ onSelectCaption, onSelectTags, currentCaption, cur
         { value: 'romantic', label: '💕 Lãng mạn' },
         { value: 'chill', label: '😎 Chill' },
     ]
-
-    // Fetch trending tags on mount
-    useEffect(() => {
-        const fetchTrendingTags = async () => {
-            try {
-                const tags = await getAllTags()
-                if (Array.isArray(tags)) {
-                    setTrendingTags(tags.slice(0, 15))
-                }
-            } catch (err) {
-                console.error('Failed to fetch trending tags:', err)
-            }
-        }
-        fetchTrendingTags()
-    }, [])
 
     const handleGenerate = async () => {
         setLoading(true)
@@ -144,24 +127,6 @@ const AiCaptionAssistant = ({ onSelectCaption, onSelectTags, currentCaption, cur
                                 onClick={() => handleSelectTag(tag)}
                             >
                                 #{tag}
-                            </span>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Trending tags */}
-            {trendingTags.length > 0 && (
-                <div className="ai-trending-tags">
-                    <span className="ai-section-label">🔥 Trending:</span>
-                    <div className="ai-tag-row">
-                        {trendingTags.map((tag, index) => (
-                            <span
-                                key={index}
-                                className={`ai-trending-pill ${isTagSelected(tag.name) ? 'selected' : ''}`}
-                                onClick={() => handleSelectTag(tag.name)}
-                            >
-                                #{tag.name}
                             </span>
                         ))}
                     </div>

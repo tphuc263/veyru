@@ -18,7 +18,14 @@
   position: relative;
 }
 
+/* Level 1 reply - thụt vào */
 .comment-item.reply-item {
+  margin-left: 54px;
+  padding-left: 0;
+}
+
+/* Level 2+ replies - không thụt thêm nữa, giữ ngang level 1 */
+.comment-item.reply-item-deep {
   margin-left: 54px;
   padding-left: 0;
 }

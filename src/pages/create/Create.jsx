@@ -87,10 +87,10 @@ const Create = () => {
                 <h2>New post</h2>
                 <button
                     onClick={handleSubmit}
-                    className="share-btn"
+                    className="post-btn"
                     disabled={loading || !formData.image || !formData.caption.trim()}
                 >
-                    {loading ? 'Sharing...' : 'Share'}
+                    {loading ? 'Posting...' : 'Post'}
                 </button>
             </div>
 

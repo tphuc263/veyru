@@ -160,3 +160,35 @@ export interface RecommendedUser {
   similarityScore: number;
   reason: string;
 }
+
+// ==================== Unified Post Types ====================
+export type PostType = 'PHOTO' | 'SHARE';
+
+export interface UnifiedPost {
+  id: string;
+  type: PostType;
+  createdAt: string;
+  userId: string;
+  username: string;
+  userImageUrl?: string;
+  // For PHOTO type
+  imageUrl?: string;
+  caption?: string;
+  likeCount: number;
+  commentCount: number;
+  shareCount: number;
+  isLikedByCurrentUser: boolean;
+  isSavedByCurrentUser: boolean;
+  // For SHARE type
+  shareCaption?: string;
+  // Original photo info (for SHARE type)
+  originalPhotoId?: string;
+  originalImageUrl?: string;
+  originalCaption?: string;
+  originalUsername?: string;
+  originalUserImageUrl?: string;
+  originalCreatedAt?: string;
+  originalLikeCount?: number;
+  originalCommentCount?: number;
+  originalShareCount?: number;
+}

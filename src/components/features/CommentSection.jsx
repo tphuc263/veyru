@@ -3,6 +3,7 @@ import { Heart, MessageCircle, CornerDownRight } from 'lucide-react';
 import { createComment, toggleCommentLike } from '../../services/commentService';
 import { showToast } from '../../utils/toastService';
 import { useAuthContext } from '../../context/AuthContext';
+import { DEFAULT_AVATAR } from '../../utils/constants';
 import '../../assets/styles/components/commentSection.css';
 
 const CommentItem = ({ 
@@ -13,7 +14,7 @@ const CommentItem = ({
   currentUserId,
   level = 0 
 }) => {
-  const [showReplies, setShowReplies] = useState(level === 0 && comment.replies?.length > 0);
+  const [showReplies, setShowReplies] = useState(level <= 1 && comment.replies?.length > 0);
   const [isLiking, setIsLiking] = useState(false);
   const [localLikeCount, setLocalLikeCount] = useState(comment.likeCount || 0);
   const [localIsLiked, setLocalIsLiked] = useState(comment.isLikedByCurrentUser || false);
@@ -38,12 +39,16 @@ const CommentItem = ({
     }
   };
 
+  // Level >= 1 đều có cùng indent (level 2+ không thụt thêm nữa)
+  const isReply = level >= 1;
+
   return (
-    <div className={`comment-item ${level > 0 ? 'reply-item' : ''}`}>
-      <img 
-        src={comment.userImageUrl || '/default-avatar.png'} 
-        alt={comment.username} 
+    <div className={`comment-item ${isReply ? 'reply-item' : ''}`}>
+      <img
+        src={comment.userImageUrl || DEFAULT_AVATAR}
+        alt={comment.username}
         className="comment-avatar"
+        onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}
       />
       <div className="comment-body">
         <div className="comment-header">
@@ -63,8 +68,8 @@ const CommentItem = ({
           </button>
         </div>
         
-        {/* Replies toggle */}
-        {level === 0 && comment.replyCount > 0 && (
+        {/* Replies toggle - hiển thị cho level 0 và level 1 */}
+        {level <= 1 && comment.replyCount > 0 && (
           <button 
             className="view-replies-btn"
             onClick={() => setShowReplies(!showReplies)}
@@ -145,6 +150,34 @@ const CommentSection = ({
     await toggleCommentLike(commentId);
   };
 
+  // Recursive helper to add reply to nested comments
+  const addReplyToComments = (comments, parentId, newReply) => {
+    return comments.map(comment => {
+      // Check if this is the direct parent
+      if (comment.id === parentId) {
+        return {
+          ...comment,
+          replyCount: (comment.replyCount || 0) + 1,
+          replies: [...(comment.replies || []), newReply]
+        };
+      }
+      // Check nested replies recursively
+      if (comment.replies && comment.replies.length > 0) {
+        const updatedReplies = addReplyToComments(comment.replies, parentId, newReply);
+        // Check if reply was added to nested level
+        const replyAdded = updatedReplies !== comment.replies;
+        if (replyAdded) {
+          return {
+            ...comment,
+            replyCount: (comment.replyCount || 0) + 1,
+            replies: updatedReplies
+          };
+        }
+      }
+      return comment;
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newComment.trim() || isSubmitting) return;
@@ -164,51 +197,32 @@ const CommentSection = ({
 
       const response = await createComment(photoId, commentData);
       const apiCommentData = response.data ?? response;
-      
+
       // Augment with current user info if missing (for immediate display)
       const newCommentData = {
         ...apiCommentData,
         userImageUrl: apiCommentData.userImageUrl || currentUserImageUrl,
         username: apiCommentData.username || user?.username,
+        replies: [], // Initialize with empty replies array
       };
 
       if (replyingTo) {
-        // Add reply to parent comment
-        setComments(prevComments => 
-          prevComments.map(comment => {
-            if (comment.id === replyingTo.id) {
-              return {
-                ...comment,
-                replyCount: (comment.replyCount || 0) + 1,
-                replies: [...(comment.replies || []), newCommentData]
-              };
-            }
-            // Check if replying to a nested reply
-            if (comment.replies) {
-              const replyIndex = comment.replies.findIndex(r => r.id === replyingTo.id);
-              if (replyIndex !== -1) {
-                return {
-                  ...comment,
-                  replyCount: (comment.replyCount || 0) + 1,
-                  replies: [...comment.replies, newCommentData]
-                };
-              }
-            }
-            return comment;
-          })
+        // Add reply to parent comment (supports all nesting levels)
+        setComments(prevComments =>
+          addReplyToComments(prevComments, replyingTo.id, newCommentData)
         );
       } else {
         // Add as top-level comment
-        setComments(prev => [...prev, { ...newCommentData, replies: [] }]);
+        setComments(prev => [...prev, newCommentData]);
       }
 
       setNewComment('');
       setReplyingTo(null);
-      
+
       if (onCommentAdded) {
         onCommentAdded(newCommentData);
       }
-      
+
       showToast('success', 'Đã thêm bình luận');
     } catch (error) {
       showToast('error', 'Không thể thêm bình luận');

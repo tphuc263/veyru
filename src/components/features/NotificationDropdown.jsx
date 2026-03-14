@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Bell, Heart, MessageCircle, UserPlus, AtSign, ImagePlus, Share2 } from 'lucide-react';
 import { getNotifications, getUnreadCount, markAsRead, markAllAsRead } from '../../services/notificationService';
 import { showToast } from '../../utils/toastService';
+import { DEFAULT_AVATAR } from '../../utils/constants';
 import '../../assets/styles/components/notificationDropdown.css';
 
 const NotificationIcon = ({ type }) => {
@@ -19,7 +20,7 @@ const NotificationIcon = ({ type }) => {
     case 'TAG_IN_PHOTO':
       return <ImagePlus size={16} className="notification-icon tag" />;
     case 'SHARE_PHOTO':
-      return <Share2 size={16} className="notification-icon share" />;
+      return <Share2 size={16} className="notification-icon forward" />;
     default:
       return <Bell size={16} className="notification-icon" />;
   }
@@ -54,10 +55,11 @@ const NotificationItem = ({ notification, onRead, onNavigate }) => {
       onClick={handleClick}
     >
       <div className="notification-avatar-container">
-        <img 
-          src={notification.actorImageUrl || '/default-avatar.png'} 
+        <img
+          src={notification.actorImageUrl || DEFAULT_AVATAR}
           alt={notification.actorUsername}
           className="notification-avatar"
+          onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}
         />
         <div className="notification-type-icon">
           <NotificationIcon type={notification.type} />

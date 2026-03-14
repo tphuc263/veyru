@@ -372,7 +372,7 @@
   margin-bottom: 8px;
 }
 
-.shares-count-inline {
+.posts-count-inline {
   font-weight: 400;
   color: #8e8e8e;
 }
@@ -649,7 +649,7 @@
 }
 
 [data-theme="dark"] .likes-count,
-[data-theme="dark"] .shares-count-inline {
+[data-theme="dark"] .posts-count-inline {
   color: #f5f5f5;
 }
 

@@ -226,21 +226,30 @@ const ProfilePage = () => {
         {activeTab === 'posts' && (
           <>
             <div className="profile-posts">
-              {posts.data.map((post, index) => (
-                <div 
-                  key={post.id || index} 
-                  className="post-item"
-                  onClick={() => handlePhotoClick(post.id)}
-                >
-                  <img src={post.imageUrl} alt={`Post ${post.id}`} />
-                  <div className="post-overlay">
-                    <div className="post-stats">
-                      <span>❤️ {post.likeCount || 0}</span>
-                      <span>💬 {post.commentCount || 0}</span>
+              {posts.data.map((post, index) => {
+                // Get the image URL - for SHARE type, use originalImageUrl
+                const displayImageUrl = post.type === 'SHARE' ? post.originalImageUrl : post.imageUrl;
+                if (!displayImageUrl) return null;
+
+                // For SHARE type, the actual photo ID is in originalPhotoId
+                const photoId = post.type === 'SHARE' ? post.originalPhotoId : post.id;
+
+                return (
+                  <div
+                    key={post.id || index}
+                    className="post-item"
+                    onClick={() => handlePhotoClick(photoId)}
+                  >
+                    <img src={displayImageUrl} alt={`Post ${post.id}`} />
+                    <div className="post-overlay">
+                      <div className="post-stats">
+                        <span>❤️ {post.type === 'SHARE' ? (post.originalLikeCount || 0) : (post.likeCount || 0)}</span>
+                        <span>💬 {post.type === 'SHARE' ? (post.originalCommentCount || 0) : (post.commentCount || 0)}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {posts.error && (

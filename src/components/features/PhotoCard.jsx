@@ -17,7 +17,8 @@ const PhotoCard = ({
                        isLiked: initialIsLiked = false,
                        isSaved: initialIsSaved = false,
                        onPhotoClick,
-                       onPhotoUpdate
+                       onPhotoUpdate,
+                       isSharePost = false
                    }) => {
     const { isLiked, likesCount, isProcessing, handleLike } = useOptimisticLike(
         photoId,
@@ -51,6 +52,7 @@ const PhotoCard = ({
             <div className="photo-card-header">
                 <img src={avatarSrc || DEFAULT_AVATAR} alt={`${username}'s avatar`} className="avatar" onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}/>
                 <span className="username">{username}</span>
+                {isSharePost && <span className="share-indicator">shared a post</span>}
             </div>
 
             <img 
@@ -107,7 +109,7 @@ const PhotoCard = ({
             <div className="photo-card-likes">
                 <strong>{likesCount}</strong> lượt thích
                 {sharesCount > 0 && (
-                    <span className="photo-card-shares-inline"> · <strong>{sharesCount}</strong> lượt chia sẻ</span>
+                    <span className="photo-card-posts-inline"> · <strong>{sharesCount}</strong> lượt chia sẻ</span>
                 )}
             </div>
 

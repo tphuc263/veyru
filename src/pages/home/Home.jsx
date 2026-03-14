@@ -126,39 +126,54 @@ const Home = () => {
                     </div>
                 )}
 
-                {feed.map((post) => (
-                    <PhotoCard
-                        key={post.id}
-                        photoId={post.id}
-                        username={post.username}
-                        avatarSrc={post.userImageUrl}
-                        photoSrc={post.imageUrl}
-                        caption={post.caption}
-                        likesCount={post.likeCount}
-                        commentsCount={post.commentCount}
-                        sharesCount={post.shareCount || 0}
-                        isLiked={post.isLikedByCurrentUser}
-                        isSaved={post.isSavedByCurrentUser}
-                        createdAt={post.createdAt}
-                        tags={post.tags}
-                        onPhotoClick={() => handlePhotoSelect(post.id)}
-                        onPhotoUpdate={(photoId, updatedPhoto) => {
-                            setFeed(prevFeed => 
-                                prevFeed.map(p => 
-                                    p.id === photoId 
-                                        ? { 
-                                            ...p, 
-                                            isLikedByCurrentUser: updatedPhoto.isLikedByCurrentUser,
-                                            likeCount: updatedPhoto.likeCount,
-                                            commentCount: updatedPhoto.commentCount || p.commentCount,
-                                            shareCount: updatedPhoto.shareCount ?? p.shareCount
-                                          }
-                                        : p
-                                )
-                            );
-                        }}
-                    />
-                ))}
+                {feed.map((post) => {
+                    // Determine if this is a SHARE post or PHOTO post
+                    const isShare = post.type === 'SHARE';
+                    // For SHARE type, use original photo info
+                    const displayPhotoId = isShare ? post.originalPhotoId : post.id;
+                    const displayImageUrl = isShare ? post.originalImageUrl : post.imageUrl;
+                    const displayCaption = isShare ? post.shareCaption : post.caption;
+                    const displayUsername = isShare ? post.originalUsername : post.username;
+                    const displayUserImageUrl = isShare ? post.originalUserImageUrl : post.userImageUrl;
+                    const displayLikesCount = isShare ? post.originalLikeCount : post.likeCount;
+                    const displayCommentsCount = isShare ? post.originalCommentCount : post.commentCount;
+                    const displayShareCount = isShare ? post.originalShareCount : post.shareCount;
+
+                    return (
+                        <PhotoCard
+                            key={post.id}
+                            photoId={displayPhotoId}
+                            username={post.username}
+                            avatarSrc={post.userImageUrl}
+                            photoSrc={displayImageUrl}
+                            caption={displayCaption}
+                            likesCount={displayLikesCount}
+                            commentsCount={displayCommentsCount}
+                            sharesCount={displayShareCount || 0}
+                            isLiked={post.isLikedByCurrentUser}
+                            isSaved={post.isSavedByCurrentUser}
+                            createdAt={post.createdAt}
+                            tags={post.tags}
+                            isSharePost={isShare}
+                            onPhotoClick={() => handlePhotoSelect(displayPhotoId)}
+                            onPhotoUpdate={(photoId, updatedPhoto) => {
+                                setFeed(prevFeed =>
+                                    prevFeed.map(p =>
+                                        p.id === post.id || p.originalPhotoId === photoId
+                                            ? {
+                                                ...p,
+                                                isLikedByCurrentUser: updatedPhoto.isLikedByCurrentUser,
+                                                likeCount: updatedPhoto.likeCount,
+                                                commentCount: updatedPhoto.commentCount || p.commentCount,
+                                                shareCount: updatedPhoto.shareCount ?? p.shareCount
+                                              }
+                                            : p
+                                    )
+                                );
+                            }}
+                        />
+                    );
+                })}
 
                 {hasMore && (
                     <div className="load-more-section">
