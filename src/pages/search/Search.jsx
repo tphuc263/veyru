@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { debounce } from '../../utils/helpers'
 import { UserResultItem } from '../../components/features/UserResultItem.jsx'
 import { searchUsers, getExploreFeed } from '../../services/searchService'
@@ -8,6 +9,9 @@ import { Heart, MessageCircle, Search as SearchIcon, X } from 'lucide-react'
 import '../../assets/styles/pages/SearchPage.css'
 
 const Search = () => {
+    // URL params for modal
+    const [searchParams, setSearchParams] = useSearchParams()
+
     // Search state
     const [query, setQuery] = useState('')
     const [searchResults, setSearchResults] = useState([])
@@ -31,6 +35,32 @@ const Search = () => {
     const observerRef = useRef(null)
 
     const isSearching = query.trim().length > 0
+
+    // Restore photo modal from URL on page load
+    useEffect(() => {
+        const photoId = searchParams.get('photo')
+        if (photoId && !selectedPhotoId) {
+            setSelectedPhotoId(photoId)
+        }
+    }, [searchParams])
+
+    // Handle photo modal close
+    const handlePhotoClose = () => {
+        setSelectedPhotoId(null)
+        // Remove photo param from URL
+        const newParams = new URLSearchParams(searchParams)
+        newParams.delete('photo')
+        setSearchParams(newParams)
+    }
+
+    // Handle photo click - update URL
+    const handlePhotoClick = (photoId) => {
+        setSelectedPhotoId(photoId)
+        // Add photo param to URL
+        const newParams = new URLSearchParams(searchParams)
+        newParams.set('photo', photoId)
+        setSearchParams(newParams)
+    }
 
     // ── Search logic ──
     const fetchUsers = async (searchText) => {
@@ -123,12 +153,21 @@ const Search = () => {
         return () => observer.disconnect()
     }, [exploreHasMore, exploreLoadingMore, explorePage, loadExplorePhotos, isSearching])
 
-    const handlePhotoUpdate = (photoId, updates) => {
-        setExplorePhotos(prev =>
-            prev.map(photo =>
-                photo.id === photoId ? { ...photo, ...updates } : photo
+    const handlePhotoUpdate = (photoId, updatedPhoto) => {
+        // Sync state between modal and explore photos
+        setExplorePhotos(prevPhotos =>
+            prevPhotos.map(photo =>
+                photo.id === photoId
+                    ? {
+                        ...photo,
+                        isLikedByCurrentUser: updatedPhoto.isLikedByCurrentUser,
+                        likeCount: updatedPhoto.likeCount,
+                        commentCount: updatedPhoto.commentCount || photo.commentCount,
+                        shareCount: updatedPhoto.shareCount ?? photo.shareCount
+                      }
+                    : photo
             )
-        )
+        );
     }
 
     const clearSearch = () => {
@@ -222,7 +261,7 @@ const Search = () => {
                                 <div
                                     key={photo.id}
                                     className={`explore-grid-item ${getGridClass(index)}`}
-                                    onClick={() => setSelectedPhotoId(photo.id)}
+                                    onClick={() => handlePhotoClick(photo.id)}
                                 >
                                     <img
                                         src={photo.imageUrl}
@@ -258,13 +297,13 @@ const Search = () => {
             )}
 
             {/* Photo Modal */}
-            {selectedPhotoId && (
+            {selectedPhotoId && (() => (
                 <PhotoModal
                     photoId={selectedPhotoId}
-                    onClose={() => setSelectedPhotoId(null)}
+                    onClose={handlePhotoClose}
                     onPhotoUpdate={handlePhotoUpdate}
                 />
-            )}
+            ))()}
         </div>
     )
 }
@@ -272,10 +311,17 @@ const Search = () => {
 /**
  * Instagram-style grid: every 3rd row has one item spanning 2x2
  * Pattern resets every 18 items (6 rows of 3)
+ * Large item only placed at column 1 or 2 (not column 3 to avoid grid overflow)
  */
 function getGridClass(index) {
     const position = index % 18
-    if (position === 2 || position === 11) {
+    // position 2 and 11 are the large items, but they would be at column 3
+    // We need to shift them to avoid spanning from the last column
+    // Option: use position 1 and 10 instead (column 2), or don't use large items
+
+    // Instead, let's use a different pattern:
+    // Position 1 (column 2) and position 10 (column 2 in row 4) become large
+    if (position === 1 || position === 10) {
         return 'explore-grid-item-large'
     }
     return ''

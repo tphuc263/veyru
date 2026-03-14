@@ -143,6 +143,33 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
     commentInputRef.current?.focus();
   };
 
+  // Recursive helper to add reply to nested comments (same as CommentSection)
+  const addReplyToComments = (comments, parentId, newReply) => {
+    return comments.map(comment => {
+      // Check if this is the direct parent
+      if (comment.id === parentId) {
+        return {
+          ...comment,
+          replyCount: (comment.replyCount || 0) + 1,
+          replies: [...(comment.replies || []), newReply]
+        };
+      }
+      // Check nested replies recursively
+      if (comment.replies && comment.replies.length > 0) {
+        const updatedReplies = addReplyToComments(comment.replies, parentId, newReply);
+        const replyAdded = updatedReplies !== comment.replies;
+        if (replyAdded) {
+          return {
+            ...comment,
+            replyCount: (comment.replyCount || 0) + 1,
+            replies: updatedReplies
+          };
+        }
+      }
+      return comment;
+    });
+  };
+
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
     if (!newComment.trim() || isSubmittingComment) return;
@@ -155,23 +182,24 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
       };
 
       const response = await createComment(photoId, commentData);
-      const newCommentData = response.data ?? response;
+      const apiCommentData = response.data ?? response;
+
+      // Augment with current user info for immediate display
+      const newCommentData = {
+        ...apiCommentData,
+        userImageUrl: apiCommentData.userImageUrl || user?.avatarUrl,
+        username: apiCommentData.username || user?.username,
+        replies: [],
+      };
 
       if (replyingTo) {
-        setComments(prevComments => 
-          prevComments.map(comment => {
-            if (comment.id === replyingTo.id) {
-              return {
-                ...comment,
-                replyCount: (comment.replyCount || 0) + 1,
-                replies: [...(comment.replies || []), newCommentData]
-              };
-            }
-            return comment;
-          })
+        // Add reply to parent comment (supports all nesting levels)
+        setComments(prevComments =>
+          addReplyToComments(prevComments, replyingTo.id, newCommentData)
         );
       } else {
-        setComments(prev => [...prev, { ...newCommentData, replies: [] }]);
+        // Add as top-level comment
+        setComments(prev => [...prev, newCommentData]);
       }
 
       setNewComment('');
@@ -362,7 +390,7 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
               <div className="likes-count">
                 <strong>{likesCount}</strong> lượt thích
                 {localShareCount > 0 && (
-                    <span className="shares-count-inline"> · <strong>{localShareCount}</strong> lượt chia sẻ</span>
+                    <span className="posts-count-inline"> · <strong>{localShareCount}</strong> lượt chia sẻ</span>
                 )}
               </div>
               

@@ -33,6 +33,12 @@
     max-width: 300px;
 }
 
+.share-indicator {
+    font-size: 14px;
+    color: var(--ig-secondary-text);
+    margin-left: 4px;
+}
+
 .photo {
     width: 100%;
     display: block; /* Loại bỏ khoảng trắng thừa dưới ảnh */
@@ -91,7 +97,7 @@
     color: var(--ig-primary-text);
 }
 
-.photo-card-shares-inline {
+.photo-card-posts-inline {
     color: var(--ig-secondary-text);
 }
 

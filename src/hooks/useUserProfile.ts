@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react';
 import {useParams} from 'react-router-dom';
 import {getCurrentUserProfile, getUserProfileById} from '../services/userService';
-import {getUserPhotos} from '../services/photoService';
+import {getUserPosts} from '../services/postService';
 
 interface UserProfile {
     id: string | number;
@@ -101,14 +101,14 @@ export const useUserProfile = (): UseUserProfileReturn => {
         const fetchPosts = async (): Promise<void> => {
             setPosts(prev => ({...prev, loading: true, error: null}));
             try {
-                const postResponse: PaginatedResponse<Photo> = await getUserPhotos(
-                    currUser.id, 
+                const postResponse: PaginatedResponse<any> = await getUserPosts(
+                    String(currUser.id),
                     posts.currentPage
                 );
                 setPosts(prev => ({
                     ...prev,
-                    data: posts.currentPage === 0 
-                        ? postResponse.content 
+                    data: posts.currentPage === 0
+                        ? postResponse.content
                         : [...prev.data, ...postResponse.content],
                     totalPages: postResponse.totalPages,
                     loading: false,

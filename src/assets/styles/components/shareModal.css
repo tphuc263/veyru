@@ -1,4 +1,4 @@
-.share-modal-backdrop {
+.post-modal-backdrop {
     position: fixed;
     top: 0;
     left: 0;
@@ -9,25 +9,25 @@
     align-items: center;
     justify-content: center;
     z-index: 1100;
-    animation: shareBackdropFadeIn 0.2s ease;
+    animation: postBackdropFadeIn 0.2s ease;
 }
 
-@keyframes shareBackdropFadeIn {
+@keyframes postBackdropFadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
 }
 
-.share-modal {
+.post-modal {
     background: var(--ig-surface);
     border-radius: 12px;
     width: 90%;
     max-width: 500px;
     overflow: hidden;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    animation: shareModalSlideUp 0.25s ease;
+    animation: postModalSlideUp 0.25s ease;
 }
 
-@keyframes shareModalSlideUp {
+@keyframes postModalSlideUp {
     from {
         opacity: 0;
         transform: translateY(20px) scale(0.95);
@@ -38,7 +38,7 @@
     }
 }
 
-.share-modal-header {
+.post-modal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -46,14 +46,14 @@
     border-bottom: 1px solid var(--ig-border-color);
 }
 
-.share-modal-header h3 {
+.post-modal-header h3 {
     margin: 0;
     font-size: 16px;
     font-weight: 600;
     color: var(--ig-primary-text);
 }
 
-.share-modal-close {
+.post-modal-close {
     background: none;
     border: none;
     font-size: 18px;
@@ -64,21 +64,21 @@
     transition: color 0.2s;
 }
 
-.share-modal-close:hover {
+.post-modal-close:hover {
     color: var(--ig-primary-text);
 }
 
-.share-modal-body {
+.post-modal-body {
     padding: 16px;
 }
 
-.share-preview {
+.post-preview {
     display: flex;
     justify-content: center;
     margin-bottom: 16px;
 }
 
-.share-preview-image {
+.post-preview-image {
     max-width: 100%;
     max-height: 200px;
     object-fit: cover;
@@ -86,11 +86,11 @@
     border: 1px solid var(--ig-border-color);
 }
 
-.share-caption-section {
+.post-caption-section {
     position: relative;
 }
 
-.share-caption-input {
+.post-caption-input {
     width: 100%;
     padding: 12px;
     border: 1px solid var(--ig-border-color);
@@ -104,16 +104,16 @@
     box-sizing: border-box;
 }
 
-.share-caption-input:focus {
+.post-caption-input:focus {
     outline: none;
     border-color: var(--ig-link-color);
 }
 
-.share-caption-input::placeholder {
+.post-caption-input::placeholder {
     color: var(--ig-secondary-text);
 }
 
-.share-caption-count {
+.post-caption-count {
     display: block;
     text-align: right;
     font-size: 12px;
@@ -121,7 +121,7 @@
     margin-top: 4px;
 }
 
-.share-modal-footer {
+.post-modal-footer {
     display: flex;
     align-items: center;
     justify-content: flex-end;
@@ -130,7 +130,7 @@
     border-top: 1px solid var(--ig-border-color);
 }
 
-.share-btn-cancel {
+.post-btn-cancel {
     padding: 8px 20px;
     border: 1px solid var(--ig-border-color);
     border-radius: 8px;
@@ -142,11 +142,11 @@
     transition: background-color 0.2s;
 }
 
-.share-btn-cancel:hover {
+.post-btn-cancel:hover {
     background: var(--ig-hover-bg);
 }
 
-.share-btn-confirm {
+.post-btn-confirm {
     padding: 8px 20px;
     border: none;
     border-radius: 8px;
@@ -161,38 +161,38 @@
     transition: opacity 0.2s;
 }
 
-.share-btn-confirm:hover:not(:disabled) {
+.post-btn-confirm:hover:not(:disabled) {
     opacity: 0.85;
 }
 
-.share-btn-confirm:disabled {
+.post-btn-confirm:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
 
-.share-btn-loading {
+.post-btn-loading {
     display: flex;
     align-items: center;
     gap: 6px;
 }
 
-.share-spinner {
-    animation: shareSpinRotate 0.8s linear infinite;
+.post-spinner {
+    animation: postSpinRotate 0.8s linear infinite;
 }
 
-@keyframes shareSpinRotate {
+@keyframes postSpinRotate {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
 
-/* Share count display in PhotoCard */
-.photo-card-share-count {
+/* Post count display in PhotoCard */
+.photo-card-post-count {
     padding: 0 16px 4px;
     font-size: 14px;
     color: var(--ig-primary-text);
 }
 
-/* Share button styling (active state) */
-.action-btn.shared {
+/* Post button styling (active state) */
+.action-btn.posted {
     color: var(--ig-link-color);
 }

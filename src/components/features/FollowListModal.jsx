@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getFollowers, getFollowing, follow, unfollow } from '../../services/followService';
 import { useAuthContext } from '../../context/AuthContext';
 import { Loader } from '../common/Loader';
+import { DEFAULT_AVATAR } from '../../utils/constants';
 import '../../assets/styles/components/followListModal.css';
 
 const FollowListModal = ({ userId, type, onClose, onFollowChange }) => {
@@ -114,10 +115,11 @@ const FollowListModal = ({ userId, type, onClose, onFollowChange }) => {
                                 className="follow-user-info"
                                 onClick={() => handleUserClick(user.userId)}
                             >
-                                <img 
-                                    src={user.userImageUrl} 
-                                    alt={user.username} 
+                                <img
+                                    src={user.userImageUrl || DEFAULT_AVATAR}
+                                    alt={user.username}
                                     className="follow-user-avatar"
+                                    onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}
                                 />
                                 <div className="follow-user-details">
                                     <span className="follow-user-username">{user.username}</span>

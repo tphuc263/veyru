@@ -4,6 +4,7 @@ import { getSuggestedUsers } from '../../services/recommendationService';
 import { follow } from '../../services/followService';
 import { useAuthContext } from '../../context/AuthContext';
 import { getCurrentUserProfile } from '../../services/userService';
+import { DEFAULT_AVATAR } from '../../utils/constants';
 import '../../assets/styles/components/suggestedUsers.css';
 
 const SuggestedUsers = () => {
@@ -89,9 +90,10 @@ const SuggestedUsers = () => {
             {currentUser && (
                 <Link to="/profile" className="current-user-mini">
                     <img
-                        src={currentUserProfile?.imageUrl || '/default-avatar.png'}
+                        src={currentUserProfile?.imageUrl || DEFAULT_AVATAR}
                         alt={currentUser.username}
                         className="current-user-avatar"
+                        onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}
                     />
                     <div className="current-user-info">
                         <span className="current-user-username">{currentUser.username}</span>
@@ -119,9 +121,10 @@ const SuggestedUsers = () => {
                     <div key={user.id} className="suggested-user-item">
                         <Link to={`/profile/${user.id}`} className="suggested-user-link">
                             <img
-                                src={user.imageUrl || '/default-avatar.png'}
+                                src={user.imageUrl || DEFAULT_AVATAR}
                                 alt={user.username}
                                 className="suggested-user-avatar"
+                                onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}
                             />
                             <div className="suggested-user-info">
                                 <span className="suggested-user-username">{user.username}</span>

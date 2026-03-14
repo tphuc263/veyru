@@ -5,77 +5,77 @@ import '../../assets/styles/components/shareModal.css';
 
 const ShareModal = ({ photoId, photoSrc, onClose, onShareSuccess }) => {
     const [caption, setCaption] = useState('');
-    const [isSharing, setIsSharing] = useState(false);
+    const [isPosting, setIsPosting] = useState(false);
 
-    const handleShare = async () => {
-        if (isSharing) return;
-        setIsSharing(true);
+    const handlePost = async () => {
+        if (isPosting) return;
+        setIsPosting(true);
         try {
             const response = await sharePhoto(photoId, caption.trim() || null);
-            showToast('success', 'Đã chia sẻ về trang cá nhân!');
+            showToast('success', 'Đã đăng về trang cá nhân!');
             if (onShareSuccess) {
                 onShareSuccess(response.data || response);
             }
             onClose();
         } catch (err) {
-            showToast('error', 'Không thể chia sẻ. Vui lòng thử lại.');
-            console.error('Failed to share:', err);
+            showToast('error', 'Không thể đăng. Vui lòng thử lại.');
+            console.error('Failed to post:', err);
         } finally {
-            setIsSharing(false);
+            setIsPosting(false);
         }
     };
 
     const handleBackdropClick = (e) => {
-        if (e.target.classList.contains('share-modal-backdrop')) {
+        if (e.target.classList.contains('post-modal-backdrop')) {
             onClose();
         }
     };
 
     return (
-        <div className="share-modal-backdrop" onClick={handleBackdropClick}>
-            <div className="share-modal">
-                <div className="share-modal-header">
+        <div className="post-modal-backdrop" onClick={handleBackdropClick}>
+            <div className="post-modal">
+                <div className="post-modal-header">
                     <h3>Chia sẻ bài viết</h3>
-                    <button className="share-modal-close" onClick={onClose}>✕</button>
+                    <button className="post-modal-close" onClick={onClose}>✕</button>
                 </div>
 
-                <div className="share-modal-body">
-                    <div className="share-preview">
-                        <img src={photoSrc} alt="Ảnh chia sẻ" className="share-preview-image" />
+                <div className="post-modal-body">
+                    <div className="post-preview">
+                        <img src={photoSrc} alt="Ảnh chia sẻ" className="post-preview-image" />
                     </div>
 
-                    <div className="share-caption-section">
+                    <div className="post-caption-section">
                         <textarea
-                            className="share-caption-input"
+                            className="post-caption-input"
                             placeholder="Viết gì đó về bài viết này..."
                             value={caption}
                             onChange={(e) => setCaption(e.target.value)}
                             maxLength={500}
                             rows={3}
                         />
-                        <span className="share-caption-count">{caption.length}/500</span>
+                        <span className="post-caption-count">{caption.length}/500</span>
                     </div>
                 </div>
 
-                <div className="share-modal-footer">
+                <div className="post-modal-footer">
                     <button
-                        className="share-btn-cancel"
+                        className="post-btn-cancel"
                         onClick={onClose}
-                        disabled={isSharing}
+                        disabled={isPosting}
                     >
                         Hủy
                     </button>
                     <button
-                        className="share-btn-confirm"
-                        onClick={handleShare}
-                        disabled={isSharing}
+                        className="post-btn-confirm"
+                        onClick={handlePost}
+                        disabled={isPosting}
                     >
-                        {isSharing ? (
-                            <span className="share-btn-loading">
-                                <svg className="share-spinner" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        {isPosting ? (
+                            <span className="post-btn-loading">
+                                <svg className="post-spinner" width="16" height="16" viewBox="0 0 16 16" fill="none">
                                     <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" strokeDasharray="28" strokeDashoffset="8" />
                                 </svg>
-                                Đang chia sẻ...
+                                Đang đăng...
                             </span>
                         ) : (
                             <>
@@ -83,7 +83,7 @@ const ShareModal = ({ photoId, photoSrc, onClose, onShareSuccess }) => {
                                     <line x1="22" y1="2" x2="11" y2="13"></line>
                                     <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                                 </svg>
-                                Chia sẻ
+                                Đăng
                             </>
                         )}
                     </button>
