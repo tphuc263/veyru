@@ -2,6 +2,7 @@ package share_app.tphucshareapp.service.photo;
 
 import org.springframework.data.domain.Page;
 import share_app.tphucshareapp.dto.response.photo.PhotoResponse;
+import share_app.tphucshareapp.dto.response.post.UnifiedPostResponse;
 
 public interface INewsfeedService {
     /**
@@ -32,4 +33,9 @@ public interface INewsfeedService {
      * Hybrid approach - try cache first, fallback to real-time
      */
     Page<PhotoResponse> getSmartNewsfeed(String userId, int page, int size);
+
+    /**
+     * Get unified newsfeed (photos + shares) for home feed
+     */
+    Page<UnifiedPostResponse> getUnifiedNewsfeed(String userId, int page, int size);
 }

@@ -62,6 +62,8 @@ public class MongoIndexConfig {
                                 .append("createdAt", -1)
                 ));
 
+        ensureIndex(collection,
+                new Index().on("userTags.taggedUserId", Sort.Direction.ASC));
 
         log.info("✓ Photo indexes synchronized");
     }

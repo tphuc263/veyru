@@ -21,7 +21,7 @@ import share_app.tphucshareapp.repository.FollowRepository;
 import share_app.tphucshareapp.repository.UserRepository;
 import share_app.tphucshareapp.security.userdetails.AppUserDetails;
 import share_app.tphucshareapp.service.notification.INotificationService;
-import share_app.tphucshareapp.service.photo.NewsfeedService;
+import share_app.tphucshareapp.service.user.UserAvatarCacheService;
 
 import java.time.Instant;
 import java.util.List;
@@ -39,6 +39,7 @@ public class FollowService implements IFollowService {
     private final ModelMapper modelMapper;
     private final MongoTemplate mongoTemplate;
     private final INotificationService notificationService;
+    private final UserAvatarCacheService userAvatarCacheService;
 
     @Override
     public void follow(String targetUserId) {
@@ -59,7 +60,7 @@ public class FollowService implements IFollowService {
 
         // increase following count of person click follow
         Query followerQuery = new Query(Criteria.where("_id").is(currentUser.getId()));
-        Update followerUpdate = new Update().inc("followingCount", 1).push("followingIds", targetUserId);
+        Update followerUpdate = new Update().inc("followingCount", 1);
         mongoTemplate.updateFirst(followerQuery, followerUpdate, User.class);
 
         // increase follower of person who have new follower
@@ -93,7 +94,7 @@ public class FollowService implements IFollowService {
         log.info("User {} unfollowed user {}", currentUser.getId(), targetUserId);
 
         Query followerQuery = new Query(Criteria.where("_id").is(currentUser.getId()));
-        Update followerUpdate = new Update().inc("followingCount", -1).pull("followingIds", targetUserId);
+        Update followerUpdate = new Update().inc("followingCount", -1);
         mongoTemplate.updateFirst(followerQuery, followerUpdate, User.class);
 
         Query followingQuery = new Query(Criteria.where("_id").is(targetUserId));
@@ -166,6 +167,7 @@ public class FollowService implements IFollowService {
                     if (user != null) {
                         FollowResponse response = modelMapper.map(user, FollowResponse.class);
                         response.setUserId(user.getId());
+                        response.setUserImageUrl(userAvatarCacheService.getAvatar(user.getId()));
                         response.setFollowedByCurrentUser(currentUserFollowing.contains(userId));
                         return response;
                     }

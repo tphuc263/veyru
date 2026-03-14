@@ -7,9 +7,11 @@ import org.springframework.stereotype.Service;
 import share_app.tphucshareapp.dto.response.photo.PhotoResponse;
 import share_app.tphucshareapp.dto.response.recommendation.RecommendedUserResponse;
 import share_app.tphucshareapp.model.Favorite;
+import share_app.tphucshareapp.model.Follow;
 import share_app.tphucshareapp.model.Photo;
 import share_app.tphucshareapp.model.User;
 import share_app.tphucshareapp.repository.FavoriteRepository;
+import share_app.tphucshareapp.repository.FollowRepository;
 import share_app.tphucshareapp.repository.PhotoRepository;
 import share_app.tphucshareapp.repository.UserRepository;
 import share_app.tphucshareapp.service.photo.PhotoConversionService;
@@ -33,6 +35,7 @@ public class RecommendationService {
     private final PhotoRepository photoRepository;
     private final UserRepository userRepository;
     private final FavoriteRepository favoriteRepository;
+    private final FollowRepository followRepository;
     private final PhotoConversionService photoConversionService;
 
     // ─── RELATED POSTS ─────────────────────────────────────────────
@@ -141,10 +144,7 @@ public class RecommendationService {
 
                 if (!results.isEmpty()) {
                     // Get already-followed user IDs
-                    Set<String> followingIds = new HashSet<>();
-                    if (currentUser.getFollowingIds() != null) {
-                        followingIds.addAll(currentUser.getFollowingIds());
-                    }
+                    Set<String> followingIds = getFollowingIds(userId);
 
                     List<RecommendedUserResponse> suggestions = new ArrayList<>();
                     for (Map<String, Object> result : results) {
@@ -188,11 +188,8 @@ public class RecommendationService {
      * Fallback: suggest popular users that the current user doesn't follow.
      */
     private List<RecommendedUserResponse> getFallbackSuggestedUsers(User currentUser, int limit) {
-        Set<String> followingIds = new HashSet<>();
+        Set<String> followingIds = getFollowingIds(currentUser.getId());
         followingIds.add(currentUser.getId());
-        if (currentUser.getFollowingIds() != null) {
-            followingIds.addAll(currentUser.getFollowingIds());
-        }
 
         // Get all users, sort by follower count, exclude followed
         List<User> allUsers = userRepository.findAll();
@@ -221,9 +218,11 @@ public class RecommendationService {
      */
     private String generateRecommendationReason(User currentUser, User candidate) {
         // Check for mutual followers
-        if (currentUser.getFollowingIds() != null && candidate.getFollowingIds() != null) {
-            Set<String> commonFollowings = new HashSet<>(currentUser.getFollowingIds());
-            commonFollowings.retainAll(candidate.getFollowingIds());
+        Set<String> currentFollowing = getFollowingIds(currentUser.getId());
+        Set<String> candidateFollowing = getFollowingIds(candidate.getId());
+        if (!currentFollowing.isEmpty() && !candidateFollowing.isEmpty()) {
+            Set<String> commonFollowings = new HashSet<>(currentFollowing);
+            commonFollowings.retainAll(candidateFollowing);
             if (!commonFollowings.isEmpty()) {
                 return "Followed by people you follow";
             }
@@ -252,6 +251,12 @@ public class RecommendationService {
     }
 
     // ─── EMBEDDING MANAGEMENT ──────────────────────────────────────
+
+    private Set<String> getFollowingIds(String userId) {
+        return followRepository.findByFollowerId(userId).stream()
+                .map(Follow::getFollowingId)
+                .collect(Collectors.toSet());
+    }
 
     /**
      * Ensure a photo has an embedding stored in Redis.

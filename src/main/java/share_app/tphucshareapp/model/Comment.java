@@ -41,7 +41,7 @@ public class Comment {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class EmbeddedUser {
+        private String userId;
         private String username;
-        private String userImageUrl;
     }
 }

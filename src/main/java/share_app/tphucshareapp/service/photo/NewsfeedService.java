@@ -9,12 +9,18 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import share_app.tphucshareapp.dto.response.photo.PhotoResponse;
+import share_app.tphucshareapp.dto.response.post.UnifiedPostResponse;
 import share_app.tphucshareapp.model.Follow;
 import share_app.tphucshareapp.model.Photo;
 import share_app.tphucshareapp.model.User;
 import share_app.tphucshareapp.repository.FollowRepository;
 import share_app.tphucshareapp.repository.PhotoRepository;
+import share_app.tphucshareapp.repository.UserRepository;
+import share_app.tphucshareapp.repository.LikeRepository;
+import share_app.tphucshareapp.repository.FavoriteRepository;
+import share_app.tphucshareapp.service.share.ShareService;
 import share_app.tphucshareapp.service.user.UserService;
+import share_app.tphucshareapp.service.user.UserAvatarCacheService;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -29,9 +35,14 @@ public class NewsfeedService implements INewsfeedService {
 
     private final FollowRepository followRepository;
     private final PhotoRepository photoRepository;
+    private final UserRepository userRepository;
     private final RedisTemplate<String, Object> redisTemplate;
     private final PhotoConversionService photoConversionService;
     private final UserService userService;
+    private final ShareService shareService;
+    private final UserAvatarCacheService userAvatarCacheService;
+    private final LikeRepository likeRepository;
+    private final FavoriteRepository favoriteRepository;
 
     // Cache configuration
     private static final String NEWSFEED_CACHE_KEY = "newsfeed:user:";
@@ -207,10 +218,125 @@ public class NewsfeedService implements INewsfeedService {
     @Override
     public Page<PhotoResponse> getSmartNewsfeed(String userId, int page, int size) {
         log.info("Getting smart newsfeed for user: {}", userId);
-        
+
         // Use simple real-time generation for now
         // This is more reliable and easier to debug
         return getNewsfeed(userId, page, size);
+    }
+
+    @Override
+    public Page<UnifiedPostResponse> getUnifiedNewsfeed(String userId, int page, int size) {
+        log.info("Getting unified newsfeed (photos + shares) for user: {}", userId);
+
+        User currentUser = userService.findUserById(userId);
+
+        // Get following user IDs
+        List<String> followingIds = new ArrayList<>(getFollowingUserIds(userId));
+
+        // Include user's own content
+        followingIds.add(userId);
+
+        // Get photos from followed users
+        List<Photo> photos = new ArrayList<>();
+        if (!followingIds.isEmpty()) {
+            Instant cutoffTime = Instant.now().minus(Duration.ofDays(30));
+            photos = photoRepository.findByUser_UserIdInAndCreatedAtAfterOrderByCreatedAtDesc(
+                followingIds, cutoffTime
+            );
+            if (photos.isEmpty()) {
+                photos = photoRepository.findByUser_UserIdInOrderByCreatedAtDesc(followingIds);
+            }
+        }
+
+        // Get shares from followed users
+        List<share_app.tphucshareapp.model.Share> shares = new ArrayList<>();
+        if (!followingIds.isEmpty()) {
+            shares = shareService.getSharesByUserIds(followingIds);
+        }
+
+        // Combine and sort by createdAt
+        List<UnifiedPostResponse> unifiedPosts = new ArrayList<>();
+
+        // Add photos
+        for (Photo photo : photos) {
+            UnifiedPostResponse post = new UnifiedPostResponse();
+            post.setId(photo.getId());
+            post.setType(UnifiedPostResponse.PostType.PHOTO);
+            post.setCreatedAt(photo.getCreatedAt());
+            post.setUserId(photo.getUser().getUserId());
+            post.setUsername(photo.getUser().getUsername());
+            // Use userAvatarCacheService to get avatar
+            String avatarUrl = photo.getUser() != null ?
+                userAvatarCacheService.getAvatar(photo.getUser().getUserId()) : null;
+            post.setUserImageUrl(avatarUrl);
+            post.setImageUrl(photo.getImageUrl());
+            post.setCaption(photo.getCaption());
+            post.setLikeCount((int) photo.getLikeCount());
+            post.setCommentCount((int) photo.getCommentCount());
+            post.setShareCount((int) photo.getShareCount());
+            // Check like/save status
+            boolean isLiked = likeRepository.existsByPhotoIdAndUserId(photo.getId(), currentUser.getId());
+            boolean isSaved = favoriteRepository.existsByUserIdAndPhotoId(currentUser.getId(), photo.getId());
+            post.setLikedByCurrentUser(isLiked);
+            post.setSavedByCurrentUser(isSaved);
+            unifiedPosts.add(post);
+        }
+
+        // Add shares
+        for (share_app.tphucshareapp.model.Share share : shares) {
+            Photo originalPhoto = photoRepository.findById(share.getPhotoId()).orElse(null);
+            UnifiedPostResponse post = new UnifiedPostResponse();
+            post.setId("share_" + share.getId());
+            post.setType(UnifiedPostResponse.PostType.SHARE);
+            post.setCreatedAt(share.getCreatedAt());
+            post.setUserId(share.getUserId());
+            // Get user info from repository
+            User shareUser = userRepository.findById(share.getUserId()).orElse(null);
+            if (shareUser != null) {
+                post.setUsername(shareUser.getUsername());
+                post.setUserImageUrl(shareUser.getImageUrl());
+            }
+            post.setShareCaption(share.getCaption());
+            post.setLikeCount(0);
+            post.setCommentCount(0);
+            post.setShareCount(0);
+            post.setLikedByCurrentUser(false);
+            post.setSavedByCurrentUser(false);
+
+            // Original photo info
+            if (originalPhoto != null) {
+                post.setOriginalPhotoId(originalPhoto.getId());
+                post.setOriginalImageUrl(originalPhoto.getImageUrl());
+                post.setOriginalCaption(originalPhoto.getCaption());
+                if (originalPhoto.getUser() != null) {
+                    post.setOriginalUsername(originalPhoto.getUser().getUsername());
+                    // Use userAvatarCacheService to get avatar
+                    String originalAvatarUrl = userAvatarCacheService.getAvatar(originalPhoto.getUser().getUserId());
+                    post.setOriginalUserImageUrl(originalAvatarUrl);
+                }
+                post.setOriginalCreatedAt(originalPhoto.getCreatedAt());
+                post.setOriginalLikeCount((int) originalPhoto.getLikeCount());
+                post.setOriginalCommentCount((int) originalPhoto.getCommentCount());
+                post.setOriginalShareCount((int) originalPhoto.getShareCount());
+            }
+
+            unifiedPosts.add(post);
+        }
+
+        // Sort by createdAt descending
+        unifiedPosts.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+
+        // Paginate
+        Pageable pageable = PageRequest.of(page, size);
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), unifiedPosts.size());
+
+        if (start >= unifiedPosts.size()) {
+            return new PageImpl<>(List.of(), pageable, unifiedPosts.size());
+        }
+
+        List<UnifiedPostResponse> pagePosts = unifiedPosts.subList(start, end);
+        return new PageImpl<>(pagePosts, pageable, unifiedPosts.size());
     }
 
     private List<String> getFollowingUserIds(String userId) {

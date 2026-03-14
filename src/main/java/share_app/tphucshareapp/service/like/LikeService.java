@@ -18,6 +18,7 @@ import share_app.tphucshareapp.repository.PhotoRepository;
 import share_app.tphucshareapp.repository.UserRepository;
 import share_app.tphucshareapp.service.notification.INotificationService;
 import share_app.tphucshareapp.service.photo.PhotoConversionService;
+import share_app.tphucshareapp.service.user.UserAvatarCacheService;
 import share_app.tphucshareapp.service.user.UserService;
 
 import java.time.Instant;
@@ -37,6 +38,7 @@ public class LikeService implements ILikeService {
     private final MongoTemplate mongoTemplate;
     private final PhotoConversionService photoConversionService;
     private final INotificationService notificationService;
+    private final UserAvatarCacheService userAvatarCacheService;
 
     @Override
     public PhotoResponse toggleLike(String photoId) {
@@ -175,7 +177,7 @@ public class LikeService implements ILikeService {
                     User user = usersMap.get(like.getUserId());
                     if (user != null) {
                         response.setUsername(user.getUsername());
-                        response.setUserImageUrl(user.getImageUrl());
+                        response.setUserImageUrl(userAvatarCacheService.getAvatar(user.getId()));
                     }
                     return response;
                 })
