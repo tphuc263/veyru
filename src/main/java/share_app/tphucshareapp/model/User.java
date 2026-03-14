@@ -9,7 +9,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import share_app.tphucshareapp.enums.UserRole;
 
 import java.time.Instant;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -38,8 +37,6 @@ public class User {
     private long photoCount;
     private long followerCount;
     private long followingCount;
-
-    private List<String> followingIds;
 
     private String resetToken;
     private Instant resetTokenExpiry;

@@ -15,10 +15,8 @@ import share_app.tphucshareapp.dto.response.search.UserSearchResponse;
 import share_app.tphucshareapp.dto.response.search.UserSearchResponseSimple;
 import share_app.tphucshareapp.dto.response.user.UserProfileResponse;
 import share_app.tphucshareapp.model.Photo;
-import share_app.tphucshareapp.model.Tag;
 import share_app.tphucshareapp.model.User;
 import share_app.tphucshareapp.repository.PhotoRepository;
-import share_app.tphucshareapp.repository.TagRepository;
 import share_app.tphucshareapp.repository.UserRepository;
 import share_app.tphucshareapp.service.follow.FollowService;
 import share_app.tphucshareapp.service.photo.PhotoConversionService;
@@ -34,7 +32,6 @@ public class SearchService implements ISearchService {
 
     private final UserRepository userRepository;
     private final PhotoRepository photoRepository;
-    private final TagRepository tagRepository;
     private final ModelMapper modelMapper;
     private final PhotoConversionService photoConversionService;
     private final UserService userService;
@@ -128,21 +125,6 @@ public class SearchService implements ISearchService {
     }
 
     @Override
-    public List<Tag> searchTags(String query, int limit) {
-        log.info("Searching tags for: {}", query);
-
-        String sanitizedQuery = sanitizeSearchQuery(query);
-        if (sanitizedQuery.isEmpty()) {
-            return List.of();
-        }
-
-        List<Tag> tags = tagRepository.findByNameContainingIgnoreCase(sanitizedQuery);
-        return tags.stream()
-                .limit(limit)
-                .toList();
-    }
-
-    @Override
     public List<String> getSearchSuggestions(String query, int limit) {
         log.info("Getting search suggestions for: {}", query);
 
@@ -156,22 +138,12 @@ public class SearchService implements ISearchService {
         // Get user suggestions
         try {
             List<User> users = userRepository.findByNameFields(sanitizedQuery,
-                    PageRequest.of(0, limit / 3)).getContent();
+                    PageRequest.of(0, limit)).getContent();
             users.forEach(user -> {
                 suggestions.add(user.getUsername());
             });
         } catch (Exception e) {
             log.warn("Error getting user suggestions: {}", e.getMessage());
-        }
-
-        // Get tag suggestions
-        try {
-            List<Tag> tags = tagRepository.findByNameContainingIgnoreCase(sanitizedQuery);
-            tags.stream()
-                    .limit(limit / 3)
-                    .forEach(tag -> suggestions.add(tag.getName()));
-        } catch (Exception e) {
-            log.warn("Error getting tag suggestions: {}", e.getMessage());
         }
 
         return suggestions.stream()

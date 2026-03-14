@@ -19,7 +19,6 @@ public class NotificationEvent implements Serializable {
     private String recipientId;
     private String actorId;
     private String actorUsername;
-    private String actorImageUrl;
     private NotificationType type;
     private String photoId;
     private String commentId;

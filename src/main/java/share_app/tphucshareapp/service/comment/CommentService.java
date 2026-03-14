@@ -20,6 +20,7 @@ import share_app.tphucshareapp.repository.CommentRepository;
 import share_app.tphucshareapp.repository.PhotoRepository;
 import share_app.tphucshareapp.repository.UserRepository;
 import share_app.tphucshareapp.service.notification.INotificationService;
+import share_app.tphucshareapp.service.user.UserAvatarCacheService;
 import share_app.tphucshareapp.service.user.UserService;
 
 import java.time.Instant;
@@ -42,6 +43,7 @@ public class CommentService implements ICommentService {
     private final MongoTemplate mongoTemplate;
     private final ModelMapper modelMapper;
     private final INotificationService notificationService;
+    private final UserAvatarCacheService userAvatarCacheService;
     
     // Pattern to match @username mentions
     private static final Pattern MENTION_PATTERN = Pattern.compile("@(\\w+)");
@@ -55,8 +57,8 @@ public class CommentService implements ICommentService {
         User currentUser = userService.getCurrentUser();
 
         Comment.EmbeddedUser embeddedUser = new Comment.EmbeddedUser();
+        embeddedUser.setUserId(currentUser.getId());
         embeddedUser.setUsername(currentUser.getUsername());
-        embeddedUser.setUserImageUrl(currentUser.getImageUrl());
 
         // Create comment
         Comment comment = new Comment();
@@ -214,14 +216,27 @@ public class CommentService implements ICommentService {
         return topLevelComments.stream()
                 .map(comment -> {
                     CommentResponse response = convertToCommentResponse(comment, currentUserId);
-                    // Load replies for each top-level comment
-                    List<Comment> replies = commentRepository.findByParentCommentIdOrderByCreatedAtAsc(comment.getId());
-                    response.setReplies(replies.stream()
-                            .map(reply -> convertToCommentResponse(reply, currentUserId))
-                            .toList());
+                    // Load all nested replies recursively
+                    loadNestedReplies(response, currentUserId);
                     return response;
                 })
                 .toList();
+    }
+
+    // Recursive method to load all nested replies
+    private void loadNestedReplies(CommentResponse parentResponse, String currentUserId) {
+        List<Comment> replies = commentRepository.findByParentCommentIdOrderByCreatedAtAsc(parentResponse.getId());
+
+        List<CommentResponse> replyResponses = replies.stream()
+                .map(reply -> {
+                    CommentResponse replyResponse = convertToCommentResponse(reply, currentUserId);
+                    // Recursively load nested replies
+                    loadNestedReplies(replyResponse, currentUserId);
+                    return replyResponse;
+                })
+                .toList();
+
+        parentResponse.setReplies(replyResponses);
     }
     
     @Override
@@ -343,7 +358,7 @@ public class CommentService implements ICommentService {
         
         if (comment.getUser() != null) {
             response.setUsername(comment.getUser().getUsername());
-            response.setUserImageUrl(comment.getUser().getUserImageUrl());
+            response.setUserImageUrl(userAvatarCacheService.getAvatar(comment.getUser().getUserId()));
         }
         
         // Check if current user liked this comment

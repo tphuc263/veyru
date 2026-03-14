@@ -6,7 +6,6 @@ spring:
     name: tphucshareapp
   data:
     mongodb:
-      # Use URI for both local and production (production passes authenticated URI via SPRING_DATA_MONGODB_URI)
       uri: ${SPRING_DATA_MONGODB_URI:mongodb://${MONGO_HOST:localhost}:${MONGO_PORT:27017}/${MONGO_DATABASE:share_app_database_new}?socketTimeoutMS=30000}
       auto-index-creation: false
     redis:

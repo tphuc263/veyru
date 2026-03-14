@@ -5,13 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import share_app.tphucshareapp.dto.request.search.SearchRequest;
 import share_app.tphucshareapp.dto.response.ApiResponse;
 import share_app.tphucshareapp.dto.response.photo.PhotoResponse;
-import share_app.tphucshareapp.dto.response.search.SearchResultResponse;
-import share_app.tphucshareapp.dto.response.search.UserSearchResponse;
 import share_app.tphucshareapp.dto.response.search.UserSearchResponseSimple;
-import share_app.tphucshareapp.model.Tag;
 import share_app.tphucshareapp.service.photo.ExploreService;
 import share_app.tphucshareapp.service.search.SearchService;
 import share_app.tphucshareapp.service.user.UserService;
@@ -61,17 +57,6 @@ public class SearchController {
         Page<PhotoResponse> photos = searchService.searchPhotosByTags(query, page, size);
         return ResponseEntity.ok(
                 ApiResponse.success(photos, "Photo tag search completed successfully")
-        );
-    }
-
-    @GetMapping("/tags")
-    public ResponseEntity<ApiResponse<List<Tag>>> searchTags(
-            @RequestParam("q") String query,
-            @RequestParam(defaultValue = "10") int limit) {
-
-        List<Tag> tags = searchService.searchTags(query, limit);
-        return ResponseEntity.ok(
-                ApiResponse.success(tags, "Tag search completed successfully")
         );
     }
 

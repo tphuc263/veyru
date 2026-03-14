@@ -6,6 +6,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import share_app.tphucshareapp.model.User;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends MongoRepository<User, String> {
@@ -28,5 +29,7 @@ public interface UserRepository extends MongoRepository<User, String> {
     Page<User> findByUsernameRegex(String searchTerm, Pageable pageable);
 
     Optional<User> findByResetToken(String resetToken);
+
+    List<User> findByIdIn(List<String> ids);
 }
 

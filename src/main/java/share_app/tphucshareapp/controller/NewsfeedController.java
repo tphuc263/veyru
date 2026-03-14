@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import share_app.tphucshareapp.dto.response.ApiResponse;
 import share_app.tphucshareapp.dto.response.photo.PhotoResponse;
+import share_app.tphucshareapp.dto.response.post.UnifiedPostResponse;
 import share_app.tphucshareapp.service.photo.NewsfeedService;
 import share_app.tphucshareapp.service.user.UserService;
 
@@ -66,5 +67,28 @@ public class NewsfeedController {
         return ResponseEntity.ok(
                 ApiResponse.success(newsfeed, "Real-time newsfeed retrieved successfully")
         );
+    }
+
+    /**
+     * Get unified newsfeed (photos + shares)
+     */
+    @GetMapping("/unified")
+    public ResponseEntity<ApiResponse<Page<UnifiedPostResponse>>> getUnifiedNewsfeed(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        try {
+            log.info("Fetching unified newsfeed for page: {}, size: {}", page, size);
+            String userId = userService.getCurrentUser().getId();
+            Page<UnifiedPostResponse> newsfeed = newsfeedService.getUnifiedNewsfeed(userId, page, size);
+            log.info("Successfully fetched {} items for unified newsfeed", newsfeed.getContent().size());
+
+            return ResponseEntity.ok(
+                    ApiResponse.success(newsfeed, "Unified newsfeed retrieved successfully")
+            );
+        } catch (Exception e) {
+            log.error("Error fetching unified newsfeed: ", e);
+            throw e;
+        }
     }
 }

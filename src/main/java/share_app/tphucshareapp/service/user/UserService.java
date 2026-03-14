@@ -30,6 +30,7 @@ public class UserService implements IUserService {
     private final ModelMapper modelMapper;
     private final CloudinaryService cloudinaryService;
     private final FollowService followService;
+    private final UserAvatarCacheService userAvatarCacheService;
 
     @Override
     public UserProfileResponse getUserProfileById(String targetUserId) {
@@ -94,6 +95,12 @@ public class UserService implements IUserService {
         }
 
         User updatedUser = userRepository.save(user);
+
+        // Update avatar cache if image changed
+        if (updatedUser.getImageUrl() != null && !updatedUser.getImageUrl().equals(oldImageUrl)) {
+            userAvatarCacheService.updateAvatar(updatedUser.getId(), updatedUser.getImageUrl());
+        }
+
         log.info("User profile updated successfully for user ID: {}", updatedUser.getId());
         return modelMapper.map(updatedUser, UserProfileResponse.class);
     }

@@ -8,8 +8,10 @@ import org.springframework.data.mongodb.core.aggregation.*;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
 import share_app.tphucshareapp.dto.response.photo.PhotoResponse;
+import share_app.tphucshareapp.model.Follow;
 import share_app.tphucshareapp.model.Photo;
 import share_app.tphucshareapp.model.User;
+import share_app.tphucshareapp.repository.FollowRepository;
 import share_app.tphucshareapp.repository.PhotoRepository;
 import share_app.tphucshareapp.service.user.UserService;
 
@@ -27,6 +29,7 @@ public class ExploreService implements IExploreService {
     private final MongoTemplate mongoTemplate;
     private final PhotoConversionService photoConversionService;
     private final UserService userService;
+    private final FollowRepository followRepository;
 
     @Override
     public Page<PhotoResponse> getExploreFeed(String userId, int page, int size) {
@@ -37,9 +40,10 @@ public class ExploreService implements IExploreService {
         // Get user's following list to exclude from explore
         List<String> excludeUserIds = new ArrayList<>();
         excludeUserIds.add(userId); // Exclude own photos
-        if (currentUser.getFollowingIds() != null) {
-            excludeUserIds.addAll(currentUser.getFollowingIds());
-        }
+        List<String> followingUserIds = followRepository.findByFollowerId(userId).stream()
+                .map(Follow::getFollowingId)
+                .toList();
+        excludeUserIds.addAll(followingUserIds);
 
         // Use MongoDB aggregation to get trending photos from non-followed users
         Pageable pageable = PageRequest.of(page, size);

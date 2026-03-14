@@ -49,6 +49,5 @@ public class Notification {
     @Builder
     public static class EmbeddedActor {
         private String username;
-        private String userImageUrl;
     }
 }

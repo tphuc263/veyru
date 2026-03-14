@@ -16,7 +16,6 @@ import share_app.tphucshareapp.model.User;
 import share_app.tphucshareapp.repository.UserRepository;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -96,7 +95,6 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
         user.setPhotoCount(0);
         user.setFollowerCount(0);
         user.setFollowingCount(0);
-        user.setFollowingIds(new ArrayList<>());
 
         return userRepository.save(user);
     }

@@ -16,6 +16,7 @@ import share_app.tphucshareapp.event.NotificationEvent;
 import share_app.tphucshareapp.model.Notification;
 import share_app.tphucshareapp.model.User;
 import share_app.tphucshareapp.repository.NotificationRepository;
+import share_app.tphucshareapp.service.user.UserAvatarCacheService;
 
 import java.time.Instant;
 import java.util.List;
@@ -24,10 +25,11 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class NotificationService implements INotificationService {
-    
+
     private final NotificationRepository notificationRepository;
     private final RabbitTemplate rabbitTemplate;
     private final SocketIOServer socketIOServer;
+    private final UserAvatarCacheService userAvatarCacheService;
 
     @Override
     public void sendLikePhotoNotification(String photoOwnerId, User actor, String photoId, String thumbnailUrl) {
@@ -37,7 +39,6 @@ public class NotificationService implements INotificationService {
                 .recipientId(photoOwnerId)
                 .actorId(actor.getId())
                 .actorUsername(actor.getUsername())
-                .actorImageUrl(actor.getImageUrl())
                 .type(NotificationType.LIKE_PHOTO)
                 .photoId(photoId)
                 .message(actor.getUsername() + " đã thích ảnh của bạn")
@@ -56,7 +57,6 @@ public class NotificationService implements INotificationService {
                 .recipientId(photoOwnerId)
                 .actorId(actor.getId())
                 .actorUsername(actor.getUsername())
-                .actorImageUrl(actor.getImageUrl())
                 .type(NotificationType.COMMENT_PHOTO)
                 .photoId(photoId)
                 .commentId(commentId)
@@ -76,7 +76,6 @@ public class NotificationService implements INotificationService {
                 .recipientId(commentOwnerId)
                 .actorId(actor.getId())
                 .actorUsername(actor.getUsername())
-                .actorImageUrl(actor.getImageUrl())
                 .type(NotificationType.LIKE_COMMENT)
                 .photoId(photoId)
                 .commentId(commentId)
@@ -95,7 +94,6 @@ public class NotificationService implements INotificationService {
                 .recipientId(parentCommentOwnerId)
                 .actorId(actor.getId())
                 .actorUsername(actor.getUsername())
-                .actorImageUrl(actor.getImageUrl())
                 .type(NotificationType.REPLY_COMMENT)
                 .photoId(photoId)
                 .commentId(commentId)
@@ -115,7 +113,6 @@ public class NotificationService implements INotificationService {
                 .recipientId(mentionedUserId)
                 .actorId(actor.getId())
                 .actorUsername(actor.getUsername())
-                .actorImageUrl(actor.getImageUrl())
                 .type(NotificationType.MENTION_IN_COMMENT)
                 .photoId(photoId)
                 .commentId(commentId)
@@ -135,7 +132,6 @@ public class NotificationService implements INotificationService {
                 .recipientId(taggedUserId)
                 .actorId(actor.getId())
                 .actorUsername(actor.getUsername())
-                .actorImageUrl(actor.getImageUrl())
                 .type(NotificationType.TAG_IN_PHOTO)
                 .photoId(photoId)
                 .message(actor.getUsername() + " đã gắn thẻ bạn trong một ảnh")
@@ -154,7 +150,6 @@ public class NotificationService implements INotificationService {
                 .recipientId(followedUserId)
                 .actorId(actor.getId())
                 .actorUsername(actor.getUsername())
-                .actorImageUrl(actor.getImageUrl())
                 .type(NotificationType.NEW_FOLLOWER)
                 .message(actor.getUsername() + " đã bắt đầu theo dõi bạn")
                 .createdAt(Instant.now())
@@ -232,7 +227,6 @@ public class NotificationService implements INotificationService {
                 .createdAt(event.getCreatedAt())
                 .actor(Notification.EmbeddedActor.builder()
                         .username(event.getActorUsername())
-                        .userImageUrl(event.getActorImageUrl())
                         .build())
                 .thumbnailUrl(event.getThumbnailUrl())
                 .build();
@@ -263,7 +257,7 @@ public class NotificationService implements INotificationService {
                 .createdAt(notification.getCreatedAt())
                 .actorId(notification.getActorId())
                 .actorUsername(notification.getActor() != null ? notification.getActor().getUsername() : null)
-                .actorImageUrl(notification.getActor() != null ? notification.getActor().getUserImageUrl() : null)
+                .actorImageUrl(userAvatarCacheService.getAvatar(notification.getActorId()))
                 .photoId(notification.getPhotoId())
                 .commentId(notification.getCommentId())
                 .thumbnailUrl(notification.getThumbnailUrl())

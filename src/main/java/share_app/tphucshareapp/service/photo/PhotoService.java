@@ -29,7 +29,7 @@
     import share_app.tphucshareapp.repository.LikeRepository;
     import share_app.tphucshareapp.repository.PhotoRepository;
     import share_app.tphucshareapp.repository.ShareRepository;
-    import share_app.tphucshareapp.service.tag.TagService;
+    import share_app.tphucshareapp.service.user.UserAvatarCacheService;
     import share_app.tphucshareapp.service.user.UserService;
 
     import java.time.Instant;
@@ -49,10 +49,10 @@
         private final FavoriteRepository favoriteRepository;
         private final CommentRepository commentRepository;
         private final ShareRepository shareRepository;
-        private final TagService tagService;
         private final PhotoConversionService photoConversionService;
         private final ApplicationEventPublisher eventPublisher;
         private final MongoTemplate mongoTemplate;
+        private final UserAvatarCacheService userAvatarCacheService;
 
         @Override
         public PhotoResponse createPhoto(CreatePhotoRequest request) {
@@ -67,7 +67,6 @@
             EmbeddedUser embeddedUser = new EmbeddedUser();
             embeddedUser.setUserId(currentUser.getId());
             embeddedUser.setUsername(currentUser.getUsername());
-            embeddedUser.setUserImageUrl(currentUser.getImageUrl());
 
             Photo photo = new Photo();
             photo.setUser(embeddedUser);
@@ -83,7 +82,6 @@
                         .distinct()
                         .toList();
                 photo.setTags(tagNames);
-                tagService.createOrGetTags(tagNames);
             }
 
             Photo savedPhoto = photoRepository.save(photo);
@@ -200,7 +198,7 @@
             PhotoDetailResponse response = modelMapper.map(photo, PhotoDetailResponse.class);
             if (photo.getUser() != null) {
                 response.setUsername(photo.getUser().getUsername());
-                response.setUserImageUrl(photo.getUser().getUserImageUrl());
+                response.setUserImageUrl(userAvatarCacheService.getAvatar(photo.getUser().getUserId()));
             }
             response.setLikeCount((int) photo.getLikeCount());
             response.setCommentCount((int) photo.getCommentCount());
@@ -231,7 +229,7 @@
                 User user = usersMap.get(like.getUserId());
                 if (user != null) {
                     res.setUsername(user.getUsername());
-                    res.setUserImageUrl(user.getImageUrl());
+                    res.setUserImageUrl(userAvatarCacheService.getAvatar(user.getId()));
                 }
                 return res;
             }).toList();
@@ -243,7 +241,7 @@
                 CommentResponse res = modelMapper.map(comment, CommentResponse.class);
                 if (comment.getUser() != null) {
                     res.setUsername(comment.getUser().getUsername());
-                    res.setUserImageUrl(comment.getUser().getUserImageUrl());
+                    res.setUserImageUrl(userAvatarCacheService.getAvatar(comment.getUser().getUserId()));
                 }
                 return res;
             }).toList();

@@ -30,12 +30,25 @@ public class Photo {
     private long commentCount;
     private long shareCount;
 
+    private List<EmbeddedUserTag> userTags;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     public static class EmbeddedUser {
         private String userId;
         private String username;
-        private String userImageUrl;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class EmbeddedUserTag {
+        private String taggedUserId;
+        private String taggedByUserId;
+        private String username;
+        private Double positionX;
+        private Double positionY;
+        private Instant createdAt;
     }
 }

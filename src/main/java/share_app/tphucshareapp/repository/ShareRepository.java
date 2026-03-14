@@ -17,5 +17,7 @@ public interface ShareRepository extends MongoRepository<Share, String> {
 
     List<Share> findByPhotoIdOrderByCreatedAtDesc(String photoId);
 
+    List<Share> findByUserIdInOrderByCreatedAtDesc(List<String> userIds);
+
     void deleteAllByPhotoId(String photoId);
 }

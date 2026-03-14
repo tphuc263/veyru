@@ -1,12 +1,14 @@
 package share_app.tphucshareapp.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import share_app.tphucshareapp.dto.request.share.SharePhotoRequest;
 import share_app.tphucshareapp.dto.response.ApiResponse;
 import share_app.tphucshareapp.dto.response.photo.PhotoResponse;
 import share_app.tphucshareapp.dto.response.share.ShareResponse;
+import share_app.tphucshareapp.dto.response.share.ShareWithPhotoResponse;
 import share_app.tphucshareapp.service.share.ShareService;
 
 import java.util.List;
@@ -48,5 +50,15 @@ public class ShareController {
     public ResponseEntity<ApiResponse<Boolean>> hasShared(@PathVariable String photoId) {
         boolean shared = shareService.hasShared(photoId);
         return ResponseEntity.ok(ApiResponse.success(shared, "Share status retrieved"));
+    }
+
+    // Get shares by user ID (for profile page)
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<ApiResponse<Page<ShareWithPhotoResponse>>> getUserShares(
+            @PathVariable String userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Page<ShareWithPhotoResponse> shares = shareService.getSharesByUserId(userId, page, size);
+        return ResponseEntity.ok(ApiResponse.success(shares, "User shares retrieved successfully"));
     }
 }
