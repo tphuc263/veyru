@@ -103,18 +103,6 @@ export interface ValidationResult {
 }
 
 // ==================== AI Types ====================
-export interface CaptionSuggestionRequest {
-  imageDescription?: string;
-  tags?: string[];
-  mood?: string;
-  language?: string;
-}
-
-export interface CaptionSuggestionResponse {
-  captions: string[];
-  suggestedTags: string[];
-}
-
 export interface EngagementAnalysisRequest {
   recentPostCount?: number;
 }
@@ -147,6 +135,22 @@ export interface TimingSlot {
 export interface PostTimingSuggestionResponse {
   bestTimes: TimingSlot[];
   aiSummary: string;
+}
+
+export interface ImageAnalysisRequest {
+  imageBase64: string;
+  mimeType?: string;
+  userId?: string;
+}
+
+export interface ImageAnalysisResponse {
+  imageDescription: string;
+  sceneType: string;
+  mood: string;
+  colors: string[];
+  objects: string[];
+  suggestedTags: string[];
+  captionSuggestions: string[];
 }
 
 // ==================== Recommendation Types ====================

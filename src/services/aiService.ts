@@ -1,23 +1,29 @@
 import api from '../config/ApiConfig';
 import {
-    CaptionSuggestionRequest,
-    CaptionSuggestionResponse,
     EngagementAnalysisRequest,
     EngagementAnalysisResponse,
-    PostTimingSuggestionResponse
+    PostTimingSuggestionResponse,
+    ImageAnalysisRequest,
+    ImageAnalysisResponse
 } from '../types/api';
-
-export const suggestCaptions = async (request: CaptionSuggestionRequest): Promise<CaptionSuggestionResponse> => {
-    const response = await api.post('/ai/suggest-caption', request);
-    return (response.data ?? response) as CaptionSuggestionResponse;
-};
 
 export const analyzeEngagement = async (request?: EngagementAnalysisRequest): Promise<EngagementAnalysisResponse> => {
     const response = await api.post('/ai/analyze-engagement', request || {});
-    return response.data as EngagementAnalysisResponse;
+    return response as EngagementAnalysisResponse;
 };
 
 export const suggestPostTiming = async (): Promise<PostTimingSuggestionResponse> => {
     const response = await api.get('/ai/suggest-timing');
-    return response.data as PostTimingSuggestionResponse;
+    return response as PostTimingSuggestionResponse;
+};
+
+export const analyzeImage = async (request: ImageAnalysisRequest): Promise<ImageAnalysisResponse> => {
+    const response = await api.post('/ai/analyze-image', request);
+    return response as ImageAnalysisResponse;
+};
+
+// Get trending hashtags
+export const getTrendingHashtags = async (limit: number = 10): Promise<string[]> => {
+    const response = await api.get(`/tags/trending?limit=${limit}`);
+    return response as string[];
 };
