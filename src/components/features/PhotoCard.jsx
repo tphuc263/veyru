@@ -65,7 +65,7 @@ const PhotoCard = ({
 
             <div className="photo-card-actions">
                 <div className="action-buttons-left">
-                    <button 
+                    <button
                         className={`action-btn ${isLiked ? 'liked' : ''}`}
                         onClick={handleLike}
                         disabled={isProcessing}
@@ -75,7 +75,8 @@ const PhotoCard = ({
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                         </svg>
                     </button>
-                    <button 
+                    <span className="likes-count-inline">{likesCount}</span>
+                    <button
                         className="action-btn"
                         onClick={onPhotoClick}
                     >
@@ -83,7 +84,8 @@ const PhotoCard = ({
                             <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
                         </svg>
                     </button>
-                    <button 
+                    <span className="comments-count-inline">{commentsCount}</span>
+                    <button
                         className="action-btn"
                         onClick={() => setShowShareModal(true)}
                         aria-label="Share"
@@ -94,7 +96,7 @@ const PhotoCard = ({
                         </svg>
                     </button>
                 </div>
-                <button 
+                <button
                     className={`action-btn save-btn ${isSaved ? 'saved' : ''}`}
                     onClick={handleSave}
                     disabled={isSaving}
@@ -107,21 +109,14 @@ const PhotoCard = ({
             </div>
 
             <div className="photo-card-likes">
-                <strong>{likesCount}</strong> lượt thích
                 {sharesCount > 0 && (
-                    <span className="photo-card-posts-inline"> · <strong>{sharesCount}</strong> lượt chia sẻ</span>
+                    <span className="photo-card-posts-inline"><strong>{sharesCount}</strong> lượt chia sẻ</span>
                 )}
             </div>
 
             <div className="photo-card-caption">
                 <span className="username">{username}</span> {caption}
             </div>
-
-            {commentsCount > 0 && (
-                <div className="photo-card-comments-count" onClick={onPhotoClick} style={{ cursor: 'pointer' }}>
-                    Xem tất cả {commentsCount} bình luận
-                </div>
-            )}
 
             {showShareModal && (
                 <ShareModal

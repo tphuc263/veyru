@@ -62,41 +62,65 @@
     border-color: #0095f6;
 }
 
-/* ===== AI Suggest Button ===== */
-.ai-suggest-btn {
+/* ===== AI Inline Button ===== */
+.ai-inline-row {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.ai-inline-btn {
+    display: inline-flex;
+    align-items: center;
     gap: 6px;
-    width: 100%;
-    padding: 10px 16px;
-    background: linear-gradient(135deg, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D, #F56040, #F77737, #FCAF45, #FFDC80);
-    background-size: 300% 300%;
-    animation: gradientShift 5s ease infinite;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: #fff;
     border: none;
-    border-radius: 8px;
+    border-radius: 20px;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
-    transition: opacity 0.2s ease, transform 0.15s ease;
+    transition: all 0.2s ease;
 }
 
-@keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+.ai-inline-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-.ai-suggest-btn:hover:not(:disabled) {
-    opacity: 0.9;
-    transform: scale(1.01);
-}
-
-.ai-suggest-btn:disabled {
+.ai-inline-btn:disabled {
     opacity: 0.7;
     cursor: not-allowed;
-    transform: none;
+}
+
+.ai-spark-icon {
+    font-size: 14px;
+}
+
+.ai-toggle-btn {
+    padding: 6px 12px;
+    background: #f0f0f0;
+    color: #666;
+    border: none;
+    border-radius: 16px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ai-toggle-btn:hover {
+    background: #e0e0e0;
+}
+
+/* ===== Suggestions Panel ===== */
+.ai-suggestions-panel {
+    margin-top: 12px;
+    padding: 12px;
+    background: #fafafa;
+    border-radius: 12px;
+    border: 1px solid #eee;
 }
 
 /* ===== Spinner Small ===== */

@@ -91,6 +91,15 @@
     height: 24px;
 }
 
+.likes-count-inline,
+.comments-count-inline {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ig-primary-text);
+    margin-right: 16px;
+    min-width: 20px;
+}
+
 .photo-card-likes {
     padding: 0 16px 8px;
     font-size: 14px;

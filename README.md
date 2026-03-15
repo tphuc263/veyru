@@ -1,14 +1,16 @@
-# 📸 Photo Share - Frontend
+# 📸 VibeLens - Frontend
 
 <div align="center">
 
+![Live Website](https://img.shields.io/badge/Live-https://vibelens.me-00D09C?style=for-the-badge)
 ![React](https://img.shields.io/badge/React-19.1-61DAFB?style=for-the-badge&logo=react&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-6.3-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8-010101?style=for-the-badge&logo=socket.io&logoColor=white)
 
-**A modern, Instagram-inspired photo sharing application**
+**A modern, Instagram-inspired photo sharing platform**
 
+[Live Demo](https://vibelens.me) •
 [Features](#-features) •
 [Getting Started](#-getting-started) •
 [Architecture](#-architecture) •
@@ -22,18 +24,20 @@
 
 ### Core Features
 - 📷 **Photo Sharing** - Upload, view, and interact with photos
-- ❤️ **Social Interactions** - Like, comment, and save posts
+- ❤️ **Social Interactions** - Like, comment, save posts, and share
 - 🔍 **Search & Explore** - Discover users and trending content
-- 💬 **Real-time Messaging** - Direct messages with WebSocket
-- 👤 **User Profiles** - View profiles, followers, and following
+- 💬 **Real-time Messaging** - Direct messages with WebSocket (Socket.IO)
+- 👤 **User Profiles** - View profiles, followers, and following lists
 - 🔐 **Authentication** - JWT-based auth with OAuth2 (Google)
+- 🏷️ **Tags** - Tag and discover photos by tags
 
 ### Technical Features
 - ⚡ **Optimistic Updates** - Instant UI feedback for likes/follows
 - ♾️ **Infinite Scroll** - Smooth pagination for feeds
 - 📱 **Responsive Design** - Mobile-first approach
-- 🔄 **Real-time Updates** - WebSocket for live notifications
+- 🔄 **Real-time Updates** - WebSocket for live notifications and messages
 - 🤖 **AI Integration** - Smart caption suggestions
+- 🎨 **Image Cropping** - Easy crop tool for profile/cover photos
 
 ---
 
@@ -287,12 +291,14 @@ useEffect(() => {
 | **Framework** | React 19.1 |
 | **Build Tool** | Vite 6.3 |
 | **Language** | TypeScript 5.7 |
-| **Routing** | React Router 7.6 |
+| **Routing** | React Router DOM 7.6 |
 | **HTTP Client** | Axios 1.9 |
 | **Real-time** | Socket.IO Client 4.8 |
 | **Icons** | Lucide React |
 | **Notifications** | React Toastify |
 | **Image Crop** | React Easy Crop |
+| **Emoji Picker** | Emoji Picker React |
+| **Testing Data** | Faker JS |
 
 ---
 
@@ -327,5 +333,7 @@ This project is private and for educational purposes.
 <div align="center">
 
 **Made with ❤️ using React + Vite**
+
+[Live Demo](https://vibelens.me) • [Backend API](https://vibelens.me/api-docs)
 
 </div>
