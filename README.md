@@ -1,15 +1,17 @@
-# 📸 Photo Share - Backend
+# 📸 VibeLens - Backend
 
 <div align="center">
 
+![Live Website](https://img.shields.io/badge/Live-https://vibelens.me-00D09C?style=for-the-badge)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.3-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white)
 ![Java](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
-![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis&logoColor=white)
+![RabbitMQ](https://img.shields.io/badge/RabbitMQ-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white)
 
-**RESTful API backend for the Photo Share application**
+**RESTful API backend for VibeLens - A modern photo sharing platform**
 
+[Live Demo](https://vibelens.me) •
 [Features](#-features) •
 [Getting Started](#-getting-started) •
 [API Documentation](#-api-documentation) •
@@ -22,21 +24,24 @@
 ## ✨ Features
 
 ### Core Features
-- 🔐 **Authentication** - JWT + OAuth2 (Google) authentication
-- 📷 **Photo Management** - Upload, CRUD operations with Cloudinary
+- 🔐 **Authentication** - JWT + OAuth2 (Google) authentication with role-based access
+- 📷 **Photo Management** - Upload, CRUD operations with Cloudinary integration
 - ❤️ **Social Features** - Likes, comments, shares, favorites
-- 👥 **User Relations** - Follow/unfollow system
-- 💬 **Real-time Messaging** - WebSocket with Socket.IO
-- 🔍 **Search** - User search with pagination
-- 📰 **Newsfeed** - Personalized feed algorithm
-- 🤖 **AI Integration** - Caption suggestions and recommendations
+- 👥 **User Relations** - Follow/unfollow system with follower/following counts
+- 💬 **Real-time Messaging** - WebSocket with Socket.IO for instant messaging
+- 🔍 **Search** - User and photo search with pagination
+- 📰 **Newsfeed** - Personalized feed algorithm based on followed users
+- 🤖 **AI Integration** - Caption suggestions and photo recommendations
+- 📊 **Analytics** - User activity tracking and post analytics
+- 🏷️ **Tags** - Photo tagging and discovery system
 
 ### Technical Features
-- 📊 **Caching** - Redis for performance optimization
-- 📈 **Monitoring** - Prometheus + Actuator metrics
-- 📧 **Email Service** - Password reset emails
-- 📝 **API Docs** - Swagger/OpenAPI documentation
-- 🐳 **Containerization** - Docker support
+- 📊 **Caching** - Redis for performance optimization and session management
+- 📈 **Monitoring** - Prometheus + Actuator metrics for observability
+- 🐰 **Message Queue** - RabbitMQ for async task processing (email, notifications)
+- 📧 **Email Service** - Password reset and notification emails via SMTP
+- 📝 **API Docs** - Swagger/OpenAPI interactive documentation
+- 🐳 **Containerization** - Full Docker and Docker Compose support
 
 ---
 
@@ -46,9 +51,10 @@
 
 - **Java** 21+
 - **Maven** 3.9+
-- **MongoDB** 6.0+
+- **MongoDB** 7.0+
 - **Redis** 7.0+
-- **Docker** (optional)
+- **RabbitMQ** 3.13+ (optional, for async tasks)
+- **Docker** & **Docker Compose** (recommended)
 
 ### Installation
 
@@ -67,14 +73,21 @@ cp .env.example .env
 ./mvnw spring-boot:run
 ```
 
-#### Option 2: Docker Compose
+#### Option 2: Docker Compose (Recommended)
 
 ```bash
-# Start all services
-docker-compose up -d
+# Start all services (MongoDB, Redis, RabbitMQ, Backend)
+docker-compose -f docker-compose.yml up -d
 
 # View logs
 docker-compose logs -f app
+```
+
+#### Option 3: Production Docker Compose
+
+```bash
+# Full production stack with frontend, backend, and infrastructure
+docker-compose -f ../docker-compose.production.yml up -d
 ```
 
 ### Environment Variables
@@ -82,14 +95,27 @@ docker-compose logs -f app
 Create a `.env` file in the root directory:
 
 ```env
+# Application
+APP_PORT=8080
+APP_URL=http://localhost:8080
+
 # MongoDB
 MONGO_HOST=localhost
 MONGO_PORT=27017
-MONGO_DATABASE=share_app_database
+MONGO_DATABASE=vibelens
+MONGO_USERNAME=admin
+MONGO_PASSWORD=your-password
 
 # Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
+REDIS_PASSWORD=your-password
+
+# RabbitMQ (Optional - for async tasks)
+RABBITMQ_HOST=localhost
+RABBITMQ_PORT=5672
+RABBITMQ_USERNAME=guest
+RABBITMQ_PASSWORD=guest
 
 # JWT
 JWT_SECRET=your-secret-key
@@ -112,9 +138,6 @@ MAIL_PASSWORD=your-app-password
 
 # Frontend URL (CORS)
 FRONTEND_URL=http://localhost:5173
-
-# AI Service (Optional)
-AI_SERVICE_URL=http://localhost:5000
 ```
 
 ---
@@ -430,9 +453,10 @@ src/main/java/share_app/tphucshareapp/
 |----------|------------|
 | **Framework** | Spring Boot 3.4.3 |
 | **Language** | Java 21 |
-| **Database** | MongoDB |
-| **Cache** | Redis |
-| **Authentication** | Spring Security + JWT + OAuth2 |
+| **Database** | MongoDB 7.0 |
+| **Cache** | Redis 7.x |
+| **Message Queue** | RabbitMQ 3.13 |
+| **Authentication** | Spring Security + JWT + OAuth2 (Google) |
 | **File Storage** | Cloudinary |
 | **Real-time** | Netty Socket.IO |
 | **Documentation** | SpringDoc OpenAPI |
@@ -469,20 +493,33 @@ GET /actuator/prometheus
 
 ## 🐳 Docker
 
-### Docker Compose Services
+### Development Stack (docker-compose.yml)
 
 ```yaml
 services:
   app:         # Spring Boot application
   mongodb:     # MongoDB database
   redis:       # Redis cache
+  rabbitmq:    # RabbitMQ message broker
 ```
+
+### Production Stack (docker-compose.production.yml)
+
+Full production deployment including:
+- Frontend (Nginx)
+- Backend (Spring Boot)
+- MongoDB
+- Redis
+- RabbitMQ
 
 ### Commands
 
 ```bash
-# Build and start
+# Development
 docker-compose up -d --build
+
+# Production
+docker-compose -f ../docker-compose.production.yml up -d --build
 
 # View logs
 docker-compose logs -f
@@ -536,5 +573,7 @@ This project is private and for educational purposes.
 <div align="center">
 
 **Built with ❤️ using Spring Boot**
+
+[Live Demo](https://vibelens.me) • [API Docs](https://vibelens.me/api-docs)
 
 </div>
