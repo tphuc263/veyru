@@ -1,7 +1,6 @@
 package share_app.tphucshareapp.service.follow;
 
 import share_app.tphucshareapp.dto.response.follow.FollowResponse;
-import share_app.tphucshareapp.dto.response.follow.FollowStatsResponse;
 
 import java.util.List;
 

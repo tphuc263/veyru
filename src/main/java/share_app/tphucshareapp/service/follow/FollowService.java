@@ -1,7 +1,12 @@
 package share_app.tphucshareapp.service.follow;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -13,22 +18,18 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import share_app.tphucshareapp.dto.response.follow.FollowResponse;
-import share_app.tphucshareapp.dto.response.follow.FollowStatsResponse;
 import share_app.tphucshareapp.model.Follow;
 import share_app.tphucshareapp.model.User;
 import share_app.tphucshareapp.repository.FollowRepository;
 import share_app.tphucshareapp.repository.UserRepository;
 import share_app.tphucshareapp.security.userdetails.AppUserDetails;
+import share_app.tphucshareapp.service.graph.Neo4jGraphService;
 import share_app.tphucshareapp.service.notification.INotificationService;
 import share_app.tphucshareapp.service.user.UserAvatarCacheService;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +41,7 @@ public class FollowService implements IFollowService {
     private final MongoTemplate mongoTemplate;
     private final INotificationService notificationService;
     private final UserAvatarCacheService userAvatarCacheService;
+    private final Neo4jGraphService neo4jGraphService;
 
     @Override
     public void follow(String targetUserId) {
@@ -58,6 +60,25 @@ public class FollowService implements IFollowService {
         followRepository.save(follow);
         log.info("User {} followed user {}", currentUser.getId(), targetUserId);
 
+        // Sync to Neo4j graph
+        try {
+            neo4jGraphService.upsertUser(currentUser.getId(), currentUser.getUsername(),
+                    currentUser.getImageUrl(), currentUser.getFollowingCount(),
+                    currentUser.getPhotoCount(), currentUser.getBio());
+
+            User targetUser = userRepository.findById(targetUserId).orElse(null);
+            if (targetUser != null) {
+                neo4jGraphService.upsertUser(targetUser.getId(), targetUser.getUsername(),
+                        targetUser.getImageUrl(), targetUser.getFollowingCount(),
+                        targetUser.getPhotoCount(), targetUser.getBio());
+            }
+
+            neo4jGraphService.createFollowRelationship(currentUser.getId(), targetUserId);
+            log.debug("Synced follow relationship to Neo4j: {} -> {}", currentUser.getId(), targetUserId);
+        } catch (Exception e) {
+            log.warn("Failed to sync follow to Neo4j: {}", e.getMessage());
+        }
+
         // increase following count of person click follow
         Query followerQuery = new Query(Criteria.where("_id").is(currentUser.getId()));
         Update followerUpdate = new Update().inc("followingCount", 1);
@@ -67,18 +88,19 @@ public class FollowService implements IFollowService {
         Query followingQuery = new Query(Criteria.where("_id").is(targetUserId));
         Update followingUpdate = new Update().inc("followerCount", 1);
         mongoTemplate.updateFirst(followingQuery, followingUpdate, User.class);
-        
+
         // Send notification to the user being followed
         notificationService.sendNewFollowerNotification(targetUserId, currentUser);
 
         log.info("User {} followed user {}", currentUser.getId(), targetUserId);
 
-//        try {
-//            newsfeedService.generateNewsfeedCache(currentUser.getId());
-//            log.info("Regenerated newsfeed cache after follow for user: {}", currentUser.getId());
-//        } catch (Exception e) {
-//            log.error("Error regenerating newsfeed cache after follow", e);
-//        }
+        // try {
+        // newsfeedService.generateNewsfeedCache(currentUser.getId());
+        // log.info("Regenerated newsfeed cache after follow for user: {}",
+        // currentUser.getId());
+        // } catch (Exception e) {
+        // log.error("Error regenerating newsfeed cache after follow", e);
+        // }
     }
 
     @Override
@@ -101,14 +123,14 @@ public class FollowService implements IFollowService {
         Update followingUpdate = new Update().inc("followerCount", -1);
         mongoTemplate.updateFirst(followingQuery, followingUpdate, User.class);
 
-//        try {
-//            newsfeedService.generateNewsfeedCache(currentUser.getId());
-//            log.info("Regenerated newsfeed cache after unfollow for user: {}", currentUser.getId());
-//        } catch (Exception e) {
-//            log.error("Error regenerating newsfeed cache after unfollow", e);
-//        }
+        // try {
+        // newsfeedService.generateNewsfeedCache(currentUser.getId());
+        // log.info("Regenerated newsfeed cache after unfollow for user: {}",
+        // currentUser.getId());
+        // } catch (Exception e) {
+        // log.error("Error regenerating newsfeed cache after unfollow", e);
+        // }
     }
-
 
     @Override
     public List<FollowResponse> getFollowers(String userId, int page, int size) {
@@ -206,7 +228,8 @@ public class FollowService implements IFollowService {
     private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof AppUserDetails userDetails)) {
+        if (authentication == null || !authentication.isAuthenticated()
+                || !(authentication.getPrincipal() instanceof AppUserDetails userDetails)) {
             throw new RuntimeException("User not authenticated properly");
         }
         return userRepository.findById(userDetails.getId())

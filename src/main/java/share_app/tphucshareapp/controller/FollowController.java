@@ -5,8 +5,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import share_app.tphucshareapp.dto.response.ApiResponse;
 import share_app.tphucshareapp.dto.response.follow.FollowResponse;
-import share_app.tphucshareapp.dto.response.follow.FollowStatsResponse;
-import share_app.tphucshareapp.service.follow.FollowService;
 import share_app.tphucshareapp.service.follow.IFollowService;
 
 import java.util.List;

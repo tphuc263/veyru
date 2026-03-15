@@ -8,7 +8,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.util.List;
-import org.bson.types.ObjectId;
 
 @Data
 @NoArgsConstructor

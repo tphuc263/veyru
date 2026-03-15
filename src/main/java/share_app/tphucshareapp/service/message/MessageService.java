@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import share_app.tphucshareapp.dto.response.message.ConversationResponse;
 import share_app.tphucshareapp.dto.response.message.MessageResponse;
@@ -20,7 +21,6 @@ import share_app.tphucshareapp.repository.ConversationRepository;
 import share_app.tphucshareapp.repository.MessageRepository;
 import share_app.tphucshareapp.repository.UserRepository;
 import share_app.tphucshareapp.security.userdetails.AppUserDetails;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.Instant;
 import java.util.ArrayList;

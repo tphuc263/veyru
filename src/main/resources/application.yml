@@ -19,6 +19,11 @@ spring:
           min-idle: 0
       repositories:
         enabled: false
+    neo4j:
+      uri: ${NEO4J_URI:bolt://localhost:7687}
+      authentication:
+        username: ${NEO4J_USERNAME:neo4j}
+        password: ${NEO4J_PASSWORD:password}
   servlet:
     multipart:
       enabled: true
@@ -74,7 +79,7 @@ cloudinary:
 auth:
   token:
     jwtSecret: ${JWT_SECRET}
-    accessExpirationInMils: 720000000
+    accessExpirationInMils: 3600000
 
 app:
   frontend:
@@ -84,9 +89,7 @@ app:
     failureRedirectUri: ${OAUTH2_FAILURE_REDIRECT_URI:http://localhost:5173/login?error=true}
 
 ai:
-  gemini:
-    api-key: ${GEMINI_API_KEY:}
-    model: ${GEMINI_MODEL:gemini-2.0-flash}
+  # Local AI services - no external API required
 
 newsfeed:
   cache:
