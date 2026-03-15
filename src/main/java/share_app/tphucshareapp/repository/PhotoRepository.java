@@ -8,7 +8,6 @@ import share_app.tphucshareapp.model.Photo;
 
 import java.time.Instant;
 import java.util.List;
-import org.bson.types.ObjectId;
 
 public interface PhotoRepository extends MongoRepository<Photo, String> {
     Page<Photo> findByUserUserIdOrderByCreatedAtDesc(String userId, Pageable pageable);

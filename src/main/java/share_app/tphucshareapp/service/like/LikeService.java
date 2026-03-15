@@ -1,13 +1,19 @@
 package share_app.tphucshareapp.service.like;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import share_app.tphucshareapp.dto.response.like.LikeResponse;
 import share_app.tphucshareapp.dto.response.photo.PhotoResponse;
 import share_app.tphucshareapp.model.Like;
@@ -16,15 +22,11 @@ import share_app.tphucshareapp.model.User;
 import share_app.tphucshareapp.repository.LikeRepository;
 import share_app.tphucshareapp.repository.PhotoRepository;
 import share_app.tphucshareapp.repository.UserRepository;
+import share_app.tphucshareapp.service.graph.Neo4jGraphService;
 import share_app.tphucshareapp.service.notification.INotificationService;
 import share_app.tphucshareapp.service.photo.PhotoConversionService;
 import share_app.tphucshareapp.service.user.UserAvatarCacheService;
 import share_app.tphucshareapp.service.user.UserService;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +41,7 @@ public class LikeService implements ILikeService {
     private final PhotoConversionService photoConversionService;
     private final INotificationService notificationService;
     private final UserAvatarCacheService userAvatarCacheService;
+    private final Neo4jGraphService neo4jGraphService;
 
     @Override
     public PhotoResponse toggleLike(String photoId) {
@@ -47,18 +50,25 @@ public class LikeService implements ILikeService {
                 .orElseThrow(() -> new RuntimeException("Photo not found with ID: " + photoId));
 
         boolean alreadyLiked = likeRepository.existsByPhotoIdAndUserId(photoId, currentUser.getId());
-        
+
         if (alreadyLiked) {
             // Unlike
             Like like = likeRepository.findByPhotoIdAndUserId(photoId, currentUser.getId())
                     .orElseThrow(() -> new RuntimeException("Like not found"));
             likeRepository.delete(like);
-            
+
             Query query = new Query(Criteria.where("_id").is(photoId));
             Update update = new Update().inc("likeCount", -1);
             mongoTemplate.updateFirst(query, update, Photo.class);
             photo.setLikeCount(Math.max(0, photo.getLikeCount() - 1));
-            
+
+            // Sync to Neo4j graph - remove like relationship
+            try {
+                neo4jGraphService.removeLikeRelationship(currentUser.getId(), photoId);
+            } catch (Exception e) {
+                log.warn("Failed to sync unlike to Neo4j: {}", e.getMessage());
+            }
+
             log.info("User {} unliked photo {}", currentUser.getId(), photoId);
         } else {
             // Like
@@ -67,25 +77,31 @@ public class LikeService implements ILikeService {
             like.setUserId(currentUser.getId());
             like.setCreatedAt(Instant.now());
             likeRepository.save(like);
-            
+
             Query query = new Query(Criteria.where("_id").is(photoId));
             Update update = new Update().inc("likeCount", 1);
             mongoTemplate.updateFirst(query, update, Photo.class);
             photo.setLikeCount(photo.getLikeCount() + 1);
-            
+
+            // Sync to Neo4j graph - create like relationship
+            try {
+                neo4jGraphService.createLikeRelationship(currentUser.getId(), photoId);
+            } catch (Exception e) {
+                log.warn("Failed to sync like to Neo4j: {}", e.getMessage());
+            }
+
             // Send notification to photo owner
             if (photo.getUser() != null) {
                 notificationService.sendLikePhotoNotification(
                         photo.getUser().getUserId(),
                         currentUser,
                         photoId,
-                        photo.getImageUrl()
-                );
+                        photo.getImageUrl());
             }
-            
+
             log.info("User {} liked photo {}", currentUser.getId(), photoId);
         }
-        
+
         // Return full updated photo state - Facebook/Instagram pattern
         return photoConversionService.convertToPhotoResponse(photo, currentUser);
     }
@@ -113,15 +129,21 @@ public class LikeService implements ILikeService {
         Query query = new Query(Criteria.where("_id").is(photoId));
         Update update = new Update().inc("likeCount", 1);
         mongoTemplate.updateFirst(query, update, Photo.class);
-        
+
+        // Sync to Neo4j graph - create like relationship
+        try {
+            neo4jGraphService.createLikeRelationship(currentUser.getId(), photoId);
+        } catch (Exception e) {
+            log.warn("Failed to sync like to Neo4j: {}", e.getMessage());
+        }
+
         // Send notification
         if (photo.getUser() != null) {
             notificationService.sendLikePhotoNotification(
                     photo.getUser().getUserId(),
                     currentUser,
                     photoId,
-                    photo.getImageUrl()
-            );
+                    photo.getImageUrl());
         }
 
         log.info("User {} liked photo {}", currentUser.getId(), photoId);
@@ -138,6 +160,13 @@ public class LikeService implements ILikeService {
         Query query = new Query(Criteria.where("_id").is(photoId));
         Update update = new Update().inc("likeCount", -1);
         mongoTemplate.updateFirst(query, update, Photo.class);
+
+        // Sync to Neo4j graph - remove like relationship
+        try {
+            neo4jGraphService.removeLikeRelationship(currentUser.getId(), photoId);
+        } catch (Exception e) {
+            log.warn("Failed to sync unlike to Neo4j: {}", e.getMessage());
+        }
 
         log.info("User {} unliked photo {}", currentUser.getId(), photoId);
     }

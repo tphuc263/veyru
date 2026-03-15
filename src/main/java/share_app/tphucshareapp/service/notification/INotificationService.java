@@ -1,7 +1,6 @@
 package share_app.tphucshareapp.service.notification;
 
 import share_app.tphucshareapp.dto.response.notification.NotificationResponse;
-import share_app.tphucshareapp.enums.NotificationType;
 import share_app.tphucshareapp.model.User;
 
 import java.util.List;

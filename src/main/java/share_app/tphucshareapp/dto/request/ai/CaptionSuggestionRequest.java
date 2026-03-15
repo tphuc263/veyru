@@ -12,4 +12,7 @@ public class CaptionSuggestionRequest {
     private List<String> tags;
     private String mood;
     private String language;
+    // Optional: nếu frontend muốn force một userId cụ thể
+    // Nếu null, backend sẽ lấy từ current logged-in user
+    private String userId;
 }

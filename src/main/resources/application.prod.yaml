@@ -81,7 +81,7 @@ cloudinary:
 auth:
   token:
     jwtSecret: ${JWT_SECRET}
-    accessExpirationInMils: 720000000
+    accessExpirationInMils: 3600000
 
 app:
   frontend:
@@ -91,9 +91,7 @@ app:
     failureRedirectUri: ${OAUTH2_FAILURE_REDIRECT_URI:http://localhost:5173/login?error=true}
 
 ai:
-  gemini:
-    api-key: ${GEMINI_API_KEY:}
-    model: ${GEMINI_MODEL:gemini-2.0-flash}
+  # Local AI services - no external API required
 
 newsfeed:
   cache:

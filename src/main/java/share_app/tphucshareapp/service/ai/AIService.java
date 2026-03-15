@@ -1,140 +1,115 @@
 package share_app.tphucshareapp.service.ai;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import share_app.tphucshareapp.dto.request.ai.CaptionSuggestionRequest;
-import share_app.tphucshareapp.dto.response.ai.CaptionSuggestionResponse;
-import share_app.tphucshareapp.dto.response.ai.EngagementAnalysisResponse;
-import share_app.tphucshareapp.dto.response.ai.PostTimingSuggestionResponse;
-import share_app.tphucshareapp.model.Like;
-import share_app.tphucshareapp.model.Photo;
-import share_app.tphucshareapp.repository.LikeRepository;
-import share_app.tphucshareapp.repository.PhotoRepository;
-
-import java.time.*;
+import java.time.DayOfWeek;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.TextStyle;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.stereotype.Service;
+
+import lombok.extern.slf4j.Slf4j;
+import share_app.tphucshareapp.dto.request.ai.ImageAnalysisRequest;
+import share_app.tphucshareapp.dto.response.ai.EngagementAnalysisResponse;
+import share_app.tphucshareapp.dto.response.ai.ImageAnalysisResponse;
+import share_app.tphucshareapp.dto.response.ai.PostTimingSuggestionResponse;
+import share_app.tphucshareapp.model.Photo;
+import share_app.tphucshareapp.repository.PhotoRepository;
+
+/**
+ * Local AI service using algorithmic approaches instead of external APIs.
+ */
 @Service
 @Slf4j
 public class AIService implements IAIService {
 
-    @Value("${ai.gemini.api-key:}")
-    private String geminiApiKey;
-
-    @Value("${ai.gemini.model:gemini-2.0-flash}")
-    private String geminiModel;
-
     private final PhotoRepository photoRepository;
-    private final LikeRepository likeRepository;
-    private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
 
-    public AIService(PhotoRepository photoRepository,
-                     LikeRepository likeRepository,
-                     ObjectMapper objectMapper) {
+    private static final Map<String, List<String>> SCENE_TAGS = Map.of(
+            "nature", List.of("nature", "naturelovers", "beautiful", "landscape", "outdoor", "adventure", "travel"),
+            "food", List.of("food", "foodie", "foodporn", "yummy", "delicious", "instafood", "homemade"),
+            "portrait", List.of("portrait", "selfie", "model", "beauty", "style", "fashion", "ootd"),
+            "city", List.of("city", "urban", "street", "citylife", "architecture", "building", "travel"),
+            "beach", List.of("beach", "ocean", "summer", "vacation", "sun", "sea", "travel"),
+            "interior", List.of("interior", "design", "home", "decor", "architecture", "room", "living"),
+            "general", List.of("photo", "instagood", "photooftheday", "picoftheday", "instadaily"));
+
+    private static final List<String> CAPTION_TEMPLATES = List.of(
+            "Beautiful moment ✨", "Living my best life 💫", "Making memories 📸",
+            "Just being me 🌟", "Good vibes only ☀️", "Chasing dreams ✨",
+            "Life is beautiful 🌈", "Creating memories 🎉");
+
+    public AIService(PhotoRepository photoRepository) {
         this.photoRepository = photoRepository;
-        this.likeRepository = likeRepository;
-        this.restTemplate = new RestTemplate();
-        this.objectMapper = objectMapper;
     }
 
-    // ==================== CAPTION SUGGESTION ====================
-    @Override
-    public CaptionSuggestionResponse suggestCaptions(CaptionSuggestionRequest request) {
-        log.info("Generating caption suggestions for: {}", request.getImageDescription());
+    // ==================== USER CONTEXT ====================
+    private static class UserContext {
+        private boolean hasHistory;
+        private double avgCaptionLength;
+        private List<String> topTags = new ArrayList<>();
 
-        String prompt = buildCaptionPrompt(request);
-        String aiResponse = callGeminiApi(prompt);
-
-        if (aiResponse == null || aiResponse.isBlank()) {
-            return fallbackCaptionResponse(request);
-        }
-
-        return parseCaptionResponse(aiResponse, request);
+        public boolean isHasHistory() { return hasHistory; }
+        public void setHasHistory(boolean hasHistory) { this.hasHistory = hasHistory; }
+        public double getAvgCaptionLength() { return avgCaptionLength; }
+        public void setAvgCaptionLength(double avgCaptionLength) { this.avgCaptionLength = avgCaptionLength; }
+        public List<String> getTopTags() { return topTags; }
+        public void setTopTags(List<String> topTags) { this.topTags = topTags; }
     }
 
-    private String buildCaptionPrompt(CaptionSuggestionRequest request) {
-        String lang = request.getLanguage() != null ? request.getLanguage() : "vi";
-        String langInstruction = lang.equals("vi")
-                ? "Respond in Vietnamese."
-                : "Respond in English.";
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("You are a social media expert for a photo sharing app like Instagram. ");
-        sb.append(langInstruction).append("\n\n");
-        sb.append("Generate exactly 3 creative, engaging captions for a photo post.\n");
-
-        if (request.getImageDescription() != null && !request.getImageDescription().isBlank()) {
-            sb.append("Photo description: ").append(request.getImageDescription()).append("\n");
-        }
-        if (request.getTags() != null && !request.getTags().isEmpty()) {
-            sb.append("Tags: ").append(String.join(", ", request.getTags())).append("\n");
-        }
-        if (request.getMood() != null && !request.getMood().isBlank()) {
-            sb.append("Mood/Style: ").append(request.getMood()).append("\n");
+    private UserContext buildUserContext(String userId) {
+        UserContext context = new UserContext();
+        if (userId == null || userId.isBlank()) {
+            context.setHasHistory(false);
+            return context;
         }
 
-        sb.append("\nRules:\n");
-        sb.append("- Each caption should be 1-3 sentences\n");
-        sb.append("- Include relevant emojis\n");
-        sb.append("- Make them engaging and suitable for social media\n");
-        sb.append("- Also suggest 5 relevant hashtags\n\n");
-        sb.append("Format your response EXACTLY like this (no extra text):\n");
-        sb.append("CAPTION_1: [first caption]\n");
-        sb.append("CAPTION_2: [second caption]\n");
-        sb.append("CAPTION_3: [third caption]\n");
-        sb.append("TAGS: [tag1, tag2, tag3, tag4, tag5]");
+        try {
+            List<Photo> userPhotos = photoRepository.findByUser_UserIdOrderByCreatedAtDesc(userId);
+            List<Photo> recentPhotos = userPhotos.stream().limit(10).toList();
 
-        return sb.toString();
-    }
-
-    private CaptionSuggestionResponse parseCaptionResponse(String aiResponse, CaptionSuggestionRequest request) {
-        List<String> captions = new ArrayList<>();
-        List<String> suggestedTags = new ArrayList<>();
-
-        String[] lines = aiResponse.split("\n");
-        for (String line : lines) {
-            line = line.trim();
-            if (line.startsWith("CAPTION_1:") || line.startsWith("CAPTION_2:") || line.startsWith("CAPTION_3:")) {
-                String caption = line.substring(line.indexOf(":") + 1).trim();
-                if (!caption.isBlank()) {
-                    captions.add(caption);
-                }
-            } else if (line.startsWith("TAGS:")) {
-                String tagsStr = line.substring(5).trim()
-                        .replace("[", "").replace("]", "");
-                suggestedTags = Arrays.stream(tagsStr.split(","))
-                        .map(String::trim)
-                        .filter(t -> !t.isBlank())
-                        .map(t -> t.startsWith("#") ? t.substring(1) : t)
-                        .collect(Collectors.toList());
+            if (recentPhotos.isEmpty()) {
+                context.setHasHistory(false);
+                return context;
             }
+
+            context.setHasHistory(true);
+
+            List<String> recentCaptions = recentPhotos.stream()
+                    .map(Photo::getCaption)
+                    .filter(c -> c != null && !c.isBlank())
+                    .toList();
+
+            if (!recentCaptions.isEmpty()) {
+                double avgLength = recentCaptions.stream()
+                        .mapToInt(String::length)
+                        .average().orElse(0);
+                context.setAvgCaptionLength(avgLength);
+            }
+
+            List<String> topTags = recentPhotos.stream()
+                    .filter(p -> p.getTags() != null)
+                    .flatMap(p -> p.getTags().stream())
+                    .collect(Collectors.groupingBy(t -> t, Collectors.counting()))
+                    .entrySet().stream()
+                    .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                    .limit(5)
+                    .map(Map.Entry::getKey)
+                    .toList();
+            context.setTopTags(topTags);
+
+        } catch (Exception e) {
+            log.warn("Failed to build user context: {}", e.getMessage());
+            context.setHasHistory(false);
         }
 
-        if (captions.isEmpty()) {
-            return fallbackCaptionResponse(request);
-        }
-
-        return new CaptionSuggestionResponse(captions, suggestedTags);
-    }
-
-    private CaptionSuggestionResponse fallbackCaptionResponse(CaptionSuggestionRequest request) {
-        List<String> captions = new ArrayList<>();
-        String desc = request.getImageDescription() != null ? request.getImageDescription() : "photo";
-
-        captions.add("✨ " + desc + " vibes ✨");
-        captions.add("Khoảnh khắc đáng nhớ 📸 " + desc);
-        captions.add("Một ngày tuyệt vời! 🌟 #" + desc.replace(" ", ""));
-
-        List<String> tags = request.getTags() != null ? request.getTags() : List.of("photography", "photooftheday");
-        return new CaptionSuggestionResponse(captions, tags);
+        return context;
     }
 
     // ==================== ENGAGEMENT ANALYSIS ====================
@@ -144,8 +119,6 @@ public class AIService implements IAIService {
 
         int count = recentPostCount > 0 ? Math.min(recentPostCount, 50) : 20;
         List<Photo> photos = photoRepository.findByUser_UserIdOrderByCreatedAtDesc(userId);
-
-        // Take only recent posts
         List<Photo> recentPhotos = photos.stream().limit(count).toList();
 
         if (recentPhotos.isEmpty()) {
@@ -153,7 +126,6 @@ public class AIService implements IAIService {
                     List.of(), "Chưa có bài đăng nào để phân tích.");
         }
 
-        // Calculate metrics
         double avgLikes = recentPhotos.stream().mapToLong(Photo::getLikeCount).average().orElse(0);
         double avgComments = recentPhotos.stream().mapToLong(Photo::getCommentCount).average().orElse(0);
         double totalEngagement = recentPhotos.stream()
@@ -161,16 +133,12 @@ public class AIService implements IAIService {
                 .sum();
         double engagementRate = recentPhotos.size() > 0 ? totalEngagement / recentPhotos.size() : 0;
 
-        // Determine trend
         String trend = calculateTrend(recentPhotos);
 
-        // Top posts by engagement
         List<EngagementAnalysisResponse.PostInsight> topPosts = recentPhotos.stream()
-                .sorted((a, b) -> {
-                    double scoreA = a.getLikeCount() + a.getCommentCount() * 2.0;
-                    double scoreB = b.getLikeCount() + b.getCommentCount() * 2.0;
-                    return Double.compare(scoreB, scoreA);
-                })
+                .sorted((a, b) -> Double.compare(
+                        b.getLikeCount() + b.getCommentCount() * 2.0,
+                        a.getLikeCount() + a.getCommentCount() * 2.0))
                 .limit(5)
                 .map(p -> new EngagementAnalysisResponse.PostInsight(
                         p.getId(),
@@ -178,12 +146,10 @@ public class AIService implements IAIService {
                         p.getImageUrl(),
                         p.getLikeCount(),
                         p.getCommentCount(),
-                        p.getLikeCount() + p.getCommentCount() * 2.0
-                ))
+                        p.getLikeCount() + p.getCommentCount() * 2.0))
                 .toList();
 
-        // Build AI summary
-        String aiSummary = buildEngagementSummary(avgLikes, avgComments, engagementRate, trend, recentPhotos, topPosts);
+        String summary = buildEngagementSummary(avgLikes, avgComments, engagementRate, trend, recentPhotos);
 
         return new EngagementAnalysisResponse(
                 Math.round(avgLikes * 100.0) / 100.0,
@@ -191,15 +157,13 @@ public class AIService implements IAIService {
                 Math.round(engagementRate * 100.0) / 100.0,
                 trend,
                 topPosts,
-                aiSummary
-        );
+                summary);
     }
 
     private String calculateTrend(List<Photo> photos) {
         if (photos.size() < 4) return "insufficient_data";
 
         int half = photos.size() / 2;
-        // Photos are ordered most recent first
         List<Photo> recentHalf = photos.subList(0, half);
         List<Photo> olderHalf = photos.subList(half, photos.size());
 
@@ -218,54 +182,13 @@ public class AIService implements IAIService {
         return "stable";
     }
 
-    private String buildEngagementSummary(double avgLikes, double avgComments, double engagementRate,
-                                          String trend, List<Photo> photos,
-                                          List<EngagementAnalysisResponse.PostInsight> topPosts) {
-        // Try AI-generated summary first
-        String prompt = buildEngagementAnalysisPrompt(avgLikes, avgComments, engagementRate, trend, photos, topPosts);
-        String aiResponse = callGeminiApi(prompt);
-
-        if (aiResponse != null && !aiResponse.isBlank()) {
-            return aiResponse.trim();
-        }
-
-        // Fallback to template-based summary
+    private String buildEngagementSummary(double avgLikes, double avgComments,
+            double engagementRate, String trend, List<Photo> photos) {
         StringBuilder summary = new StringBuilder();
         summary.append(String.format("📊 Trong %d bài đăng gần đây:\n", photos.size()));
         summary.append(String.format("• Trung bình %.1f lượt thích và %.1f bình luận mỗi bài\n", avgLikes, avgComments));
         summary.append(String.format("• Điểm tương tác trung bình: %.1f\n", engagementRate));
 
-        switch (trend) {
-            case "growing" -> summary.append("• 📈 Xu hướng: Tăng trưởng tốt! Tiếp tục phát huy nhé!");
-            case "declining" -> summary.append("• 📉 Xu hướng: Đang giảm. Hãy thử thay đổi nội dung hoặc thời gian đăng bài.");
-            case "stable" -> summary.append("• ➡️ Xu hướng: Ổn định. Có thể thử nội dung mới để tăng tương tác.");
-            default -> summary.append("• Cần thêm dữ liệu để phân tích xu hướng.");
-        }
-
-        return summary.toString();
-    }
-
-    private String buildEngagementAnalysisPrompt(double avgLikes, double avgComments, double engagementRate,
-                                                  String trend, List<Photo> photos,
-                                                  List<EngagementAnalysisResponse.PostInsight> topPosts) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("You are a social media analytics expert. Respond in Vietnamese. ");
-        sb.append("Analyze this Instagram-like account's engagement data and give actionable advice.\n\n");
-        sb.append(String.format("Total posts analyzed: %d\n", photos.size()));
-        sb.append(String.format("Average likes per post: %.1f\n", avgLikes));
-        sb.append(String.format("Average comments per post: %.1f\n", avgComments));
-        sb.append(String.format("Engagement rate: %.1f\n", engagementRate));
-        sb.append(String.format("Trend: %s\n\n", trend));
-
-        if (!topPosts.isEmpty()) {
-            sb.append("Top performing posts:\n");
-            for (var post : topPosts) {
-                sb.append(String.format("- Caption: \"%s\" | Likes: %d | Comments: %d\n",
-                        post.getCaption(), post.getLikeCount(), post.getCommentCount()));
-            }
-        }
-
-        // Include tag analysis
         Map<String, Long> tagFrequency = new HashMap<>();
         for (Photo p : photos) {
             if (p.getTags() != null) {
@@ -274,26 +197,29 @@ public class AIService implements IAIService {
                 }
             }
         }
+
         if (!tagFrequency.isEmpty()) {
-            sb.append("\nMost used tags: ");
-            sb.append(tagFrequency.entrySet().stream()
+            summary.append("\n🏷️ Tags phổ biến nhất: ");
+            summary.append(tagFrequency.entrySet().stream()
                     .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-                    .limit(10)
-                    .map(e -> "#" + e.getKey() + " (" + e.getValue() + ")")
+                    .limit(5)
+                    .map(e -> "#" + e.getKey())
                     .collect(Collectors.joining(", ")));
-            sb.append("\n");
+            summary.append("\n");
         }
 
-        sb.append("\nProvide a concise analysis (3-5 bullet points) with:\n");
-        sb.append("1. Overall performance assessment\n");
-        sb.append("2. What type of content performs best\n");
-        sb.append("3. Specific, actionable tips to improve engagement\n");
-        sb.append("Keep it under 300 words. Use emojis for visual appeal.");
+        switch (trend) {
+            case "growing" -> summary.append("\n📈 Xu hướng: Tăng trưởng tốt! Tiếp tục phát huy nhé!");
+            case "declining" -> summary.append("\n📉 Xu hướng: Đang giảm. Hãy thử thay đổi nội dung hoặc thời gian đăng bài.");
+            case "stable" -> summary.append("\n➡️ Xu hướng: Ổn định. Có thể thử nội dung mới để tăng tương tác.");
+            case "new_account" -> summary.append("\n🆕 Tài khoản mới! Hãy đăng bài thường xuyên để xây dựng audience.");
+            default -> summary.append("\n❓ Cần thêm dữ liệu để phân tích xu hướng.");
+        }
 
-        return sb.toString();
+        return summary.toString();
     }
 
-    // ==================== POST TIMING SUGGESTION ====================
+    // ==================== POST TIMING ====================
     @Override
     public PostTimingSuggestionResponse suggestPostTiming(String userId) {
         log.info("Suggesting post timing for user: {}", userId);
@@ -304,7 +230,6 @@ public class AIService implements IAIService {
             return getDefaultTimingSuggestion();
         }
 
-        // Analyze when the best engagement happens
         Map<DayOfWeek, List<Double>> engagementByDay = new EnumMap<>(DayOfWeek.class);
         Map<Integer, List<Double>> engagementByHour = new HashMap<>();
 
@@ -320,24 +245,19 @@ public class AIService implements IAIService {
             engagementByHour.computeIfAbsent(hour, k -> new ArrayList<>()).add(engagement);
         }
 
-        // Find best days
-        List<PostTimingSuggestionResponse.TimingSlot> bestTimes = new ArrayList<>();
-
-        // Top days with best average engagement
         List<Map.Entry<DayOfWeek, Double>> dayAvgs = engagementByDay.entrySet().stream()
                 .map(e -> Map.entry(e.getKey(), e.getValue().stream().mapToDouble(d -> d).average().orElse(0)))
                 .sorted(Map.Entry.<DayOfWeek, Double>comparingByValue().reversed())
                 .limit(3)
                 .toList();
 
-        // Top hours with best average engagement
         List<Map.Entry<Integer, Double>> hourAvgs = engagementByHour.entrySet().stream()
                 .map(e -> Map.entry(e.getKey(), e.getValue().stream().mapToDouble(d -> d).average().orElse(0)))
                 .sorted(Map.Entry.<Integer, Double>comparingByValue().reversed())
                 .limit(3)
                 .toList();
 
-        // Combine best days and hours
+        List<PostTimingSuggestionResponse.TimingSlot> bestTimes = new ArrayList<>();
         for (var dayEntry : dayAvgs) {
             String dayName = dayEntry.getKey().getDisplayName(TextStyle.FULL, Locale.forLanguageTag("vi"));
             for (var hourEntry : hourAvgs) {
@@ -345,35 +265,26 @@ public class AIService implements IAIService {
                 String timeRange = String.format("%02d:00 - %02d:00", hour, (hour + 1) % 24);
                 double score = (dayEntry.getValue() + hourEntry.getValue()) / 2.0;
                 String reason = String.format("Dựa trên phân tích %d bài đăng của bạn", photos.size());
-
                 bestTimes.add(new PostTimingSuggestionResponse.TimingSlot(dayName, timeRange,
                         Math.round(score * 100.0) / 100.0, reason));
             }
         }
 
-        // Sort by score and take top 5
         bestTimes.sort((a, b) -> Double.compare(b.getScore(), a.getScore()));
         bestTimes = bestTimes.stream().limit(5).toList();
 
-        // Build AI summary
-        String aiSummary = buildTimingSummary(userId, photos, dayAvgs, hourAvgs);
+        String summary = buildTimingSummary(photos, dayAvgs, hourAvgs);
 
-        return new PostTimingSuggestionResponse(bestTimes, aiSummary);
+        return new PostTimingSuggestionResponse(bestTimes, summary);
     }
 
     private PostTimingSuggestionResponse getDefaultTimingSuggestion() {
         List<PostTimingSuggestionResponse.TimingSlot> defaults = List.of(
-                new PostTimingSuggestionResponse.TimingSlot("Thứ Hai", "07:00 - 09:00", 8.5,
-                        "Khung giờ sáng sớm phổ biến cho Instagram"),
-                new PostTimingSuggestionResponse.TimingSlot("Thứ Tư", "12:00 - 13:00", 8.0,
-                        "Giờ nghỉ trưa - nhiều người online"),
-                new PostTimingSuggestionResponse.TimingSlot("Thứ Sáu", "17:00 - 19:00", 9.0,
-                        "Cuối tuần - người dùng thư giãn nhiều hơn"),
-                new PostTimingSuggestionResponse.TimingSlot("Thứ Bảy", "10:00 - 11:00", 8.8,
-                        "Cuối tuần sáng - thời gian rảnh"),
-                new PostTimingSuggestionResponse.TimingSlot("Chủ Nhật", "19:00 - 21:00", 8.2,
-                        "Tối Chủ Nhật - chuẩn bị tuần mới")
-        );
+                new PostTimingSuggestionResponse.TimingSlot("Thứ Hai", "07:00 - 09:00", 8.5, "Khung giờ sáng sớm phổ biến cho Instagram"),
+                new PostTimingSuggestionResponse.TimingSlot("Thứ Tư", "12:00 - 13:00", 8.0, "Giờ nghỉ trưa - nhiều người online"),
+                new PostTimingSuggestionResponse.TimingSlot("Thứ Sáu", "17:00 - 19:00", 9.0, "Cuối tuần - người dùng thư giãn nhiều hơn"),
+                new PostTimingSuggestionResponse.TimingSlot("Thứ Bảy", "10:00 - 11:00", 8.8, "Cuối tuần sáng - thời gian rảnh"),
+                new PostTimingSuggestionResponse.TimingSlot("Chủ Nhật", "19:00 - 21:00", 8.2, "Tối Chủ Nhật - chuẩn bị tuần mới"));
 
         return new PostTimingSuggestionResponse(defaults,
                 "💡 Bạn chưa có đủ dữ liệu để phân tích cá nhân hóa. " +
@@ -381,19 +292,12 @@ public class AIService implements IAIService {
                         "Hãy đăng thêm bài để nhận phân tích chính xác hơn!");
     }
 
-    private String buildTimingSummary(String userId, List<Photo> photos,
-                                      List<Map.Entry<DayOfWeek, Double>> dayAvgs,
-                                      List<Map.Entry<Integer, Double>> hourAvgs) {
-        String prompt = buildTimingPrompt(photos, dayAvgs, hourAvgs);
-        String aiResponse = callGeminiApi(prompt);
-
-        if (aiResponse != null && !aiResponse.isBlank()) {
-            return aiResponse.trim();
-        }
-
-        // Fallback
+    private String buildTimingSummary(List<Photo> photos,
+            List<Map.Entry<DayOfWeek, Double>> dayAvgs,
+            List<Map.Entry<Integer, Double>> hourAvgs) {
         StringBuilder sb = new StringBuilder();
         sb.append("⏰ Dựa trên phân tích ").append(photos.size()).append(" bài đăng:\n");
+
         if (!dayAvgs.isEmpty()) {
             sb.append("• Ngày tốt nhất: ");
             sb.append(dayAvgs.get(0).getKey().getDisplayName(TextStyle.FULL, Locale.forLanguageTag("vi")));
@@ -408,76 +312,69 @@ public class AIService implements IAIService {
         return sb.toString();
     }
 
-    private String buildTimingPrompt(List<Photo> photos,
-                                     List<Map.Entry<DayOfWeek, Double>> dayAvgs,
-                                     List<Map.Entry<Integer, Double>> hourAvgs) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("You are a social media timing expert. Respond in Vietnamese.\n");
-        sb.append("Based on this user's posting data, give personalized timing advice.\n\n");
-        sb.append(String.format("Total posts: %d\n", photos.size()));
+    // ==================== IMAGE ANALYSIS ====================
+    @Override
+    public ImageAnalysisResponse analyzeImage(ImageAnalysisRequest request) {
+        log.info("Analyzing image for user: {}", request.getUserId());
 
-        sb.append("Best days (avg engagement):\n");
-        for (var e : dayAvgs) {
-            sb.append(String.format("- %s: %.1f\n",
-                    e.getKey().getDisplayName(TextStyle.FULL, Locale.ENGLISH), e.getValue()));
-        }
-
-        sb.append("Best hours (avg engagement):\n");
-        for (var e : hourAvgs) {
-            sb.append(String.format("- %02d:00: %.1f\n", e.getKey(), e.getValue()));
-        }
-
-        sb.append("\nProvide a concise 2-3 sentence summary about when to post. ");
-        sb.append("Be specific with days and times. Use emojis. Keep under 150 words.");
-
-        return sb.toString();
+        UserContext userContext = buildUserContext(request.getUserId());
+        return generateImageAnalysis(userContext);
     }
 
-    // ==================== GEMINI API INTEGRATION ====================
-    private String callGeminiApi(String prompt) {
-        if (geminiApiKey == null || geminiApiKey.isBlank()) {
-            log.warn("Gemini API key not configured, using fallback responses");
-            return null;
+    private ImageAnalysisResponse generateImageAnalysis(UserContext userContext) {
+        List<String> userTags = userContext.isHasHistory() ? userContext.getTopTags() : List.of();
+
+        List<String> suggestedTags;
+        if (!userTags.isEmpty()) {
+            suggestedTags = new ArrayList<>(userTags);
+            suggestedTags.addAll(SCENE_TAGS.get("general").subList(0, 3));
+        } else {
+            suggestedTags = new ArrayList<>(SCENE_TAGS.get("general"));
         }
 
-        try {
-            String url = String.format(
-                    "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s",
-                    geminiModel, geminiApiKey
-            );
+        if (suggestedTags.size() > 8) {
+            suggestedTags = suggestedTags.subList(0, 8);
+        }
 
-            Map<String, Object> requestBody = Map.of(
-                    "contents", List.of(
-                            Map.of("parts", List.of(
-                                    Map.of("text", prompt)
-                            ))
-                    ),
-                    "generationConfig", Map.of(
-                            "temperature", 0.8,
-                            "maxOutputTokens", 1024
-                    )
-            );
+        List<String> captionSuggestions = generateCaptionSuggestions(userContext);
+        String sceneType = determineSceneType(userTags);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
+        return new ImageAnalysisResponse(
+                "Photo",
+                sceneType,
+                "neutral",
+                List.of("vibrant"),
+                List.of("photo"),
+                suggestedTags,
+                captionSuggestions);
+    }
 
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+    private List<String> generateCaptionSuggestions(UserContext userContext) {
+        List<String> suggestions = new ArrayList<>();
 
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                JsonNode root = objectMapper.readTree(response.getBody());
-                JsonNode candidates = root.path("candidates");
-                if (candidates.isArray() && !candidates.isEmpty()) {
-                    JsonNode content = candidates.get(0).path("content").path("parts");
-                    if (content.isArray() && !content.isEmpty()) {
-                        return content.get(0).path("text").asText();
-                    }
-                }
+        for (String template : CAPTION_TEMPLATES) {
+            suggestions.add(template);
+            if (suggestions.size() >= 3) break;
+        }
+
+        if (userContext.isHasHistory() && userContext.getAvgCaptionLength() > 0) {
+            if (userContext.getAvgCaptionLength() < 50) {
+                suggestions.add("Short and sweet ✨");
+            } else if (userContext.getAvgCaptionLength() > 150) {
+                suggestions.add("Sharing a moment worth remembering 📸\n.\n.\n#life #memories #moments");
             }
-        } catch (Exception e) {
-            log.error("Failed to call Gemini API: {}", e.getMessage());
         }
 
-        return null;
+        return suggestions;
+    }
+
+    private String determineSceneType(List<String> userTags) {
+        for (String tag : userTags) {
+            if (SCENE_TAGS.containsKey(tag.toLowerCase())) {
+                return tag.toLowerCase();
+            }
+        }
+        return "general";
     }
 }
+

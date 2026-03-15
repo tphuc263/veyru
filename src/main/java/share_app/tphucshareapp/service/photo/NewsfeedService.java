@@ -13,14 +13,10 @@ import share_app.tphucshareapp.dto.response.post.UnifiedPostResponse;
 import share_app.tphucshareapp.model.Follow;
 import share_app.tphucshareapp.model.Photo;
 import share_app.tphucshareapp.model.User;
-import share_app.tphucshareapp.repository.FollowRepository;
-import share_app.tphucshareapp.repository.PhotoRepository;
-import share_app.tphucshareapp.repository.UserRepository;
-import share_app.tphucshareapp.repository.LikeRepository;
-import share_app.tphucshareapp.repository.FavoriteRepository;
+import share_app.tphucshareapp.repository.*;
 import share_app.tphucshareapp.service.share.ShareService;
-import share_app.tphucshareapp.service.user.UserService;
 import share_app.tphucshareapp.service.user.UserAvatarCacheService;
+import share_app.tphucshareapp.service.user.UserService;
 
 import java.time.Duration;
 import java.time.Instant;
