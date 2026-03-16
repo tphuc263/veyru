@@ -15,15 +15,23 @@ const CaptionAutocomplete = ({
     const [selectedIndex, setSelectedIndex] = useState(-1)
     const dropdownRef = useRef(null)
 
-    // Show dropdown when there are suggestions
+    // Show dropdown when there are suggestions AND user is actively typing
     useEffect(() => {
-        if (suggestions && suggestions.length > 0) {
+        if (suggestions && suggestions.length > 0 && value.length > 0) {
             setShowDropdown(true)
             setSelectedIndex(-1)
         } else {
             setShowDropdown(false)
         }
-    }, [suggestions])
+    }, [suggestions, value])
+
+    // Clear suggestions when input is cleared
+    useEffect(() => {
+        if (!value || value.trim() === '') {
+            setShowDropdown(false)
+            setSelectedIndex(-1)
+        }
+    }, [value])
 
     // Handle click outside to close dropdown
     useEffect(() => {
@@ -120,13 +128,6 @@ const CaptionAutocomplete = ({
                             </li>
                         ))}
                     </ul>
-                </div>
-            )}
-
-            {/* AI indicator when generating */}
-            {suggestions.length === 0 && value.length >= 2 && (
-                <div className="ai-inline-hint">
-                    <span>✨ AI đang gợi ý...</span>
                 </div>
             )}
         </div>

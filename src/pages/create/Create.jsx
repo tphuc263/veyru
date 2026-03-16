@@ -1,9 +1,8 @@
-import {useEffect, useState, useRef, useCallback} from 'react'
+import {useEffect, useState, useCallback} from 'react'
 import {useNavigate} from 'react-router-dom'
 import {useCreatePost} from '../../hooks/useCreatePost.js'
 import {toastSuccess, toastError} from '../../utils/toastService.js'
-import CaptionAutocomplete from '../../components/features/CaptionAutocomplete.jsx'
-import {analyzeImage, getTrendingHashtags} from '../../services/aiService.js'
+import {getTrendingHashtags} from '../../services/aiService.js'
 import '../../assets/styles/pages/createPage.css'
 
 const Create = () => {
@@ -18,12 +17,7 @@ const Create = () => {
         resetForm
     } = useCreatePost()
 
-    // AI Caption autocomplete state
-    const [aiSuggestions, setAiSuggestions] = useState([])
-    const [isGenerating, setIsGenerating] = useState(false)
-    const [imageAnalysis, setImageAnalysis] = useState(null)
     const [trendingHashtags, setTrendingHashtags] = useState([])
-    const debounceTimer = useRef(null)
 
     // Analyze image when uploaded
     const analyzeUploadedImage = useCallback(async (file) => {
@@ -38,8 +32,6 @@ const Create = () => {
             })
 
             if (result) {
-                setImageAnalysis(result)
-
                 // Auto-fill tags from AI analysis
                 if (result.suggestedTags && result.suggestedTags.length > 0) {
                     const tagString = result.suggestedTags.map(t => `#${t}`).join(' ')
@@ -47,11 +39,6 @@ const Create = () => {
                         ...prev,
                         tags: prev.tags ? `${prev.tags} ${tagString}` : tagString
                     }))
-                }
-
-                // Set initial caption suggestions from AI
-                if (result.captionSuggestions && result.captionSuggestions.length > 0) {
-                    setAiSuggestions(result.captionSuggestions)
                 }
             }
         } catch (err) {
@@ -68,29 +55,6 @@ const Create = () => {
             reader.onerror = reject
         })
     }
-
-    // Handle AI suggestion generation - uses captions from image analysis
-    const handleGenerateSuggestions = useCallback(async (currentCaption) => {
-        if (debounceTimer.current) {
-            clearTimeout(debounceTimer.current)
-        }
-
-        debounceTimer.current = setTimeout(async () => {
-            if (currentCaption.length < 3) return
-
-            setIsGenerating(true)
-            try {
-                // Use image analysis context if available
-                if (imageAnalysis?.captionSuggestions && imageAnalysis.captionSuggestions.length > 0) {
-                    setAiSuggestions(imageAnalysis.captionSuggestions)
-                }
-            } catch (err) {
-                console.error('Failed to generate suggestions:', err)
-            } finally {
-                setIsGenerating(false)
-            }
-        }, 800) // Debounce 800ms
-    }, [imageAnalysis])
 
     const handleImageChange = (e) => {
         const file = e.target.files[0]
@@ -121,11 +85,6 @@ const Create = () => {
             // Analyze image with AI
             analyzeUploadedImage(file)
         }
-    }
-
-    const handleCaptionChange = (e) => {
-        setFormData(prev => ({...prev, caption: e.target.value}))
-        setError('')
     }
 
     const handleTagsChange = (e) => {
@@ -220,13 +179,16 @@ const Create = () => {
             </div>
 
             <div className="form-section">
-                {/* AI-powered caption autocomplete */}
-                <CaptionAutocomplete
-                    value={formData.caption}
-                    onChange={(caption) => setFormData(prev => ({...prev, caption}))}
-                    suggestions={aiSuggestions}
-                    onGenerateSuggestions={handleGenerateSuggestions}
+                <textarea
+                    id="caption-input"
+                    name="caption"
                     placeholder="Write a caption..."
+                    value={formData.caption}
+                    onChange={(e) => {
+                        setFormData(prev => ({...prev, caption: e.target.value}))
+                        setError('')
+                    }}
+                    rows={3}
                 />
 
                 <input
