@@ -2,7 +2,7 @@
     flex: 1;
     margin-left: 244px;
     padding: var(--ig-spacing-sm) var(--ig-spacing-lg) var(--ig-spacing-lg);
-    overflow-y: auto;
+    overflow-y: visible;
     background-color: var(--ig-background);
     min-height: 100vh;
 }
