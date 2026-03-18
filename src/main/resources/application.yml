@@ -24,6 +24,11 @@ spring:
       authentication:
         username: ${NEO4J_USERNAME:neo4j}
         password: ${NEO4J_PASSWORD:password}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
   servlet:
     multipart:
       enabled: true

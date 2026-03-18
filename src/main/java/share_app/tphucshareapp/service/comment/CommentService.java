@@ -8,7 +8,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.modelmapper.ModelMapper;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -43,7 +42,6 @@ public class CommentService implements ICommentService {
     private final UserRepository userRepository;
     private final UserService userService;
     private final MongoTemplate mongoTemplate;
-    private final ModelMapper modelMapper;
     private final INotificationService notificationService;
     private final UserAvatarCacheService userAvatarCacheService;
     private final Neo4jGraphService neo4jGraphService;

@@ -1,151 +1,151 @@
-version: '3.8'
+# version: '3.8'
 
-services:
-  mongodb:
-    image: mongo:7.0
-    container_name: mongodb
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
-    networks:
-      - share-app-network
+# services:
+#   mongodb:
+#     image: mongo:7.0
+#     container_name: mongodb
+#     ports:
+#       - "27017:27017"
+#     volumes:
+#       - mongo-data:/data/db
+#     networks:
+#       - share-app-network
 
-  redis:
-    image: redis/redis-stack:7.4.0-v3
-    container_name: share-app-redis
-    ports:
-      - "6379:6379"
-      - "8001:8001"
-    volumes:
-      - redis-data:/data
-    environment:
-      - REDIS_ARGS=--appendonly yes
-    networks:
-      - share-app-network
+#   redis:
+#     image: redis/redis-stack:7.4.0-v3
+#     container_name: share-app-redis
+#     ports:
+#       - "6379:6379"
+#       - "8001:8001"
+#     volumes:
+#       - redis-data:/data
+#     environment:
+#       - REDIS_ARGS=--appendonly yes
+#     networks:
+#       - share-app-network
 
-  neo4j:
-    image: neo4j:5.15.0
-    container_name: share-app-neo4j
-    ports:
-      - "7474:7474"  # HTTP
-      - "7687:7687"  # Bolt
-    volumes:
-      - neo4j-data:/data
-      - neo4j-logs:/logs
-    environment:
-      - NEO4J_AUTH=neo4j/password
-      - NEO4J_server_memory_heap_initial__size=512m
-      - NEO4J_server_memory_heap_max__size=2G
-      - NEO4J_server_memory_pagecache_size=1G
-      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
-      - NEO4J_dbms_security_procedures_allowlist=apoc.*
-    networks:
-      - share-app-network
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+#   neo4j:
+#     image: neo4j:5.15.0
+#     container_name: share-app-neo4j
+#     ports:
+#       - "7474:7474"  # HTTP
+#       - "7687:7687"  # Bolt
+#     volumes:
+#       - neo4j-data:/data
+#       - neo4j-logs:/logs
+#     environment:
+#       - NEO4J_AUTH=neo4j/password
+#       - NEO4J_server_memory_heap_initial__size=512m
+#       - NEO4J_server_memory_heap_max__size=2G
+#       - NEO4J_server_memory_pagecache_size=1G
+#       - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+#       - NEO4J_dbms_security_procedures_allowlist=apoc.*
+#     networks:
+#       - share-app-network
+#     healthcheck:
+#       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+#       interval: 30s
+#       timeout: 10s
+#       retries: 5
 
-  rabbitmq:
-    image: rabbitmq:3.13-management
-    container_name: share-app-rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
-    volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
-    networks:
-      - share-app-network
-    healthcheck:
-      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+#   rabbitmq:
+#     image: rabbitmq:3.13-management
+#     container_name: share-app-rabbitmq
+#     ports:
+#       - "5672:5672"
+#       - "15672:15672"
+#     environment:
+#       - RABBITMQ_DEFAULT_USER=guest
+#       - RABBITMQ_DEFAULT_PASS=guest
+#     volumes:
+#       - rabbitmq-data:/var/lib/rabbitmq
+#     networks:
+#       - share-app-network
+#     healthcheck:
+#       test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+#       interval: 30s
+#       timeout: 10s
+#       retries: 5
 
-  # Spring Boot Application
-  share-app:
-    build: .
-    container_name: share-app-backend
-    ports:
-      - "8080:8080"
-      - "9092:9092"
-    environment:
-      - MONGO_HOST=mongodb
-      - MONGO_PORT=27017
-      - MONGO_DATABASE=share_app_database_new
+#   # Spring Boot Application
+#   share-app:
+#     build: .
+#     container_name: share-app-backend
+#     ports:
+#       - "8080:8080"
+#       - "9092:9092"
+#     environment:
+#       - MONGO_HOST=mongodb
+#       - MONGO_PORT=27017
+#       - MONGO_DATABASE=share_app_database_new
 
-      # Redis Configuration
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+#       # Redis Configuration
+#       - REDIS_HOST=redis
+#       - REDIS_PORT=6379
 
-      # Neo4j Configuration
-      - NEO4J_URI=bolt://neo4j:7687
-      - NEO4J_USERNAME=neo4j
-      - NEO4J_PASSWORD=password
+#       # Neo4j Configuration
+#       - NEO4J_URI=bolt://neo4j:7687
+#       - NEO4J_USERNAME=neo4j
+#       - NEO4J_PASSWORD=password
 
-      # RabbitMQ Configuration
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USERNAME=guest
-      - RABBITMQ_PASSWORD=guest
+#       # RabbitMQ Configuration
+#       - RABBITMQ_HOST=rabbitmq
+#       - RABBITMQ_PORT=5672
+#       - RABBITMQ_USERNAME=guest
+#       - RABBITMQ_PASSWORD=guest
 
-      # Cloudinary Configuration
-      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
-      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
-      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+#       # Cloudinary Configuration
+#       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+#       - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+#       - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
 
-      # JWT Configuration
-      - JWT_SECRET=${JWT_SECRET}
+#       # JWT Configuration
+#       - JWT_SECRET=${JWT_SECRET}
 
-      # Google OAuth2 Configuration
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+#       # Google OAuth2 Configuration
+#       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+#       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
 
-      # Mail (SMTP) Configuration
-      - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
-      - MAIL_PORT=${MAIL_PORT:-587}
-      - MAIL_USERNAME=${MAIL_USERNAME}
-      - MAIL_PASSWORD=${MAIL_PASSWORD}
+#       # Mail (SMTP) Configuration
+#       - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
+#       - MAIL_PORT=${MAIL_PORT:-587}
+#       - MAIL_USERNAME=${MAIL_USERNAME}
+#       - MAIL_PASSWORD=${MAIL_PASSWORD}
 
-      # CORS Configuration
-      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:5174}
+#       # CORS Configuration
+#       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:5174}
 
-      # OAuth2 Redirect URIs
-      - OAUTH2_REDIRECT_URI=${OAUTH2_REDIRECT_URI:-http://localhost:5173/auth/oauth2/redirect}
-      - OAUTH2_FAILURE_REDIRECT_URI=${OAUTH2_FAILURE_REDIRECT_URI:-http://localhost:5173/login?error=true}
-    depends_on:
-      mongodb:
-        condition: service_started
-      redis:
-        condition: service_started
-      neo4j:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - share-app-network
-    volumes:
-      - ./logs:/app/logs
-    restart: unless-stopped
-    healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/v1/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
+#       # OAuth2 Redirect URIs
+#       - OAUTH2_REDIRECT_URI=${OAUTH2_REDIRECT_URI:-http://localhost:5173/auth/oauth2/redirect}
+#       - OAUTH2_FAILURE_REDIRECT_URI=${OAUTH2_FAILURE_REDIRECT_URI:-http://localhost:5173/login?error=true}
+#     depends_on:
+#       mongodb:
+#         condition: service_started
+#       redis:
+#         condition: service_started
+#       neo4j:
+#         condition: service_healthy
+#       rabbitmq:
+#         condition: service_healthy
+#     networks:
+#       - share-app-network
+#     volumes:
+#       - ./logs:/app/logs
+#     restart: unless-stopped
+#     healthcheck:
+#       test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/v1/health" ]
+#       interval: 30s
+#       timeout: 10s
+#       retries: 5
+#       start_period: 60s
 
-volumes:
-  mongo-data:
-  redis-data:
-  rabbitmq-data:
-  neo4j-data:
-  neo4j-logs:
+# volumes:
+#   mongo-data:
+#   redis-data:
+#   rabbitmq-data:
+#   neo4j-data:
+#   neo4j-logs:
 
-networks:
-  share-app-network:
-    driver: bridge
+# networks:
+#   share-app-network:
+#     driver: bridge

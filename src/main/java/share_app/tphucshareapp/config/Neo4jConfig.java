@@ -16,13 +16,13 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Configuration
 public class Neo4jConfig {
 
-    @Value("${spring.neo4j.uri:bolt://localhost:7687}")
+    @Value("${NEO4J_URI:bolt://localhost:7687}")
     private String neo4jUri;
 
-    @Value("${spring.neo4j.authentication.username:neo4j}")
+    @Value("${NEO4J_USERNAME:neo4j}")
     private String username;
 
-    @Value("${spring.neo4j.authentication.password:password}")
+    @Value("${NEO4J_PASSWORD:password}")
     private String password;
 
     @Bean
