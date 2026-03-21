@@ -24,6 +24,6 @@ export const analyzeImage = async (request: ImageAnalysisRequest): Promise<Image
 
 // Get trending hashtags
 export const getTrendingHashtags = async (limit: number = 10): Promise<string[]> => {
-    const response = await api.get(`/tags/trending?limit=${limit}`);
-    return response as string[];
+    const response = await api.get<ApiResponse<string[]>>(`/tags/trending?limit=${limit}`);
+    return response.data as string[];
 };

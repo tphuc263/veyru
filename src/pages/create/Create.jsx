@@ -188,7 +188,7 @@ const Create = () => {
                         setFormData(prev => ({...prev, caption: e.target.value}))
                         setError('')
                     }}
-                    rows={3}
+                    rows={4}
                 />
 
                 <input
