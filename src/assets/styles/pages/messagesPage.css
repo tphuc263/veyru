@@ -4,14 +4,23 @@
 
 .messages-container {
     display: flex;
-    height: calc(100vh - 32px); /* Account for main-content padding (8px top + 24px bottom) */
-    max-height: calc(100vh - 32px);
+    height: calc(100vh - 32px);
     max-width: 935px;
     margin: 0 auto;
     border: 1px solid var(--ig-border-color);
     border-radius: 4px;
     overflow: hidden;
     background: var(--ig-surface);
+}
+
+@media (max-width: 768px) {
+    .messages-container {
+        border: none;
+        border-radius: 0;
+        height: 100%;
+        min-height: calc(100vh - 32px);
+        max-height: none;
+    }
 }
 
 /* ===================================

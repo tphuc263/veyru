@@ -23,8 +23,8 @@ const crypto = require('crypto');
 const CONFIG = {
     apiBaseUrl: 'https://vibelens.me/api/v1',
     apiBaseUrlLocal: 'http://localhost:8080/api/v1',
-    totalUsers: 5,
-    postsPerUser: { min: 10, max: 20 },
+    totalUsers: 50,
+    postsPerUser: { min: 3, max: 6 },
     followsPerUser: { min: 5, max: 20 },
     mutualFollowChance: 0.6, // 60% chance to follow back
     likesPerUser: { min: 10, max: 30 },

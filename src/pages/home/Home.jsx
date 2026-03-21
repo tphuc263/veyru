@@ -22,7 +22,6 @@ const Home = () => {
     useEffect(() => {
         const photoId = searchParams.get('photo');
         if (photoId && !selectedPhotoId) {
-            // Keep photoId as string - API expects string ID
             setSelectedPhotoId(photoId);
         }
     }, [searchParams]);
@@ -140,7 +139,7 @@ const Home = () => {
                     const displayShareCount = isShare ? post.originalShareCount : post.shareCount;
 
                     return (
-                        <PhotoCard
+                            <PhotoCard
                             key={post.id}
                             photoId={displayPhotoId}
                             username={post.username}
@@ -199,12 +198,10 @@ const Home = () => {
                 )}
             </main>
 
-            {/* Suggested Users sidebar (Instagram style) */}
             <aside className="home-sidebar">
                 <SuggestedUsers />
             </aside>
 
-            {/* Scroll to Top Button */}
             {showScrollTop && (
                 <button onClick={scrollToTop} className="scroll-to-top" title="Về đầu trang">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">

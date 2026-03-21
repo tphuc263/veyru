@@ -3,8 +3,7 @@
    =================================== */
 
 .suggested-users-container {
-    position: sticky;
-    top: 30px;
+    position: relative;
     width: 300px;
     padding: 8px 0;
 }

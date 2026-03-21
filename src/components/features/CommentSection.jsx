@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Heart, MessageCircle, CornerDownRight } from 'lucide-react';
 import { createComment, toggleCommentLike } from '../../services/commentService';
 import { showToast } from '../../utils/toastService';
@@ -113,9 +113,9 @@ const CommentItem = ({
   );
 };
 
-const CommentSection = ({ 
-  photoId, 
-  comments: initialComments, 
+const CommentSection = ({
+  photoId,
+  comments: initialComments,
   onCommentAdded,
   formatDate,
   currentUserId,
@@ -128,6 +128,7 @@ const CommentSection = ({
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
+  const commentInputRef = useRef(null);
 
   // Update comments when props change
   useEffect(() => {
@@ -137,10 +138,7 @@ const CommentSection = ({
   const handleReply = (comment) => {
     setReplyingTo(comment);
     setNewComment(`@${comment.username} `);
-    // Focus the input
-    const input = document.getElementById('comment-input-section');
-    if (input) input.focus();
-    // Notify parent if callback provided
+    commentInputRef.current?.focus();
     if (onReplyClick) {
       onReplyClick(comment);
     }
@@ -228,6 +226,8 @@ const CommentSection = ({
       showToast('error', 'Không thể thêm bình luận');
     } finally {
       setIsSubmitting(false);
+      // Restore focus after re-render completes so cursor stays in input
+      setTimeout(() => commentInputRef.current?.focus(), 0);
     }
   };
 
@@ -270,7 +270,7 @@ const CommentSection = ({
           {/* Comment input */}
           <form onSubmit={handleSubmit} className="comment-form">
             <input
-              id="comment-input-section"
+              ref={commentInputRef}
               type="text"
               placeholder={replyingTo ? `Trả lời @${replyingTo.username}...` : 'Thêm bình luận...'}
               value={newComment}

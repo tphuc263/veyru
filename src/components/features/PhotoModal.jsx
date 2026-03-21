@@ -184,7 +184,6 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
       const response = await createComment(photoId, commentData);
       const apiCommentData = response.data ?? response;
 
-      // Augment with current user info for immediate display
       const newCommentData = {
         ...apiCommentData,
         userImageUrl: apiCommentData.userImageUrl || user?.avatarUrl,
@@ -193,12 +192,10 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
       };
 
       if (replyingTo) {
-        // Add reply to parent comment (supports all nesting levels)
         setComments(prevComments =>
           addReplyToComments(prevComments, replyingTo.id, newCommentData)
         );
       } else {
-        // Add as top-level comment
         setComments(prev => [...prev, newCommentData]);
       }
 
@@ -210,6 +207,8 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
       showToast('error', 'Không thể thêm bình luận');
     } finally {
       setIsSubmittingComment(false);
+      // Restore focus after re-render completes so cursor stays in input
+      setTimeout(() => commentInputRef.current?.focus(), 0);
     }
   };
 
