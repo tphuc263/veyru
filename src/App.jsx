@@ -11,7 +11,6 @@ import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import ResetPassword from './pages/auth/ResetPassword'
-import OAuth2RedirectHandler from './pages/auth/OAuth2RedirectHandler'
 import Home from './pages/home/Home'
 import Search from './pages/search/Search'
 import Create from './pages/create/Create'
@@ -74,7 +73,6 @@ function App() {
                         <Route element={<PublicRoute />}>
                             <Route path="/login" element={<Login />} />
                             <Route path="/register" element={<Register />} />
-                            <Route path="/auth/oauth2/redirect" element={<OAuth2RedirectHandler />} />
                         </Route>
 
                         <Route element={<ProtectedRoute />}>

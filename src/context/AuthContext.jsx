@@ -1,7 +1,8 @@
 import {createContext, useContext, useEffect, useState} from 'react'
-import {clearAuthData, getAuthData} from '../utils/storage'
+import {clearAuthData, getAuthData, setAuthData} from '../utils/storage'
 import {useAuth as useAuthLogic} from '../hooks/useAuth'
 import {toastSuccess} from '../utils/toastService'
+import api from '../config/ApiConfig'
 
 const AuthContext = createContext(undefined)
 
@@ -23,22 +24,48 @@ export const AuthProvider = ({children}) => {
     } = useAuthLogic()
 
     useEffect(() => {
-        const initializeAuth = () => {
+        const initializeAuth = async () => {
             try {
-                const {token: savedToken, user: savedUser} = getAuthData()
+                // 1. Check URL for OAuth2 token first
+                const urlParams = new URLSearchParams(window.location.search);
+                const oauthToken = urlParams.get('token');
 
-                if (savedToken && savedUser) {
-                    setToken(savedToken)
-                    setUser(savedUser)
+                if (oauthToken) {
+                    localStorage.setItem('jwt', oauthToken);
+                    const userProfile = await api.get('/users/me');
+                    setAuthData(oauthToken, {
+                        id: userProfile.data.id,
+                        username: userProfile.data.username,
+                        email: userProfile.data.email,
+                        role: userProfile.data.role
+                    });
+                    setToken(oauthToken);
+                    setUser({
+                        id: userProfile.data.id,
+                        username: userProfile.data.username,
+                        email: userProfile.data.email,
+                        role: userProfile.data.role
+                    });
+                    // Clean URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    toastSuccess.loginSuccess();
+                } else {
+                    // 2. Fall back to localStorage
+                    const {token: savedToken, user: savedUser} = getAuthData();
+                    if (savedToken && savedUser) {
+                        setToken(savedToken);
+                        setUser(savedUser);
+                    }
                 }
-            } catch {
-                clearAuthData()
+            } catch (err) {
+                console.error('Auth init failed:', err);
+                clearAuthData();
             } finally {
                 setInitLoading(false);
             }
         }
 
-        initializeAuth()
+        initializeAuth();
     }, [])
 
     const login = async (credentials) => {
