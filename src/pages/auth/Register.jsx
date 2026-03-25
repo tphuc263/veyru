@@ -90,7 +90,7 @@ const Register = () => {
                 navigate('/login', {
                     replace: true,
                     state: {
-                        message: 'Đăng ký thành công! Vui lòng đăng nhập với tài khoản mới.'
+                        message: 'Đăng ký thành công! Vui lòng đăng nhập.'
                     }
                 })
             } else {

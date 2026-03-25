@@ -63,7 +63,7 @@ const Login = () => {
         } catch (error) {
             toastError.general();
             setErrors({
-                submit: 'Đã có lỗi không mong muốn. Vui lòng thử lại.'
+                submit: 'Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.'
             })
         }
     }

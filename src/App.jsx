@@ -20,14 +20,14 @@ import Messages from './pages/messages/Messages'
 
 const NotificationsPage = () => (
     <div className="page-placeholder">
-        <h2>🔔 Notifications Page</h2>
-        <p>Stay updated with notifications...</p>
+        <h2>Thông báo</h2>
+        <p>Cập nhật thông báo mới nhất...</p>
     </div>
 )
 
 const SettingsPage = () => (
     <div className="page-placeholder">
-        <h2>⚙️ Settings</h2>
+        <h2>Cài đặt</h2>
     </div>
 );
 

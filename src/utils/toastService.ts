@@ -50,60 +50,60 @@ export const showWarning = (message: string): void => {
 // Toast cho các action cụ thể
 export const toastSuccess = {
     // Photo actions
-    photoUploaded: (): void => showSuccess('Ảnh đã được đăng tải thành công!'),
-    photoDeleted: (): void => showSuccess('Ảnh đã được xóa'),
-    photoUpdated: (): void => showSuccess('Ảnh đã được cập nhật'),
-    
+    photoUploaded: (): void => showSuccess('Ảnh đã đăng'),
+    photoDeleted: (): void => showSuccess('Đã xóa ảnh'),
+    photoUpdated: (): void => showSuccess('Đã cập nhật ảnh'),
+
     // Profile actions
-    profileUpdated: (): void => showSuccess('Hồ sơ đã được cập nhật'),
-    avatarUpdated: (): void => showSuccess('🖼️ Ảnh đại diện đã được thay đổi'),
-    
+    profileUpdated: (): void => showSuccess('Đã cập nhật hồ sơ'),
+    avatarUpdated: (): void => showSuccess('Đã đổi ảnh đại diện'),
+
     // Auth actions
-    loginSuccess: (): void => showSuccess('Đăng nhập thành công!'),
+    loginSuccess: (): void => showSuccess('Đã đăng nhập'),
     logoutSuccess: (): void => showSuccess('Đã đăng xuất'),
-    registerSuccess: (): void => showSuccess('Đăng ký thành công! Vui lòng đăng nhập'),
-    passwordResetSent: (): void => showSuccess('Email đặt lại mật khẩu đã được gửi!'),
-    passwordResetSuccess: (): void => showSuccess('Đặt lại mật khẩu thành công!'),
+    registerSuccess: (): void => showSuccess('Đã tạo tài khoản'),
+    passwordResetSent: (): void => showSuccess('Đã gửi email'),
+    passwordResetSuccess: (): void => showSuccess('Đã đặt lại mật khẩu'),
     custom: (message: string): void => showSuccess(message),
-    
+
     // Social actions
     followed: (): void => showSuccess('Đã theo dõi'),
     unfollowed: (): void => showSuccess('Đã hủy theo dõi'),
-    liked: (): void => showSuccess('❤️ Đã thích'),
+    liked: (): void => showSuccess('Đã thích'),
     unliked: (): void => showSuccess('Đã bỏ thích'),
-    commented: (): void => showSuccess('💬 Đã bình luận'),
+    commented: (): void => showSuccess('Đã bình luận'),
     commentDeleted: (): void => showSuccess('Đã xóa bình luận'),
 } as const;
 
 export const toastError = {
     // General errors
-    general: (message?: string): void => showError(message || '❌ Có lỗi xảy ra, vui lòng thử lại'),
-    network: (): void => showError('🌐 Lỗi kết nối mạng'),
-    
+    general: (message?: string): void => showError(message || 'Đã xảy ra lỗi'),
+    network: (): void => showError('Lỗi kết nối'),
+
     // Photo errors
-    uploadFailed: (): void => showError('❌ Không thể đăng tải ảnh'),
-    invalidImage: (): void => showError('⚠️ File không hợp lệ. Vui lòng chọn ảnh'),
-    imageTooLarge: (): void => showError('⚠️ Ảnh quá lớn. Tối đa 10MB'),
-    
+    uploadFailed: (): void => showError('Không thể đăng ảnh'),
+    invalidImage: (): void => showError('File không hợp lệ'),
+    imageTooLarge: (): void => showError('Ảnh quá lớn (tối đa 10MB)'),
+
     // Auth errors
-    loginFailed: (message?: string): void => showError(message || '❌ Đăng nhập thất bại'),
-    invalidCredentials: (): void => showError('⚠️ Email hoặc mật khẩu không đúng'),
-    registerFailed: (message?: string): void => showError(message || '❌ Đăng ký thất bại'),
-    
+    loginFailed: (message?: string): void => showError(message || 'Đăng nhập thất bại'),
+    invalidCredentials: (): void => showError('Sai email hoặc mật khẩu'),
+    registerFailed: (message?: string): void => showError(message || 'Đăng ký thất bại'),
+
     // Profile errors
-    updateFailed: (): void => showError('❌ Không thể cập nhật hồ sơ'),
-    
+    updateFailed: (): void => showError('Không thể cập nhật'),
+
     // Permission errors
-    unauthorized: (): void => showError('🚫 Bạn không có quyền thực hiện thao tác này'),
+    unauthorized: (): void => showError('Không có quyền thực hiện'),
     custom: (message: string): void => showError(message),
 } as const;
 
 export const toastInfo = {
-    loading: (message: string = 'Đang xử lý...'): void => showInfo(message),
-    copied: (): void => showInfo('📋 Đã sao chép'),
+    loading: (message: string = 'Đang tải...'): void => showInfo(message),
+    copied: (): void => showInfo('Đã sao chép'),
 } as const;
 
 export const toastWarning = {
-    fillRequired: (): void => showWarning('⚠️ Vui lòng điền đầy đủ thông tin'),
-    confirmAction: (): void => showWarning('⚠️ Vui lòng xác nhận'),
+    fillRequired: (): void => showWarning('Vui lòng điền đầy đủ'),
+    confirmAction: (): void => showWarning('Vui lòng xác nhận'),
 } as const;

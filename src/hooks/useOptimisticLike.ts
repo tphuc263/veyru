@@ -86,7 +86,7 @@ export const useOptimisticLike = (
       setIsLiked(previousState.isLiked);
       setLikesCount(previousState.likesCount);
       
-      showToast('error', 'Không thể cập nhật. Vui lòng thử lại.');
+      showToast('error', 'Không thể cập nhật. Thử lại sau.');
       console.error('Failed to toggle like:', error);
     } finally {
       setIsProcessing(false);

@@ -42,7 +42,7 @@ const NotificationItem = ({ notification, onRead, onNavigate }) => {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'vừa xong';
+    if (diffMins < 1) return 'Vừa xong';
     if (diffMins < 60) return `${diffMins} phút`;
     if (diffHours < 24) return `${diffHours} giờ`;
     if (diffDays < 7) return `${diffDays} ngày`;
@@ -187,7 +187,7 @@ const NotificationDropdown = ({ onPhotoClick, isControlled = false, onClose }) =
       await markAllAsRead();
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
-      showToast('success', 'Đã đánh dấu tất cả là đã đọc');
+      showToast('success', 'Đã đánh dấu tất cả đã đọc');
     } catch (error) {
       showToast('error', 'Không thể đánh dấu đã đọc');
     }
@@ -235,10 +235,10 @@ const NotificationDropdown = ({ onPhotoClick, isControlled = false, onClose }) =
       {effectiveIsOpen && (
         <div className="notification-dropdown">
           <div className="notification-header">
-            <h3>Thông báo</h3>
+            <h3>Notifications</h3>
             {unreadCount > 0 && (
               <button onClick={handleMarkAllRead} className="mark-all-read-btn">
-                Đánh dấu tất cả đã đọc
+                Mark all as read
               </button>
             )}
           </div>
@@ -247,7 +247,7 @@ const NotificationDropdown = ({ onPhotoClick, isControlled = false, onClose }) =
             {notifications.length === 0 && !loading ? (
               <div className="no-notifications">
                 <Bell size={48} strokeWidth={1} />
-                <p>Chưa có thông báo nào</p>
+                <p>No notifications yet</p>
               </div>
             ) : (
               <>
