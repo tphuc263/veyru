@@ -211,9 +211,10 @@ const Home = () => {
             )}
 
             {selectedPhotoId && (() => (
-                    <PhotoModal 
+                    <PhotoModal
                         photoId={selectedPhotoId}
                         onClose={handlePhotoClose}
+                        onPhotoClick={handlePhotoSelect}
                         onPhotoUpdate={(photoId, updatedPhoto) => {
                             // Sync state between modal and feed
                             setFeed(prevFeed => 

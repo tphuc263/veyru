@@ -301,6 +301,7 @@ const Search = () => {
                 <PhotoModal
                     photoId={selectedPhotoId}
                     onClose={handlePhotoClose}
+                    onPhotoClick={handlePhotoClick}
                     onPhotoUpdate={handlePhotoUpdate}
                 />
             ))()}

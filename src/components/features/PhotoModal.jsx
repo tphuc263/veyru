@@ -15,7 +15,7 @@ import ShareModal from './ShareModal';
 import CommentSection from './CommentSection';
 import { useAuth } from '../../hooks/useAuth';
 
-const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
+const PhotoModal = ({ photoId, onClose, onPhotoUpdate, onPhotoClick }) => {
   const [photoDetail, setPhotoDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -450,12 +450,7 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate }) => {
                   key={photo.id}
                   className="related-photo-item"
                   onClick={() => {
-                    // Navigate to this photo (re-open modal)
-                    setRelatedPhotos([]);
-                    setPhotoDetail(null);
-                    setLoading(true);
-                    // Trigger re-fetch by changing photoId equivalent
-                    window.dispatchEvent(new CustomEvent('openPhotoModal', { detail: photo.id }));
+                    onPhotoClick(photo.id);
                   }}
                 >
                   <img src={photo.imageUrl} alt={photo.caption || 'Related photo'} loading="lazy" />

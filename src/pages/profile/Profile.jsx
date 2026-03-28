@@ -302,9 +302,10 @@ const ProfilePage = () => {
       </main>
 
       {selectedPhotoId && (() => (
-          <PhotoModal 
+          <PhotoModal
             photoId={selectedPhotoId}
             onClose={handleCloseModal}
+            onPhotoClick={handlePhotoClick}
             onPhotoUpdate={(photoId, updatedPhoto) => {
               // Sync state between modal and profile posts
               setPosts(prevPosts => ({
