@@ -30,6 +30,7 @@
 - 👤 **User Profiles** - View profiles, followers, and following lists
 - 🔐 **Authentication** - JWT-based auth with OAuth2 (Google)
 - 🏷️ **Tags** - Tag and discover photos by tags
+- 🔔 **Notifications** - Real-time notifications for likes, comments, follows
 
 ### Technical Features
 - ⚡ **Optimistic Updates** - Instant UI feedback for likes/follows
@@ -38,6 +39,7 @@
 - 🔄 **Real-time Updates** - WebSocket for live notifications and messages
 - 🤖 **AI Integration** - Smart caption suggestions
 - 🎨 **Image Cropping** - Easy crop tool for profile/cover photos
+- 🔐 **Protected Routes** - Auth-gated pages with redirect
 
 ---
 
@@ -51,7 +53,7 @@
 
 ### Installation
 
-\`\`\`bash
+```bash
 # Clone repository
 git clone <repository-url>
 cd frontend-photo-share
@@ -64,23 +66,26 @@ cp .env.example .env
 
 # Start development server
 npm run dev
-\`\`\`
+```
 
 ### Environment Variables
 
-\`\`\`env
-VITE_API_BASE_URL=http://localhost:8080/api
+```env
+VITE_API_BASE_URL=http://localhost:8080/api/v1
 VITE_SOCKET_URL=http://localhost:9092
-\`\`\`
+VITE_OAUTH_URL=/oauth2/authorization/google
+```
 
 ### Available Scripts
 
 | Command | Description |
 |---------|-------------|
-| \`npm run dev\` | Start development server |
-| \`npm run build\` | Build for production |
-| \`npm run preview\` | Preview production build |
-| \`npm run lint\` | Run ESLint |
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run build:docker` | Build Docker image |
+| `npm run preview` | Preview production build |
+| `npm run lint` | Run ESLint |
+| `npm run seed` | Seed data via API (requires running backend) |
 
 ---
 
@@ -88,20 +93,20 @@ VITE_SOCKET_URL=http://localhost:9092
 
 ### Project Structure
 
-\`\`\`
+```
 src/
-├── assets/                 # Static assets
-│   └── styles/            # CSS modules & global styles
-│       ├── base.css       # Reset & base styles
-│       ├── variables.css  # CSS custom properties
-│       ├── components/    # Component-specific styles
-│       ├── layout/        # Layout styles
-│       └── pages/         # Page-specific styles
+├── assets/
+│   └── styles/
+│       ├── base.css
+│       ├── variables.css
+│       ├── components/
+│       ├── layout/
+│       └── pages/
 │
-├── components/            # React components
-│   ├── common/           # Reusable UI components
-│   │   └── Loader.jsx    # Loading spinner
-│   ├── features/         # Feature-specific components
+├── components/
+│   ├── common/
+│   │   └── Loader.jsx
+│   ├── features/
 │   │   ├── PhotoCard.jsx
 │   │   ├── PhotoModal.jsx
 │   │   ├── ShareModal.jsx
@@ -109,122 +114,131 @@ src/
 │   │   ├── SuggestedUsers.jsx
 │   │   ├── AiCaptionAssistant.jsx
 │   │   └── AiCreatorDashboard.jsx
-│   └── layout/           # Layout components
+│   └── layout/
 │       ├── Layout.jsx
 │       └── SideBar.jsx
 │
-├── config/               # App configuration
-│   └── ApiConfig.ts     # API endpoints
+├── config/
+│   └── ApiConfig.ts
 │
-├── context/             # React Context providers
-│   └── AuthContext.jsx  # Authentication state
+├── context/
+│   ├── AuthContext.jsx
+│   └── SocketContext.jsx
 │
-├── hooks/               # Custom React hooks
-│   ├── useAuth.ts           # Authentication logic
-│   ├── useCreatePost.ts     # Post creation logic
-│   ├── useOptimisticLike.ts # Like with optimistic UI
-│   └── useUserProfile.ts    # Profile data fetching
+├── hooks/
+│   ├── useAuth.ts
+│   ├── useCreatePost.ts
+│   ├── useOptimisticLike.ts
+│   └── useUserProfile.ts
 │
-├── pages/               # Route pages
-│   ├── auth/            # Authentication pages
+├── pages/
+│   ├── auth/
 │   │   ├── Login.jsx
 │   │   ├── Register.jsx
 │   │   ├── ForgotPassword.jsx
 │   │   ├── ResetPassword.jsx
 │   │   └── OAuth2RedirectHandler.jsx
 │   ├── home/
-│   │   └── Home.jsx     # Newsfeed
+│   │   └── Home.jsx
 │   ├── search/
-│   │   └── Search.jsx   # Search & Explore
+│   │   └── Search.jsx
 │   ├── create/
-│   │   └── Create.jsx   # Create post
+│   │   └── Create.jsx
 │   ├── messages/
-│   │   └── Messages.jsx # Direct messages
+│   │   └── Messages.jsx
+│   ├── notifications/
+│   │   └── Notifications.jsx
 │   └── profile/
 │       ├── Profile.jsx
 │       └── EditProfileForm.jsx
 │
-├── services/            # API service layer
+├── services/                  # 17 API services
+│   ├── api.ts
 │   ├── authService.ts
 │   ├── userService.ts
 │   ├── photoService.ts
+│   ├── postService.ts
 │   ├── commentService.ts
 │   ├── likeService.ts
 │   ├── followService.ts
 │   ├── favoriteService.ts
+│   ├── shareService.ts
 │   ├── messageService.ts
 │   ├── searchService.ts
-│   ├── shareService.ts
-│   ├── tagService.ts
 │   ├── newsfeedService.ts
 │   ├── recommendationService.ts
+│   ├── notificationService.ts
 │   ├── aiService.ts
 │   └── socketService.ts
 │
-├── types/              # TypeScript definitions
+├── types/
 │   └── api.ts
 │
-├── utils/              # Utility functions
-│   ├── constants.ts    # App constants
-│   ├── helpers.ts      # Helper functions
-│   ├── storage.ts      # localStorage utilities
-│   ├── toastService.ts # Toast notifications
+├── utils/
+│   ├── constants.ts
+│   ├── helpers.ts
+│   ├── storage.ts
+│   ├── toastService.ts
 │   └── ProtectedRoute.jsx
 │
-├── App.jsx             # Root component
-└── main.jsx            # Entry point
-\`\`\`
+├── App.jsx
+└── main.jsx
+```
 
 ### State Management
 
-The application uses **React Context** + **Custom Hooks** pattern:
-
-\`\`\`
+```
 ┌─────────────────────────────────────────┐
 │              AuthContext                │
-│  ┌─────────────────────────────────┐   │
-│  │  user, token, isAuthenticated   │   │
-│  │  login(), logout(), register()  │   │
-│  └─────────────────────────────────┘   │
+│  user, token, isAuthenticated           │
+│  login(), logout(), register()          │
+└─────────────────────────────────────────┘
+                    │
+┌─────────────────────────────────────────┐
+│            SocketContext               │
+│  socket, connected                      │
+│  joinRoom(), sendMessage()               │
 └─────────────────────────────────────────┘
                     │
                     ▼
 ┌─────────────────────────────────────────┐
 │            Custom Hooks                 │
-│  ┌─────────────┐  ┌─────────────────┐  │
-│  │  useAuth    │  │ useUserProfile  │  │
-│  └─────────────┘  └─────────────────┘  │
-│  ┌─────────────┐  ┌─────────────────┐  │
-│  │useCreatePost│  │useOptimisticLike│  │
-│  └─────────────┘  └─────────────────┘  │
+│  useAuth    │ useUserProfile             │
+│  useCreatePost │ useOptimisticLike       │
 └─────────────────────────────────────────┘
-\`\`\`
+```
 
 ### Data Flow
 
-\`\`\`
-┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
-│   User   │────►│   Page   │────►│  Service │────►│   API    │
-│  Action  │     │Component │     │  Layer   │     │ Backend  │
-└──────────┘     └──────────┘     └──────────┘     └──────────┘
-                      │                                  │
-                      │◄─────────────────────────────────┘
-                      │         Response
-                      ▼
-              ┌──────────────┐
-              │  State Update │
-              │  (Context/    │
-              │   useState)   │
-              └──────────────┘
-\`\`\`
+```
+User Action → Page Component → Service Layer → API Backend
+     ↑                                        │
+     └────────────── Response ─────────────────┘
+     │
+     ▼
+State Update (Context / useState)
+```
+
+### Socket.IO Integration
+
+Real-time messaging and notifications:
+
+```
+ON:  new_message   → append to chat
+ON:  message_read  → update read status
+ON:  notification  → show toast + badge
+ON:  user_online   → update online status
+
+EMIT: join_room    → join conversation
+EMIT: send_message → send to server
+EMIT: mark_read    → mark as read
+```
 
 ---
 
 ## 📖 Documentation
 
 ### State Machine Diagrams
-
-Detailed state diagrams for all components are available in:
 
 📄 **[docs/STATE_DIAGRAMS.md](docs/STATE_DIAGRAMS.md)**
 
@@ -242,28 +256,23 @@ Includes:
 
 #### Optimistic Updates
 
-\`\`\`typescript
-// Example: useOptimisticLike hook
+```typescript
 const handleLike = async () => {
-  // 1. Optimistic update (immediate)
   setIsLiked(true);
   setLikesCount(prev => prev + 1);
-  
+
   try {
-    // 2. API call
     await likePhoto(photoId);
   } catch (error) {
-    // 3. Rollback on error
     setIsLiked(false);
     setLikesCount(prev => prev - 1);
   }
 };
-\`\`\`
+```
 
 #### Infinite Scroll
 
-\`\`\`typescript
-// Intersection Observer pattern
+```typescript
 useEffect(() => {
   const observer = new IntersectionObserver(
     entries => {
@@ -273,14 +282,22 @@ useEffect(() => {
     },
     { threshold: 0.1 }
   );
-  
+
   if (loadTriggerRef.current) {
     observer.observe(loadTriggerRef.current);
   }
-  
+
   return () => observer.disconnect();
 }, [hasMore, loading]);
-\`\`\`
+```
+
+#### Image Cropping
+
+```typescript
+const onCropComplete = (croppedArea, croppedAreaPixels) => {
+  const canvas = getCroppedImg(imageRef.current, croppedAreaPixels);
+};
+```
 
 ---
 
@@ -312,15 +329,52 @@ useEffect(() => {
 
 ### Git Workflow
 
-\`\`\`bash
-# Feature branch
+```bash
 git checkout -b feature/your-feature
-
-# Commit with conventional commits
 git commit -m "feat: add new feature"
 git commit -m "fix: resolve bug"
-git commit -m "docs: update readme"
-\`\`\`
+git push origin main
+```
+
+---
+
+## 🔄 CI/CD
+
+GitHub Actions automatically builds and deploys on every push to `main`.
+
+### Workflow
+
+```yaml
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    steps:
+      - Checkout code
+      - Log in to GHCR
+      - Build & push Docker image with build args:
+          VITE_API_BASE_URL=/api/v1
+          VITE_SOCKET_URL=
+          VITE_OAUTH_URL=/oauth2/authorization/google
+      - SSH to VPS:
+          docker compose pull frontend
+          docker compose up -d --no-deps frontend
+```
+
+### GitHub Secrets Required
+
+| Secret | Description |
+|--------|-------------|
+| `VPS_HOST` | VPS IP address or hostname |
+| `VPS_USER` | SSH username |
+| `VPS_SSH_KEY` | Private SSH key for VPS access |
+
+### Container Registry
+
+- **Registry**: `ghcr.io/photo-sharing-platform/frontend-photo-share`
+- **Tags**: `latest`, `sha-{commit-hash}`
 
 ---
 
