@@ -9,6 +9,7 @@ import './assets/styles/toast.css'
 
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
+import OAuth2Redirect from './pages/auth/OAuth2Redirect'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import ResetPassword from './pages/auth/ResetPassword'
 import Home from './pages/home/Home'
@@ -67,6 +68,7 @@ function App() {
                         <Route path="/privacy" element={<PrivacyPage />} />
 
                         {/* Open routes — accessible regardless of auth state */}
+                        <Route path="/auth/oauth2/redirect" element={<OAuth2Redirect />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
                         <Route path="/reset-password" element={<ResetPassword />} />
 
