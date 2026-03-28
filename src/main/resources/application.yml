@@ -53,6 +53,9 @@ spring:
               - email
               - profile
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+
+server:
+  forward-headers-strategy: framework
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
