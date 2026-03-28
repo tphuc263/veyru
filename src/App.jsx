@@ -18,37 +18,7 @@ import Create from './pages/create/Create'
 import Profile from './pages/profile/Profile'
 import EditProfileForm from './pages/profile/EditProfileForm.jsx'
 import Messages from './pages/messages/Messages'
-
-const NotificationsPage = () => (
-    <div className="page-placeholder">
-        <h2>Thông báo</h2>
-        <p>Cập nhật thông báo mới nhất...</p>
-    </div>
-)
-
-const SettingsPage = () => (
-    <div className="page-placeholder">
-        <h2>Cài đặt</h2>
-    </div>
-);
-
-const HelpPage = () => (
-    <div className="page-placeholder">
-        <h2>❓ Help & Support</h2>
-    </div>
-);
-
-const TermsPage = () => (
-    <div className="page-placeholder">
-        <h2>📄 Terms of Service</h2>
-    </div>
-);
-
-const PrivacyPage = () => (
-    <div className="page-placeholder">
-        <h2>🔒 Privacy Policy</h2>
-    </div>
-);
+import Notifications from './pages/notifications/Notifications'
 
 const NotFoundPage = () => (
     <div className="page-placeholder">
@@ -64,8 +34,6 @@ function App() {
                 <Layout>
                     <Routes>
                         <Route path="/" element={<Navigate to="/login" replace/>} />
-                        <Route path="/terms" element={<TermsPage />} />
-                        <Route path="/privacy" element={<PrivacyPage />} />
 
                         {/* Open routes — accessible regardless of auth state */}
                         <Route path="/auth/oauth2/redirect" element={<OAuth2Redirect />} />
@@ -81,13 +49,11 @@ function App() {
                             <Route path="/home" element={<Home />} />
                             <Route path="/search" element={<Search />} />
                             <Route path="/messages" element={<Messages />} />
-                            <Route path="/notifications" element={<NotificationsPage />} />
+                            <Route path="/notifications" element={<Notifications />} />
                             <Route path="/create" element={<Create />} />
                             <Route path="/profile" element={<Profile />} />
                             <Route path="/profile/:userId" element={<Profile />} />
                             <Route path="/edit-profile" element={<EditProfileForm />} />
-                            <Route path="/settings" element={<SettingsPage />} />
-                            <Route path="/help" element={<HelpPage />} />
                         </Route>
 
                         <Route path="*" element={<NotFoundPage />} />

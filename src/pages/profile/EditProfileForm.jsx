@@ -6,6 +6,7 @@ import {
   getCurrentUserProfile,
 } from "../../services/userService";
 import {toastSuccess, toastError} from '../../utils/toastService.js';
+import {DEFAULT_AVATAR} from '../../utils/constants.js';
 import '../../assets/styles/pages/editProfile.css';
 
 const createImage = (url) =>
@@ -220,9 +221,10 @@ const EditProfileForm = () => {
             <div className="form-row form-row-avatar">
               <div className="avatar-preview-wrapper">
                 <img
-                  src={avatarPreview}
+                  src={avatarPreview || DEFAULT_AVATAR}
                   alt="Avatar Preview"
                   className="avatar-preview"
+                  onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}
                 />
               </div>
               <div className="avatar-actions">

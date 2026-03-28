@@ -110,10 +110,8 @@
     }
 }
 
-/* Dark mode support (optional) */
-@media (prefers-color-scheme: dark) {
-    .Toastify__toast {
-        background-color: #2c2c2c;
-        color: #ffffff;
-    }
+/* Dark mode support */
+[data-theme="dark"] .Toastify__toast {
+    background-color: #2c2c2c;
+    color: #ffffff;
 }

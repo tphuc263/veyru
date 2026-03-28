@@ -3,7 +3,7 @@
     margin: 50px auto;
     padding: 0 20px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    color: #262626;
+    color: var(--ig-primary-text, #262626);
 }
 
 /* --- Header --- */
@@ -158,7 +158,7 @@
 .profile-tabs {
     display: flex;
     justify-content: center;
-    border-top: 1px solid #dbdbdb;
+    border-top: 1px solid var(--ig-border-color, #dbdbdb);
     gap: 60px;
 }
 
@@ -175,17 +175,17 @@
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 1px;
-    color: #8e8e8e;
+    color: var(--ig-secondary-text, #8e8e8e);
     transition: color 0.2s;
 }
 
 .profile-tab.active {
-    color: #262626;
-    border-top-color: #262626;
+    color: var(--ig-primary-text, #262626);
+    border-top-color: var(--ig-primary-text, #262626);
 }
 
 .profile-tab:hover:not(.active) {
-    color: #262626;
+    color: var(--ig-primary-text, #262626);
 }
 
 .profile-tab svg {
@@ -207,13 +207,13 @@
     margin: 16px 0 8px;
     font-size: 28px;
     font-weight: 300;
-    color: #262626;
+    color: var(--ig-primary-text, #262626);
 }
 
 .empty-saved p {
     max-width: 350px;
     font-size: 14px;
-    color: #8e8e8e;
+    color: var(--ig-secondary-text, #8e8e8e);
     line-height: 1.5;
 }
 
@@ -278,4 +278,29 @@
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+/* ===================================
+   DARK MODE SUPPORT
+   =================================== */
+[data-theme="dark"] .profile-tabs {
+    border-top-color: #363636;
+}
+
+[data-theme="dark"] .profile-tab {
+    color: #a8a8a8;
+}
+
+[data-theme="dark"] .profile-tab.active,
+[data-theme="dark"] .profile-tab:hover:not(.active) {
+    color: #f5f5f5;
+    border-top-color: #f5f5f5;
+}
+
+[data-theme="dark"] .empty-saved h3 {
+    color: #f5f5f5;
+}
+
+[data-theme="dark"] .empty-saved svg {
+    stroke: #a8a8a8;
 }

@@ -2,19 +2,16 @@ import {NavLink} from 'react-router-dom'
 import {useAuthContext} from '../../context/AuthContext'
 import {useState, useEffect, useRef} from 'react'
 import {Heart, Home, LogOut, Menu, MessageCircle, Moon, PlusSquare, Search, Sun, User} from 'lucide-react'
-import NotificationDropdown from '../features/NotificationDropdown'
 import { getUnreadCount } from '../../services/notificationService'
 
 const SideBar = () => {
     const {user, logout, isAuthenticated} = useAuthContext()
     const [moreMenuOpen, setMoreMenuOpen] = useState(false)
-    const [notificationOpen, setNotificationOpen] = useState(false)
     const [unreadNotifications, setUnreadNotifications] = useState(0)
     const [theme, setTheme] = useState(() => {
         return localStorage.getItem('theme') || 'dark'
     })
     const menuRef = useRef(null)
-    const notificationRef = useRef(null)
 
     // Fetch unread notification count
     useEffect(() => {
@@ -46,15 +43,12 @@ const SideBar = () => {
             if (menuRef.current && !menuRef.current.contains(e.target)) {
                 setMoreMenuOpen(false)
             }
-            if (notificationRef.current && !notificationRef.current.contains(e.target)) {
-                setNotificationOpen(false)
-            }
         }
-        if (moreMenuOpen || notificationOpen) {
+        if (moreMenuOpen) {
             document.addEventListener('mousedown', handleClickOutside)
         }
         return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [moreMenuOpen, notificationOpen])
+    }, [moreMenuOpen])
 
     const handleLogout = () => {
         setMoreMenuOpen(false)
@@ -96,29 +90,18 @@ const SideBar = () => {
                     <span className="nav-label">Messages</span>
                 </NavLink>
                 
-                {/* Notifications with Dropdown */}
-                <div className="notification-nav-wrapper" ref={notificationRef}>
-                    <button
-                        className={`nav-item ${notificationOpen ? 'active' : ''}`}
-                        onClick={() => setNotificationOpen(prev => !prev)}
-                    >
-                        <span className="nav-icon">
-                            <Heart size={24}/>
-                            {unreadNotifications > 0 && (
-                                <span className="notification-badge-sidebar">
-                                    {unreadNotifications > 99 ? '99+' : unreadNotifications}
-                                </span>
-                            )}
-                        </span>
-                        <span className="nav-label">Notifications</span>
-                    </button>
-                    {notificationOpen && (
-                        <NotificationDropdown 
-                          isControlled={true} 
-                          onClose={() => setNotificationOpen(false)} 
-                        />
-                    )}
-                </div>
+                {/* Notifications */}
+                <NavLink to="/notifications" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
+                    <span className="nav-icon">
+                        <Heart size={24}/>
+                        {unreadNotifications > 0 && (
+                            <span className="notification-badge-sidebar">
+                                {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                            </span>
+                        )}
+                    </span>
+                    <span className="nav-label">Notifications</span>
+                </NavLink>
                 
                 {/* Create */}
                 <NavLink to="/create" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
