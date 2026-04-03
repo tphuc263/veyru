@@ -66,7 +66,8 @@ public class SecurityConfig {
                         API + "/follows/**",
                         API + "/favorites/**",
                         API + "/ai/**",
-                        API + "/messages/**"
+                        API + "/messages/**",
+                        API + "/newsfeed/**"
                 );
 
         http
