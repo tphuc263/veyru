@@ -447,9 +447,6 @@ const Messages = () => {
                                                 <span className="muted-icon" title="Muted">🔇</span>
                                             )}
                                         </span>
-                                        <span className="conversation-time">
-                                            {formatTime(conv.lastMessageAt)}
-                                        </span>
                                     </div>
                                     <div className="conversation-preview">
                                         {isTyping(conv.participantId) ? (
@@ -460,6 +457,9 @@ const Messages = () => {
                                                 {conv.lastMessageText || 'No messages yet'}
                                             </span>
                                         )}
+                                        <span className="conversation-time">
+                                            {formatTime(conv.lastMessageAt)}
+                                        </span>
                                         {conv.unreadCount > 0 && (
                                             <span className="unread-badge">{conv.unreadCount}</span>
                                         )}
@@ -595,44 +595,65 @@ const Messages = () => {
                                             (index === 0 ||
                                                 messages[index - 1]?.senderId !== msg.senderId);
 
+                                        // Only show status on the absolute last message, and only if it's mine
+                                        const isAbsoluteLastMessage = index === messages.length - 1;
+
+                                        // Determine read status label
+                                        const getStatusLabel = () => {
+                                            if (!isMine || !isAbsoluteLastMessage) return null;
+                                            if (msg.read) return 'Đã xem';
+                                            if (isOnline(activeConversation.participantId)) return 'Đã nhận';
+                                            return 'Đã gửi';
+                                        };
+                                        const statusLabel = getStatusLabel();
+
                                         return (
                                             <div
                                                 key={msg.id}
-                                                className={`message-wrapper ${
+                                                className={`message-row ${
                                                     isMine ? 'sent' : 'received'
                                                 }`}
                                             >
-                                                {!isMine && showAvatar && (
-                                                    <div className="message-avatar">
-                                                        {activeConversation.participantImageUrl ? (
-                                                            <img
-                                                                src={
-                                                                    activeConversation.participantImageUrl
-                                                                }
-                                                                alt=""
-                                                            />
-                                                        ) : (
-                                                            <div className="avatar-placeholder tiny">
-                                                                {activeConversation.participantUsername?.[0]?.toUpperCase()}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
                                                 <div
-                                                    className={`message-bubble ${
+                                                    className={`message-wrapper ${
                                                         isMine ? 'sent' : 'received'
                                                     }`}
                                                 >
-                                                    <p>{msg.text}</p>
-                                                    <span className="message-time">
+                                                    {!isMine && showAvatar && (
+                                                        <div className="message-avatar">
+                                                            {activeConversation.participantImageUrl ? (
+                                                                <img
+                                                                    src={
+                                                                        activeConversation.participantImageUrl
+                                                                    }
+                                                                    alt=""
+                                                                />
+                                                            ) : (
+                                                                <div className="avatar-placeholder tiny">
+                                                                    {activeConversation.participantUsername?.[0]?.toUpperCase()}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    {!isMine && !showAvatar && (
+                                                        <div className="message-avatar-spacer" />
+                                                    )}
+                                                    <div
+                                                        className={`message-bubble ${
+                                                            isMine ? 'sent' : 'received'
+                                                        }`}
+                                                    >
+                                                        <p>{msg.text}</p>
+                                                    </div>
+                                                    <span className="message-time-hover">
                                                         {formatMessageTime(msg.createdAt)}
-                                                        {isMine && (
-                                                            <span className="read-status">
-                                                                {msg.read ? ' ✓✓' : ' ✓'}
-                                                            </span>
-                                                        )}
                                                     </span>
                                                 </div>
+                                                {statusLabel && (
+                                                    <div className="message-status-label">
+                                                        {statusLabel}
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })}

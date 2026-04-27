@@ -95,6 +95,8 @@ export const connectSocket = (userId: string): Client => {
                     console.log('[socketService] Received message envelope:', envelope);
                     if (envelope.type === 'CHAT_MESSAGE') {
                         triggerEvent('new_message', envelope.payload);
+                    } else if (envelope.type === 'MESSAGES_READ') {
+                        triggerEvent('messages_read', envelope.payload);
                     }
                 } catch (e) {
                     console.error('Failed to parse message', e);
@@ -179,9 +181,15 @@ export const sendSocketMessage = (receiverId: string, text: string): void => {
     publishEvent('CHAT_MESSAGE', { receiverId, text });
 };
 
-// Mark messages as read
-export const markMessagesRead = (_conversationId: string, _otherUserId: string): void => {
-    // publishEvent('MARK_READ', { conversationId: _conversationId, otherUserId: _otherUserId });
+// Mark messages as read via REST API
+export const markMessagesRead = async (conversationId: string, _otherUserId: string): Promise<void> => {
+    try {
+        const { markAsRead } = await import('./messageService');
+        await markAsRead(conversationId);
+        console.log(`[Socket] Marked messages as read for conversation: ${conversationId}`);
+    } catch (e) {
+        console.error('[Socket] Failed to mark messages as read:', e);
+    }
 };
 
 // Send typing indicator
