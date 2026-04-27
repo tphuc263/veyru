@@ -88,6 +88,19 @@ public class MessageController {
     }
 
     /**
+     * Check online status for multiple users
+     */
+    @PostMapping("/online-users")
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> getOnlineUsers(@RequestBody List<String> userIds) {
+        Map<String, Boolean> result = userIds.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        id -> id,
+                        id -> simpUserRegistry.getUser(id) != null
+                ));
+        return ResponseEntity.ok(ApiResponse.success(result, "Online statuses retrieved"));
+    }
+
+    /**
      * Start a conversation with a user (or get existing one)
      */
     @PostMapping("/conversations/start/{otherUserId}")
