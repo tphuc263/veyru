@@ -21,7 +21,7 @@ COPY --from=build /app/target/*.jar app.jar
 RUN mkdir -p /app/logs && chown -R spring:spring /app
 
 USER spring
-EXPOSE 8080 9092
+EXPOSE 8080
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \

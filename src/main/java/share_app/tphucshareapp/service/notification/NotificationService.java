@@ -238,7 +238,7 @@ public class NotificationService implements INotificationService {
         Notification savedNotification = notificationRepository.save(notification);
         log.info("Saved notification: {} for user: {}", savedNotification.getId(), event.getRecipientId());
         
-        // Send real-time notification via Socket.IO
+        // Send real-time notification via WebSocket
         sendRealTimeNotification(event.getRecipientId(), convertToResponse(savedNotification));
     }
 

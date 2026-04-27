@@ -29,7 +29,7 @@
 - 📷 **Photo Management** - Upload, CRUD operations with Cloudinary integration
 - ❤️ **Social Features** - Likes, comments, shares, favorites
 - 👥 **User Relations** - Follow/unfollow system with follower/following counts
-- 💬 **Real-time Messaging** - WebSocket with Socket.IO for instant messaging
+- 💬 **Real-time Messaging** - Spring WebSocket (STOMP) for instant messaging
 - 🔍 **Search** - User and photo search with pagination
 - 📰 **Newsfeed** - Personalized feed algorithm based on followed users
 - 🤖 **AI Integration** - Caption suggestions and photo recommendations
@@ -287,7 +287,7 @@ src/main/java/share_app/tphucshareapp/
 │   ├── WebConfig.java               # CORS, MVC config
 │   ├── RedisConfig.java             # Redis configuration
 │   ├── CloudinaryConfig.java        # Cloudinary setup
-│   └── SocketIOConfig.java          # WebSocket config
+│   └── WebSocketConfig.java         # WebSocket config
 │
 ├── controller/                      # REST Controllers
 │   ├── AuthController.java
@@ -393,8 +393,8 @@ src/main/java/share_app/tphucshareapp/
 │   │   ├── NotificationProducer.java
 │   │   └── NotificationConsumer.java
 │   │
-│   ├── websocket/                        # Socket.IO handling
-│   │   └── SocketIOEventHandler.java
+│   ├── websocket/                        # WebSocket handling
+│   │   └── WebSocketMessageController.java
 │   │
 │   └── exceptions/                      # Custom exceptions
 │       ├── GlobalExceptionHandler.java
@@ -414,8 +414,8 @@ src/main/java/share_app/tphucshareapp/
                     ▼                           ▼
          ┌─────────────────┐         ┌─────────────────┐
          │   REST API      │         │   WebSocket     │
-         │   (Port 8080)   │         │   (Port 9092)   │
-         │   /api/v1/*     │         │   Socket.IO     │
+         │   (Port 8080)   │         │   (Port 8080)   │
+         │   /api/v1/*     │         │   STOMP /ws     │
          └────────┬────────┘         └────────┬────────┘
                   │                           │
                   └─────────────┬─────────────┘
@@ -551,7 +551,7 @@ src/main/java/share_app/tphucshareapp/
 | **Message Queue** | RabbitMQ 3.13 |
 | **Authentication** | Spring Security + JWT + OAuth2 (Google) |
 | **File Storage** | Cloudinary |
-| **Real-time** | Netty Socket.IO 2.0.12 |
+| **Real-time** | Spring WebSocket (STOMP) |
 | **Documentation** | SpringDoc OpenAPI |
 | **Monitoring** | Spring Actuator + Prometheus |
 | **Email** | Spring Mail |
