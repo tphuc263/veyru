@@ -3,10 +3,11 @@ import { toast, ToastOptions } from 'react-toastify';
 const toastConfig: ToastOptions = {
     position: "top-right",
     autoClose: 3000,
-    hideProgressBar: false,
+    hideProgressBar: true,
     closeOnClick: true,
-    pauseOnHover: true,
-    draggable: true,
+    pauseOnHover: false,
+    pauseOnFocusLoss: false,
+    draggable: false,
 };
 
 type ToastType = 'success' | 'error' | 'info' | 'warning' | 'default';
