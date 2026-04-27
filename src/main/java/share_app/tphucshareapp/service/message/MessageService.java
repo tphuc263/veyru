@@ -97,10 +97,14 @@ public class MessageService {
                     .timestamp(Instant.now())
                     .payload(response)
                     .build();
+            // Send to receiver
             messagingTemplate.convertAndSendToUser(receiverId, "/queue/messages", envelope);
-            log.info("Sent real-time message to user: {}", receiverId);
+            log.info("Sent real-time message to receiver: {}", receiverId);
+            // Send back to sender (to replace optimistic message with confirmed data)
+            messagingTemplate.convertAndSendToUser(senderId, "/queue/messages", envelope);
+            log.info("Sent confirmed message back to sender: {}", senderId);
         } catch (Exception e) {
-            log.error("Failed to send real-time message to user: {}", receiverId, e);
+            log.error("Failed to send real-time message", e);
         }
 
         return response;
@@ -168,7 +172,33 @@ public class MessageService {
                 .and("receiverId").is(userId)
                 .and("read").is(false));
         Update update = new Update().set("read", true);
-        mongoTemplate.updateMulti(query, update, Message.class);
+        var result = mongoTemplate.updateMulti(query, update, Message.class);
+
+        // Notify the sender that their messages have been read
+        if (result.getModifiedCount() > 0) {
+            Conversation conversation = conversationRepository.findById(conversationId)
+                    .orElse(null);
+            if (conversation != null) {
+                conversation.getParticipantIds().stream()
+                        .filter(id -> !id.equals(userId))
+                        .forEach(senderId -> {
+                            try {
+                                WsEventEnvelope<java.util.Map<String, String>> envelope = WsEventEnvelope
+                                        .<java.util.Map<String, String>>builder()
+                                        .type("MESSAGES_READ")
+                                        .timestamp(Instant.now())
+                                        .payload(java.util.Map.of(
+                                                "conversationId", conversationId,
+                                                "readBy", userId))
+                                        .build();
+                                messagingTemplate.convertAndSendToUser(senderId, "/queue/messages", envelope);
+                                log.info("Sent MESSAGES_READ notification to user: {}", senderId);
+                            } catch (Exception e) {
+                                log.error("Failed to send MESSAGES_READ notification to user: {}", senderId, e);
+                            }
+                        });
+            }
+        }
     }
 
     /**
