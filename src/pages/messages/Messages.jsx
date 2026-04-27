@@ -22,7 +22,7 @@ import '../../assets/styles/pages/messagesPage.css';
 
 const Messages = () => {
     const { user } = useAuthContext();
-    const { isConnected, onlineUsers, subscribeToMessages } = useSocketContext();
+    const { isConnected, onlineUsers, subscribeToMessages, updateOnlineUsers } = useSocketContext();
     const [searchParams, setSearchParams] = useSearchParams();
 
     // State
@@ -214,6 +214,13 @@ const Messages = () => {
             setLoading(true);
             const data = await getConversations();
             setConversations(data || []);
+            
+            // Fetch online statuses for all participants
+            if (data && data.length > 0) {
+                const participantIds = data.map(conv => conv.participantId);
+                const onlineStatuses = await import('../../services/messageService').then(m => m.getOnlineUsers(participantIds));
+                updateOnlineUsers(onlineStatuses);
+            }
         } catch (error) {
             console.error('Failed to load conversations:', error);
         } finally {

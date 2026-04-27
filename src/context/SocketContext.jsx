@@ -147,11 +147,26 @@ export const SocketProvider = ({ children }) => {
         }
     }, [user?.id]);
 
+    const updateOnlineUsers = useCallback((statuses) => {
+        setOnlineUsers((prev) => {
+            const next = new Set(prev);
+            Object.entries(statuses).forEach(([userId, isOnline]) => {
+                if (isOnline) {
+                    next.add(userId);
+                } else {
+                    next.delete(userId);
+                }
+            });
+            return next;
+        });
+    }, []);
+
     const contextValue = {
         socket: socketRef.current,
         isConnected,
         onlineUsers,
         isUserOnline,
+        updateOnlineUsers,
         subscribeToMessages,
         reconnect,
     };

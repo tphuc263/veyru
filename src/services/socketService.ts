@@ -3,6 +3,7 @@ import { getToken } from '../utils/storage';
 
 let client: Client | null = null;
 let currentUserId: string | null = null;
+let pendingMessages: any[] = [];
 
 // Event listeners registry
 const listeners = {
@@ -63,8 +64,8 @@ export const connectSocket = (userId: string): Client => {
             Authorization: `Bearer ${token}`
         },
         reconnectDelay: 5000,
-        heartbeatIncoming: 4000,
-        heartbeatOutgoing: 4000,
+        heartbeatIncoming: 10000,
+        heartbeatOutgoing: 10000,
         debug: (str) => {
             console.log('[STOMP]', str);
         }
@@ -74,6 +75,18 @@ export const connectSocket = (userId: string): Client => {
         console.log('[socketService] STOMP connected:', frame);
         triggerEvent('connect');
         
+        // Process offline queue
+        if (pendingMessages.length > 0) {
+            console.log(`[socketService] Processing ${pendingMessages.length} pending messages...`);
+            pendingMessages.forEach(msg => {
+                client?.publish({
+                    destination: msg.destination,
+                    body: msg.body
+                });
+            });
+            pendingMessages = []; // clear after sending
+        }
+
         // Subscribe to user messages
         client?.subscribe('/user/queue/messages', (message) => {
             if (message.body) {
@@ -85,6 +98,22 @@ export const connectSocket = (userId: string): Client => {
                     }
                 } catch (e) {
                     console.error('Failed to parse message', e);
+                }
+            }
+        });
+
+        // Subscribe to presence events
+        client?.subscribe('/topic/presence', (message) => {
+            if (message.body) {
+                try {
+                    const envelope = JSON.parse(message.body);
+                    if (envelope.type === 'USER_ONLINE') {
+                        triggerEvent('user_online', envelope.payload);
+                    } else if (envelope.type === 'USER_OFFLINE') {
+                        triggerEvent('user_offline', envelope.payload);
+                    }
+                } catch (e) {
+                    console.error('Failed to parse presence message', e);
                 }
             }
         });
@@ -123,20 +152,25 @@ export const getSocket = (): Client | null => {
 };
 
 export const publishEvent = (type: string, payload: any): void => {
+    const envelope = {
+        type,
+        clientMessageId: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+        payload
+    };
+    
     if (client?.connected) {
-        const envelope = {
-            type,
-            clientMessageId: crypto.randomUUID(),
-            timestamp: new Date().toISOString(),
-            payload
-        };
         client.publish({
             destination: '/app/chat.send',
             body: JSON.stringify(envelope)
         });
         console.log(`[Socket] Published event ${type}`);
     } else {
-        console.error('[Socket] Cannot publish event - STOMP not connected!');
+        console.warn(`[Socket] Client offline. Queueing event ${type}`);
+        pendingMessages.push({
+            destination: '/app/chat.send',
+            body: JSON.stringify(envelope)
+        });
     }
 };
 
