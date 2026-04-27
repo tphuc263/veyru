@@ -10,7 +10,7 @@ import share_app.tphucshareapp.dto.response.ApiResponse;
 import share_app.tphucshareapp.dto.response.message.ConversationResponse;
 import share_app.tphucshareapp.dto.response.message.MessageResponse;
 import share_app.tphucshareapp.service.message.MessageService;
-import share_app.tphucshareapp.service.message.SocketIOHandler;
+import org.springframework.messaging.simp.user.SimpUserRegistry;
 
 import java.util.List;
 import java.util.Map;
@@ -22,7 +22,7 @@ import java.util.Map;
 public class MessageController {
 
     private final MessageService messageService;
-    private final SocketIOHandler socketIOHandler;
+    private final SimpUserRegistry simpUserRegistry;
 
     /**
      * Get all conversations for the current user
@@ -83,7 +83,7 @@ public class MessageController {
      */
     @GetMapping("/online/{userId}")
     public ResponseEntity<ApiResponse<Boolean>> isUserOnline(@PathVariable String userId) {
-        boolean online = socketIOHandler.isUserOnline(userId);
+        boolean online = simpUserRegistry.getUser(userId) != null;
         return ResponseEntity.ok(ApiResponse.success(online, "Online status retrieved"));
     }
 

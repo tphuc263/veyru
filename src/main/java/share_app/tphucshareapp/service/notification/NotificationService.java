@@ -1,6 +1,6 @@
 package share_app.tphucshareapp.service.notification;
 
-import com.corundumstudio.socketio.SocketIOServer;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -28,7 +28,7 @@ public class NotificationService implements INotificationService {
 
     private final NotificationRepository notificationRepository;
     private final RabbitTemplate rabbitTemplate;
-    private final SocketIOServer socketIOServer;
+    private final SimpMessagingTemplate messagingTemplate;
     private final UserAvatarCacheService userAvatarCacheService;
 
     @Override
@@ -238,10 +238,10 @@ public class NotificationService implements INotificationService {
         sendRealTimeNotification(event.getRecipientId(), convertToResponse(savedNotification));
     }
 
-    // Send real-time notification via Socket.IO
+    // Send real-time notification via WebSocket
     private void sendRealTimeNotification(String userId, NotificationResponse response) {
         try {
-            socketIOServer.getRoomOperations(userId).sendEvent("notification", response);
+            messagingTemplate.convertAndSendToUser(userId, "/queue/notifications", response);
             log.info("Sent real-time notification to user: {}", userId);
         } catch (Exception e) {
             log.error("Failed to send real-time notification to user: {}", userId, e);

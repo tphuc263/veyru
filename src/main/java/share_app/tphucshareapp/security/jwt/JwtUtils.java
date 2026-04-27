@@ -75,6 +75,20 @@ public class JwtUtils {
         }
     }
 
+    public String getUserIdFromToken(String token) {
+        try {
+            Claims claims = Jwts
+                    .parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            return claims.get("id", String.class);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid or expired JWT token", e);
+        }
+    }
+
     public boolean validateToken(String token) {
         try {
             Jwts.parser()
