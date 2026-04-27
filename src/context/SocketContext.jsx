@@ -4,6 +4,8 @@ import {
     connectSocket,
     disconnectSocket,
     getSocket,
+    subscribeToSocketEvent,
+    unsubscribeFromSocketEvent
 } from '../services/socketService';
 
 const SocketContext = createContext(undefined);
@@ -54,7 +56,7 @@ export const SocketProvider = ({ children }) => {
             console.log('[SocketContext] Socket disconnected:', reason);
             setIsConnected(false);
             // Reset connection flag to allow reconnection
-            if (reason === 'io server disconnect' || reason === 'transport close') {
+            if (reason === 'closed' || reason === 'io server disconnect' || reason === 'transport close') {
                 connectionAttemptedRef.current = false;
             }
         };
@@ -89,12 +91,12 @@ export const SocketProvider = ({ children }) => {
         };
 
         // Set up listeners
-        socket.on('connect', onConnect);
-        socket.on('disconnect', onDisconnect);
-        socket.on('connect_error', onConnectError);
-        socket.on('user_online', onUserOnline);
-        socket.on('user_offline', onUserOffline);
-        socket.on('new_message', onNewMessage);
+        subscribeToSocketEvent('connect', onConnect);
+        subscribeToSocketEvent('disconnect', onDisconnect);
+        subscribeToSocketEvent('connect_error', onConnectError);
+        subscribeToSocketEvent('user_online', onUserOnline);
+        subscribeToSocketEvent('user_offline', onUserOffline);
+        subscribeToSocketEvent('new_message', onNewMessage);
 
         // Check if already connected (in case of reconnection)
         if (socket.connected) {
@@ -104,12 +106,12 @@ export const SocketProvider = ({ children }) => {
         return () => {
             // Only cleanup listeners, DON'T disconnect here
             // We want to keep the connection alive while user is authenticated
-            socket.off('connect', onConnect);
-            socket.off('disconnect', onDisconnect);
-            socket.off('connect_error', onConnectError);
-            socket.off('user_online', onUserOnline);
-            socket.off('user_offline', onUserOffline);
-            socket.off('new_message', onNewMessage);
+            unsubscribeFromSocketEvent('connect', onConnect);
+            unsubscribeFromSocketEvent('disconnect', onDisconnect);
+            unsubscribeFromSocketEvent('connect_error', onConnectError);
+            unsubscribeFromSocketEvent('user_online', onUserOnline);
+            unsubscribeFromSocketEvent('user_offline', onUserOffline);
+            unsubscribeFromSocketEvent('new_message', onNewMessage);
         };
     }, [isAuthenticated, user?.id]);
 

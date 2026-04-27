@@ -13,6 +13,8 @@ import {
     markMessagesRead,
     sendTyping,
     sendStopTyping,
+    subscribeToSocketEvent,
+    unsubscribeFromSocketEvent,
 } from '../../services/socketService';
 import { Search, Send, ArrowLeft, MoreHorizontal, Smile, Trash2, BellOff, User } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
@@ -149,14 +151,14 @@ const Messages = () => {
             );
         };
 
-        socket.on('user_typing', onUserTyping);
-        socket.on('user_stop_typing', onUserStopTyping);
-        socket.on('messages_read', onMessagesRead);
+        subscribeToSocketEvent('user_typing', onUserTyping);
+        subscribeToSocketEvent('user_stop_typing', onUserStopTyping);
+        subscribeToSocketEvent('messages_read', onMessagesRead);
 
         return () => {
-            socket.off('user_typing', onUserTyping);
-            socket.off('user_stop_typing', onUserStopTyping);
-            socket.off('messages_read', onMessagesRead);
+            unsubscribeFromSocketEvent('user_typing', onUserTyping);
+            unsubscribeFromSocketEvent('user_stop_typing', onUserStopTyping);
+            unsubscribeFromSocketEvent('messages_read', onMessagesRead);
         };
     }, [isConnected]);
 

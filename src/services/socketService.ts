@@ -1,115 +1,161 @@
-import { io, Socket } from 'socket.io-client';
+import { Client } from '@stomp/stompjs';
 import { getToken } from '../utils/storage';
-import { SOCKET_URL } from '../utils/constants';
 
-let socket: Socket | null = null;
+let client: Client | null = null;
 let currentUserId: string | null = null;
 
-export const connectSocket = (userId: string): Socket => {
-    // If already have a socket for the same user, return it
-    if (socket && currentUserId === userId) {
-        // If connected or connecting, return existing socket
-        if (socket.connected || socket.io._readyState === 'opening') {
-            console.log('[socketService] Reusing existing socket for user:', userId);
-            return socket;
+// Event listeners registry
+const listeners = {
+    connect: new Set<() => void>(),
+    disconnect: new Set<(reason: string) => void>(),
+    connect_error: new Set<(err: any) => void>(),
+    user_online: new Set<(userId: string) => void>(),
+    user_offline: new Set<(userId: string) => void>(),
+    new_message: new Set<(message: any) => void>(),
+    user_typing: new Set<(data: any) => void>(),
+    user_stop_typing: new Set<(data: any) => void>(),
+    messages_read: new Set<(data: any) => void>()
+};
+
+export const subscribeToSocketEvent = (event: keyof typeof listeners, callback: any) => {
+    if (listeners[event]) {
+        listeners[event].add(callback);
+    }
+};
+
+export const unsubscribeFromSocketEvent = (event: keyof typeof listeners, callback: any) => {
+    if (listeners[event]) {
+        listeners[event].delete(callback);
+    }
+};
+
+const triggerEvent = (event: keyof typeof listeners, data?: any) => {
+    if (listeners[event]) {
+        listeners[event].forEach(callback => callback(data));
+    }
+};
+
+export const connectSocket = (userId: string): Client => {
+    if (client && currentUserId === userId) {
+        if (client.connected) {
+            console.log('[socketService] Reusing existing STOMP client for user:', userId);
+            return client;
         }
-        // If disconnected, reconnect
-        console.log('[socketService] Reconnecting existing socket for user:', userId);
-        socket.connect();
-        return socket;
+        console.log('[socketService] Reconnecting existing STOMP client for user:', userId);
+        client.activate();
+        return client;
     }
 
-    // If switching users, disconnect old socket first
-    if (socket && currentUserId !== userId) {
+    if (client && currentUserId !== userId) {
         console.log('[socketService] Switching user from', currentUserId, 'to', userId);
-        socket.disconnect();
-        socket = null;
+        client.deactivate();
+        client = null;
     }
 
     const token = getToken();
     currentUserId = userId;
 
-    console.log('[socketService] Creating new socket connection for user:', userId);
+    console.log('[socketService] Creating new STOMP connection for user:', userId);
     
-    socket = io(SOCKET_URL, {
-        query: {
-            token,
-            userId,
+    client = new Client({
+        brokerURL: 'ws://localhost:8080/ws',
+        connectHeaders: {
+            Authorization: `Bearer ${token}`
         },
-        path: '/socket.io',
-        transports: ['polling', 'websocket'],
-        reconnection: true,
-        reconnectionAttempts: 10,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-        timeout: 20000,
-        forceNew: false, // Reuse connection if possible
+        reconnectDelay: 5000,
+        heartbeatIncoming: 4000,
+        heartbeatOutgoing: 4000,
+        debug: (str) => {
+            console.log('[STOMP]', str);
+        }
     });
 
-    socket.on('connect', () => {
-        console.log('[socketService] Socket.IO connected:', socket?.id);
-    });
+    client.onConnect = (frame) => {
+        console.log('[socketService] STOMP connected:', frame);
+        triggerEvent('connect');
+        
+        // Subscribe to user messages
+        client?.subscribe('/user/queue/messages', (message) => {
+            if (message.body) {
+                try {
+                    const envelope = JSON.parse(message.body);
+                    console.log('[socketService] Received message envelope:', envelope);
+                    if (envelope.type === 'CHAT_MESSAGE') {
+                        triggerEvent('new_message', envelope.payload);
+                    }
+                } catch (e) {
+                    console.error('Failed to parse message', e);
+                }
+            }
+        });
+    };
 
-    socket.on('connect_error', (error) => {
-        console.error('[socketService] Socket.IO connection error:', error.message);
-    });
+    client.onStompError = (frame) => {
+        console.error('[socketService] STOMP error:', frame.headers['message']);
+        triggerEvent('connect_error', new Error(frame.headers['message']));
+    };
 
-    socket.on('disconnect', (reason) => {
-        console.log('[socketService] Socket.IO disconnected:', reason);
-    });
+    client.onWebSocketError = (event) => {
+        console.error('[socketService] STOMP websocket error:', event);
+        triggerEvent('connect_error', event);
+    };
 
-    socket.on('reconnect', (attemptNumber) => {
-        console.log('[socketService] Socket.IO reconnected after', attemptNumber, 'attempts');
-    });
+    client.onWebSocketClose = (event) => {
+        console.log('[socketService] STOMP disconnected:', event);
+        triggerEvent('disconnect', 'closed');
+    };
 
-    socket.on('reconnect_attempt', (attemptNumber) => {
-        console.log('[socketService] Socket.IO reconnection attempt:', attemptNumber);
-    });
-
-    return socket;
+    client.activate();
+    return client;
 };
 
 export const disconnectSocket = (): void => {
-    if (socket) {
-        console.log('[socketService] Disconnecting socket for user:', currentUserId);
-        socket.disconnect();
-        socket = null;
+    if (client) {
+        console.log('[socketService] Disconnecting STOMP for user:', currentUserId);
+        client.deactivate();
+        client = null;
         currentUserId = null;
     }
 };
 
-export const getSocket = (): Socket | null => {
-    return socket;
+export const getSocket = (): Client | null => {
+    return client;
 };
 
-// Send a message via Socket.IO
-export const sendSocketMessage = (receiverId: string, text: string): void => {
-    console.log('[Socket] sendSocketMessage called:', { receiverId, text, connected: socket?.connected, socketId: socket?.id });
-    if (socket?.connected) {
-        socket.emit('send_message', { receiverId, text });
-        console.log('[Socket] Emitted send_message event');
+export const publishEvent = (type: string, payload: any): void => {
+    if (client?.connected) {
+        const envelope = {
+            type,
+            clientMessageId: crypto.randomUUID(),
+            timestamp: new Date().toISOString(),
+            payload
+        };
+        client.publish({
+            destination: '/app/chat.send',
+            body: JSON.stringify(envelope)
+        });
+        console.log(`[Socket] Published event ${type}`);
     } else {
-        console.error('[Socket] Cannot send message - socket not connected!');
+        console.error('[Socket] Cannot publish event - STOMP not connected!');
     }
+};
+
+// Send a message via STOMP
+export const sendSocketMessage = (receiverId: string, text: string): void => {
+    publishEvent('CHAT_MESSAGE', { receiverId, text });
 };
 
 // Mark messages as read
-export const markMessagesRead = (conversationId: string, otherUserId: string): void => {
-    if (socket?.connected) {
-        socket.emit('mark_read', { conversationId, otherUserId });
-    }
+export const markMessagesRead = (_conversationId: string, _otherUserId: string): void => {
+    // publishEvent('MARK_READ', { conversationId: _conversationId, otherUserId: _otherUserId });
 };
 
 // Send typing indicator
-export const sendTyping = (receiverId: string): void => {
-    if (socket?.connected) {
-        socket.emit('typing', { receiverId });
-    }
+export const sendTyping = (_receiverId: string): void => {
+    // publishEvent('TYPING', { receiverId: _receiverId });
 };
 
 // Send stop typing indicator
-export const sendStopTyping = (receiverId: string): void => {
-    if (socket?.connected) {
-        socket.emit('stop_typing', { receiverId });
-    }
+export const sendStopTyping = (_receiverId: string): void => {
+    // publishEvent('STOP_TYPING', { receiverId: _receiverId });
 };
