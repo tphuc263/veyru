@@ -21,10 +21,15 @@ import share_app.tphucshareapp.repository.ConversationRepository;
 import share_app.tphucshareapp.repository.MessageRepository;
 import share_app.tphucshareapp.repository.UserRepository;
 import share_app.tphucshareapp.security.userdetails.AppUserDetails;
+import share_app.tphucshareapp.dto.websocket.WsEventEnvelope;
+
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -35,11 +40,28 @@ public class MessageService {
     private final ConversationRepository conversationRepository;
     private final UserRepository userRepository;
     private final MongoTemplate mongoTemplate;
+    private final StringRedisTemplate redisTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
 
     /**
      * Send a message from current user to receiver
      */
-    public MessageResponse sendMessage(String senderId, String receiverId, String text) {
+    public MessageResponse sendMessage(String senderId, String receiverId, String text, String clientMessageId) {
+        // Apply Idempotency with Redis
+        if (clientMessageId != null && !clientMessageId.trim().isEmpty()) {
+            String redisKey = "msg_idempotency:" + clientMessageId;
+            Boolean isNew = redisTemplate.opsForValue().setIfAbsent(redisKey, "1", 24, TimeUnit.HOURS);
+            if (Boolean.FALSE.equals(isNew)) {
+                log.info("Duplicate message detected, skipping db save for clientMessageId: {}", clientMessageId);
+                MessageResponse duplicateResponse = new MessageResponse();
+                duplicateResponse.setSenderId(senderId);
+                duplicateResponse.setReceiverId(receiverId);
+                duplicateResponse.setText(text);
+                duplicateResponse.setCreatedAt(Instant.now());
+                return duplicateResponse;
+            }
+        }
+
         User sender = userRepository.findById(senderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sender not found"));
         User receiver = userRepository.findById(receiverId)
@@ -65,7 +87,23 @@ public class MessageService {
         conversation.setUpdatedAt(Instant.now());
         conversationRepository.save(conversation);
 
-        return toMessageResponse(message);
+        MessageResponse response = toMessageResponse(message);
+
+        // Send via WebSocket
+        try {
+            WsEventEnvelope<MessageResponse> envelope = WsEventEnvelope.<MessageResponse>builder()
+                    .type("CHAT_MESSAGE")
+                    .clientMessageId(clientMessageId)
+                    .timestamp(Instant.now())
+                    .payload(response)
+                    .build();
+            messagingTemplate.convertAndSendToUser(receiverId, "/queue/messages", envelope);
+            log.info("Sent real-time message to user: {}", receiverId);
+        } catch (Exception e) {
+            log.error("Failed to send real-time message to user: {}", receiverId, e);
+        }
+
+        return response;
     }
 
     /**

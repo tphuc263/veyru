@@ -48,13 +48,13 @@ public class MessageController {
     }
 
     /**
-     * Send a message via REST (fallback when Socket.IO is not available)
+     * Send a message via REST 
      */
     @PostMapping("/send")
     public ResponseEntity<ApiResponse<MessageResponse>> sendMessage(
             @RequestBody SendMessageRequest request) {
         String senderId = messageService.getCurrentUserId();
-        MessageResponse message = messageService.sendMessage(senderId, request.getReceiverId(), request.getText());
+        MessageResponse message = messageService.sendMessage(senderId, request.getReceiverId(), request.getText(), null);
         return ResponseEntity.ok(ApiResponse.success(message, "Message sent successfully"));
     }
 

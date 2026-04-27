@@ -11,7 +11,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import share_app.tphucshareapp.config.RabbitMQConfig;
 import share_app.tphucshareapp.dto.response.notification.NotificationResponse;
+import share_app.tphucshareapp.dto.websocket.WsEventEnvelope;
 import share_app.tphucshareapp.enums.NotificationType;
+
+import java.time.Instant;
+import java.util.List;
 import share_app.tphucshareapp.event.NotificationEvent;
 import share_app.tphucshareapp.model.Notification;
 import share_app.tphucshareapp.model.User;
@@ -241,7 +245,12 @@ public class NotificationService implements INotificationService {
     // Send real-time notification via WebSocket
     private void sendRealTimeNotification(String userId, NotificationResponse response) {
         try {
-            messagingTemplate.convertAndSendToUser(userId, "/queue/notifications", response);
+            WsEventEnvelope<NotificationResponse> envelope = WsEventEnvelope.<NotificationResponse>builder()
+                    .type("NOTIFICATION")
+                    .timestamp(Instant.now())
+                    .payload(response)
+                    .build();
+            messagingTemplate.convertAndSendToUser(userId, "/queue/notifications", envelope);
             log.info("Sent real-time notification to user: {}", userId);
         } catch (Exception e) {
             log.error("Failed to send real-time notification to user: {}", userId, e);

@@ -10,11 +10,13 @@ import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.stereotype.Component;
 import share_app.tphucshareapp.security.jwt.JwtUtils;
 import share_app.tphucshareapp.security.userdetails.StompPrincipal;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
     private final JwtUtils jwtUtils;
@@ -35,11 +37,18 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                             String userId = jwtUtils.getUserIdFromToken(token);
                             accessor.setUser(new StompPrincipal(userId));
                             return message;
+                        } else {
+                            log.warn("Invalid JWT token during WebSocket handshake");
                         }
                     } catch (Exception e) {
+                        log.error("Error validating WebSocket token", e);
                         throw new IllegalArgumentException("Invalid WebSocket authentication token", e);
                     }
+                } else {
+                    log.warn("Authorization header does not start with Bearer");
                 }
+            } else {
+                log.warn("Missing Authorization header in STOMP CONNECT frame. Headers present: {}", accessor.toNativeHeaderMap());
             }
             throw new IllegalArgumentException("Missing or invalid Authorization header");
         }
