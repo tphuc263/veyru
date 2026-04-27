@@ -6,10 +6,12 @@ import {
     getConversations,
     getMessages,
     startConversation,
+    sendMessage,
 } from '../../services/messageService';
 import {
     getSocket,
     sendSocketMessage,
+    isSocketConnected,
     markMessagesRead,
     sendTyping,
     sendStopTyping,
@@ -306,7 +308,7 @@ const Messages = () => {
         messageInputRef.current?.focus();
     };
 
-    const handleSendMessage = (e) => {
+    const handleSendMessage = async (e) => {
         e.preventDefault();
         if (!newMessage.trim() || !activeConversation) return;
 
@@ -326,7 +328,20 @@ const Messages = () => {
         };
         setMessages((prev) => [...prev, optimisticMessage]);
 
-        sendSocketMessage(activeConversation.participantId, text);
+        if (isSocketConnected()) {
+            sendSocketMessage(activeConversation.participantId, text);
+        } else {
+            try {
+                const savedMessage = await sendMessage(activeConversation.participantId, text);
+                setMessages((prev) =>
+                    prev.map((m) => (m.id === optimisticMessage.id ? savedMessage : m))
+                );
+            } catch (error) {
+                console.error('Failed to send message via REST fallback:', error);
+                setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
+                return;
+            }
+        }
         setNewMessage('');
 
         // Stop typing indicator

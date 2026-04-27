@@ -1,6 +1,15 @@
 import { Client } from '@stomp/stompjs';
 import { getToken } from '../utils/storage';
 
+const resolveBrokerUrl = (): string => {
+    const envSocketUrl = import.meta.env.VITE_SOCKET_URL;
+    const configuredBase = typeof envSocketUrl === 'string' ? envSocketUrl.trim() : '';
+    const base = configuredBase || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080');
+
+    const normalizedBase = base.replace(/^http:\/\//, 'ws://').replace(/^https:\/\//, 'wss://').replace(/\/+$/, '');
+    return normalizedBase.endsWith('/ws') ? normalizedBase : `${normalizedBase}/ws`;
+};
+
 let client: Client | null = null;
 let currentUserId: string | null = null;
 let pendingMessages: any[] = [];
@@ -59,7 +68,7 @@ export const connectSocket = (userId: string): Client => {
     console.log('[socketService] Creating new STOMP connection for user:', userId);
     
     client = new Client({
-        brokerURL: 'ws://localhost:8080/ws',
+        brokerURL: resolveBrokerUrl(),
         connectHeaders: {
             Authorization: `Bearer ${token}`
         },
@@ -179,6 +188,10 @@ export const publishEvent = (type: string, payload: any): void => {
 // Send a message via STOMP
 export const sendSocketMessage = (receiverId: string, text: string): void => {
     publishEvent('CHAT_MESSAGE', { receiverId, text });
+};
+
+export const isSocketConnected = (): boolean => {
+    return Boolean(client?.connected);
 };
 
 // Mark messages as read via REST API
