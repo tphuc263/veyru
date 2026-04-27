@@ -21,10 +21,15 @@ import share_app.tphucshareapp.repository.ConversationRepository;
 import share_app.tphucshareapp.repository.MessageRepository;
 import share_app.tphucshareapp.repository.UserRepository;
 import share_app.tphucshareapp.security.userdetails.AppUserDetails;
+import share_app.tphucshareapp.dto.websocket.WsEventEnvelope;
+
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -35,11 +40,28 @@ public class MessageService {
     private final ConversationRepository conversationRepository;
     private final UserRepository userRepository;
     private final MongoTemplate mongoTemplate;
+    private final StringRedisTemplate redisTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
 
     /**
      * Send a message from current user to receiver
      */
-    public MessageResponse sendMessage(String senderId, String receiverId, String text) {
+    public MessageResponse sendMessage(String senderId, String receiverId, String text, String clientMessageId) {
+        // Apply Idempotency with Redis
+        if (clientMessageId != null && !clientMessageId.trim().isEmpty()) {
+            String redisKey = "msg_idempotency:" + clientMessageId;
+            Boolean isNew = redisTemplate.opsForValue().setIfAbsent(redisKey, "1", 24, TimeUnit.HOURS);
+            if (Boolean.FALSE.equals(isNew)) {
+                log.info("Duplicate message detected, skipping db save for clientMessageId: {}", clientMessageId);
+                MessageResponse duplicateResponse = new MessageResponse();
+                duplicateResponse.setSenderId(senderId);
+                duplicateResponse.setReceiverId(receiverId);
+                duplicateResponse.setText(text);
+                duplicateResponse.setCreatedAt(Instant.now());
+                return duplicateResponse;
+            }
+        }
+
         User sender = userRepository.findById(senderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sender not found"));
         User receiver = userRepository.findById(receiverId)
@@ -65,7 +87,27 @@ public class MessageService {
         conversation.setUpdatedAt(Instant.now());
         conversationRepository.save(conversation);
 
-        return toMessageResponse(message);
+        MessageResponse response = toMessageResponse(message);
+
+        // Send via WebSocket
+        try {
+            WsEventEnvelope<MessageResponse> envelope = WsEventEnvelope.<MessageResponse>builder()
+                    .type("CHAT_MESSAGE")
+                    .clientMessageId(clientMessageId)
+                    .timestamp(Instant.now())
+                    .payload(response)
+                    .build();
+            // Send to receiver
+            messagingTemplate.convertAndSendToUser(receiverId, "/queue/messages", envelope);
+            log.info("Sent real-time message to receiver: {}", receiverId);
+            // Send back to sender (to replace optimistic message with confirmed data)
+            messagingTemplate.convertAndSendToUser(senderId, "/queue/messages", envelope);
+            log.info("Sent confirmed message back to sender: {}", senderId);
+        } catch (Exception e) {
+            log.error("Failed to send real-time message", e);
+        }
+
+        return response;
     }
 
     /**
@@ -130,7 +172,33 @@ public class MessageService {
                 .and("receiverId").is(userId)
                 .and("read").is(false));
         Update update = new Update().set("read", true);
-        mongoTemplate.updateMulti(query, update, Message.class);
+        var result = mongoTemplate.updateMulti(query, update, Message.class);
+
+        // Notify the sender that their messages have been read
+        if (result.getModifiedCount() > 0) {
+            Conversation conversation = conversationRepository.findById(conversationId)
+                    .orElse(null);
+            if (conversation != null) {
+                conversation.getParticipantIds().stream()
+                        .filter(id -> !id.equals(userId))
+                        .forEach(senderId -> {
+                            try {
+                                WsEventEnvelope<java.util.Map<String, String>> envelope = WsEventEnvelope
+                                        .<java.util.Map<String, String>>builder()
+                                        .type("MESSAGES_READ")
+                                        .timestamp(Instant.now())
+                                        .payload(java.util.Map.of(
+                                                "conversationId", conversationId,
+                                                "readBy", userId))
+                                        .build();
+                                messagingTemplate.convertAndSendToUser(senderId, "/queue/messages", envelope);
+                                log.info("Sent MESSAGES_READ notification to user: {}", senderId);
+                            } catch (Exception e) {
+                                log.error("Failed to send MESSAGES_READ notification to user: {}", senderId, e);
+                            }
+                        });
+            }
+        }
     }
 
     /**

@@ -31,16 +31,16 @@
 │   │                              PRESENTATION LAYER                                        │  │
 │   │                                                                                        │  │
 │   │   ┌────────────────────────────┐           ┌────────────────────────────┐            │  │
-│   │   │      REST Controllers      │           │    WebSocket Handler       │            │  │
+│   │   │      REST Controllers      │           │    WebSocket (STOMP)       │            │  │
 │   │   │  ┌────────────────────┐   │           │  ┌────────────────────┐   │            │  │
-│   │   │  │ AuthController     │   │           │  │ SocketIOServer     │   │            │  │
-│   │   │  │ UserController     │   │           │  │ - onConnect        │   │            │  │
-│   │   │  │ PhotoController    │   │           │  │ - onMessage        │   │            │  │
-│   │   │  │ CommentController  │   │           │  │ - onTyping         │   │            │  │
-│   │   │  │ LikeController     │   │           │  │ - onDisconnect     │   │            │  │
+│   │   │  │ AuthController     │   │           │  │ STOMP /ws endpoint │   │            │  │
+│   │   │  │ UserController     │   │           │  │ - CONNECT (auth)   │   │            │  │
+│   │   │  │ PhotoController    │   │           │  │ - SEND /app/*      │   │            │  │
+│   │   │  │ CommentController  │   │           │  │ - SUBSCRIBE        │   │            │  │
+│   │   │  │ LikeController     │   │           │  │ - DISCONNECT       │   │            │  │
 │   │   │  │ FollowController   │   │           │  └────────────────────┘   │            │  │
 │   │   │  │ MessageController  │   │           │                            │            │  │
-│   │   │  │ NewsfeedController │   │           │      Port: 9092            │            │  │
+│   │   │  │ NewsfeedController │   │           │      Port: 8080            │            │  │
 │   │   │  │ SearchController   │   │           │                            │            │  │
 │   │   │  │ AIController       │   │           └────────────────────────────┘            │  │
 │   │   │  └────────────────────┘   │                                                      │  │

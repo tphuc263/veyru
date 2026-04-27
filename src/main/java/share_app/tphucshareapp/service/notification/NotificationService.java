@@ -1,6 +1,6 @@
 package share_app.tphucshareapp.service.notification;
 
-import com.corundumstudio.socketio.SocketIOServer;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -11,7 +11,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import share_app.tphucshareapp.config.RabbitMQConfig;
 import share_app.tphucshareapp.dto.response.notification.NotificationResponse;
+import share_app.tphucshareapp.dto.websocket.WsEventEnvelope;
 import share_app.tphucshareapp.enums.NotificationType;
+
+import java.time.Instant;
+import java.util.List;
 import share_app.tphucshareapp.event.NotificationEvent;
 import share_app.tphucshareapp.model.Notification;
 import share_app.tphucshareapp.model.User;
@@ -28,7 +32,7 @@ public class NotificationService implements INotificationService {
 
     private final NotificationRepository notificationRepository;
     private final RabbitTemplate rabbitTemplate;
-    private final SocketIOServer socketIOServer;
+    private final SimpMessagingTemplate messagingTemplate;
     private final UserAvatarCacheService userAvatarCacheService;
 
     @Override
@@ -234,14 +238,19 @@ public class NotificationService implements INotificationService {
         Notification savedNotification = notificationRepository.save(notification);
         log.info("Saved notification: {} for user: {}", savedNotification.getId(), event.getRecipientId());
         
-        // Send real-time notification via Socket.IO
+        // Send real-time notification via WebSocket
         sendRealTimeNotification(event.getRecipientId(), convertToResponse(savedNotification));
     }
 
-    // Send real-time notification via Socket.IO
+    // Send real-time notification via WebSocket
     private void sendRealTimeNotification(String userId, NotificationResponse response) {
         try {
-            socketIOServer.getRoomOperations(userId).sendEvent("notification", response);
+            WsEventEnvelope<NotificationResponse> envelope = WsEventEnvelope.<NotificationResponse>builder()
+                    .type("NOTIFICATION")
+                    .timestamp(Instant.now())
+                    .payload(response)
+                    .build();
+            messagingTemplate.convertAndSendToUser(userId, "/queue/notifications", envelope);
             log.info("Sent real-time notification to user: {}", userId);
         } catch (Exception e) {
             log.error("Failed to send real-time notification to user: {}", userId, e);

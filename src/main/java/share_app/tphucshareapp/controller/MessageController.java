@@ -10,7 +10,7 @@ import share_app.tphucshareapp.dto.response.ApiResponse;
 import share_app.tphucshareapp.dto.response.message.ConversationResponse;
 import share_app.tphucshareapp.dto.response.message.MessageResponse;
 import share_app.tphucshareapp.service.message.MessageService;
-import share_app.tphucshareapp.service.message.SocketIOHandler;
+import org.springframework.messaging.simp.user.SimpUserRegistry;
 
 import java.util.List;
 import java.util.Map;
@@ -22,7 +22,7 @@ import java.util.Map;
 public class MessageController {
 
     private final MessageService messageService;
-    private final SocketIOHandler socketIOHandler;
+    private final SimpUserRegistry simpUserRegistry;
 
     /**
      * Get all conversations for the current user
@@ -48,13 +48,13 @@ public class MessageController {
     }
 
     /**
-     * Send a message via REST (fallback when Socket.IO is not available)
+     * Send a message via REST 
      */
     @PostMapping("/send")
     public ResponseEntity<ApiResponse<MessageResponse>> sendMessage(
             @RequestBody SendMessageRequest request) {
         String senderId = messageService.getCurrentUserId();
-        MessageResponse message = messageService.sendMessage(senderId, request.getReceiverId(), request.getText());
+        MessageResponse message = messageService.sendMessage(senderId, request.getReceiverId(), request.getText(), null);
         return ResponseEntity.ok(ApiResponse.success(message, "Message sent successfully"));
     }
 
@@ -83,8 +83,21 @@ public class MessageController {
      */
     @GetMapping("/online/{userId}")
     public ResponseEntity<ApiResponse<Boolean>> isUserOnline(@PathVariable String userId) {
-        boolean online = socketIOHandler.isUserOnline(userId);
+        boolean online = simpUserRegistry.getUser(userId) != null;
         return ResponseEntity.ok(ApiResponse.success(online, "Online status retrieved"));
+    }
+
+    /**
+     * Check online status for multiple users
+     */
+    @PostMapping("/online-users")
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> getOnlineUsers(@RequestBody List<String> userIds) {
+        Map<String, Boolean> result = userIds.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        id -> id,
+                        id -> simpUserRegistry.getUser(id) != null
+                ));
+        return ResponseEntity.ok(ApiResponse.success(result, "Online statuses retrieved"));
     }
 
     /**
