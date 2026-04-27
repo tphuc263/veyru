@@ -6,7 +6,7 @@
 ![React](https://img.shields.io/badge/React-19.1-61DAFB?style=for-the-badge&logo=react&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-6.3-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8-010101?style=for-the-badge&logo=socket.io&logoColor=white)
+![STOMP WebSocket](https://img.shields.io/badge/STOMP_WebSocket-1.0-010101?style=for-the-badge&logo=websocket&logoColor=white)
 
 **A modern, Instagram-inspired photo sharing platform**
 
@@ -26,7 +26,7 @@
 - 📷 **Photo Sharing** - Upload, view, and interact with photos
 - ❤️ **Social Interactions** - Like, comment, save posts, and share
 - 🔍 **Search & Explore** - Discover users and trending content
-- 💬 **Real-time Messaging** - Direct messages with WebSocket (Socket.IO)
+- 💬 **Real-time Messaging** - Direct messages with WebSocket (STOMP)
 - 👤 **User Profiles** - View profiles, followers, and following lists
 - 🔐 **Authentication** - JWT-based auth with OAuth2 (Google)
 - 🏷️ **Tags** - Tag and discover photos by tags
@@ -72,7 +72,7 @@ npm run dev
 
 ```env
 VITE_API_BASE_URL=http://localhost:8080/api/v1
-VITE_SOCKET_URL=http://localhost:9092
+VITE_SOCKET_URL=http://localhost:8080
 VITE_OAUTH_URL=/oauth2/authorization/google
 ```
 
@@ -219,19 +219,18 @@ User Action → Page Component → Service Layer → API Backend
 State Update (Context / useState)
 ```
 
-### Socket.IO Integration
+### WebSocket (STOMP) Integration
 
-Real-time messaging and notifications:
+Real-time messaging and notifications via STOMP over WebSocket:
 
 ```
-ON:  new_message   → append to chat
-ON:  message_read  → update read status
-ON:  notification  → show toast + badge
-ON:  user_online   → update online status
+SUBSCRIBE: /user/queue/messages      → receive chat messages
+SUBSCRIBE: /user/queue/notifications  → receive notifications
+SUBSCRIBE: /topic/presence            → online/offline status
 
-EMIT: join_room    → join conversation
-EMIT: send_message → send to server
-EMIT: mark_read    → mark as read
+SEND:      /app/chat.sendMessage       → send message to server
+SEND:      /app/chat.typing            → typing indicator
+SEND:      /app/chat.markRead          → mark messages as read
 ```
 
 ---
@@ -310,7 +309,7 @@ const onCropComplete = (croppedArea, croppedAreaPixels) => {
 | **Language** | TypeScript 5.7 |
 | **Routing** | React Router DOM 7.6 |
 | **HTTP Client** | Axios 1.9 |
-| **Real-time** | Socket.IO Client 4.8 |
+| **Real-time** | @stomp/stompjs (STOMP WebSocket) |
 | **Icons** | Lucide React |
 | **Notifications** | React Toastify |
 | **Image Crop** | React Easy Crop |
