@@ -5,9 +5,9 @@ export const API_BASE_URL: string = typeof envApiUrl === 'string' ? envApiUrl : 
 // Default avatar SVG – grey circle with white person silhouette (Instagram/Facebook style)
 export const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%23c7c7c7'/%3E%3Cpath d='M20 22c-4.4 0-8 3.6-8 8h16c0-4.4-3.6-8-8-8zm0-2c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4z' fill='white'/%3E%3C/svg%3E";
 
-// Socket URL - empty means use relative path through nginx proxy
+// WebSocket URL - uses the same host as the API since STOMP runs on port 8080
 const envSocketUrl = import.meta.env.VITE_SOCKET_URL;
-export const SOCKET_URL: string = typeof envSocketUrl === 'string' ? envSocketUrl : 'http://localhost:9092';
+export const SOCKET_URL: string = typeof envSocketUrl === 'string' ? envSocketUrl : 'http://localhost:8080';
 
 // OAuth URL - uses relative path in production (proxied through nginx)
 const envOauthUrl = import.meta.env.VITE_OAUTH_URL;

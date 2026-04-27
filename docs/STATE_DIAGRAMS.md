@@ -12,7 +12,7 @@
 - [6. Profile Page](#6-profile-page)
 - [7. Search & Explore](#7-search--explore)
 - [8. App Navigation](#8-app-navigation)
-- [9. Socket.IO Global Connection Lifecycle](#9-socketio-global-connection-lifecycle-new---fixed-architecture)
+- [9. WebSocket (STOMP) Global Connection Lifecycle](#9-websocket-stomp-global-connection-lifecycle-new---fixed-architecture)
 
 ---
 
@@ -456,7 +456,7 @@
 
 ---
 
-## 9. Socket.IO Global Connection Lifecycle (NEW - Fixed Architecture)
+## 9. WebSocket (STOMP) Global Connection Lifecycle (NEW - Fixed Architecture)
 
 > **Problem Solved**: Previously, socket was only connected when Messages component was mounted.
 > Users had to reload to see new messages because navigating away disconnected the socket.

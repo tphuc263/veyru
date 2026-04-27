@@ -65,6 +65,11 @@ export const isUserOnline = async (userId: string): Promise<boolean> => {
     return response.data as boolean;
 };
 
+export const getOnlineUsers = async (userIds: string[]): Promise<Record<string, boolean>> => {
+    const response = await api.post('/messages/online-users', userIds);
+    return response.data as Record<string, boolean>;
+};
+
 export const startConversation = async (otherUserId: string): Promise<string> => {
     const response = await api.post(`/messages/conversations/start/${otherUserId}`);
     return (response.data as { conversationId: string }).conversationId;

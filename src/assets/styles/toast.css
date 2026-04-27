@@ -53,11 +53,6 @@
     color: #fafafa;
 }
 
-/* Hide progress bar */
-.Toastify__progress-bar {
-    display: none;
-}
-
 /* Close button */
 .Toastify__close-button {
     color: #8e8e8e;

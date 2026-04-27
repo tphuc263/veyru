@@ -194,7 +194,6 @@
 
 .conversation-top {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     margin-bottom: 2px;
 }
@@ -216,22 +215,29 @@
     font-size: 12px;
     color: var(--ig-secondary-text);
     flex-shrink: 0;
-    margin-left: 8px;
+    margin-left: 4px;
+    white-space: nowrap;
 }
 
 .conversation-preview {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    gap: 4px;
 }
 
-.conversation-preview span {
+.conversation-preview>span:first-child {
     font-size: 14px;
     color: var(--ig-secondary-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+.conversation-preview .conversation-time::before {
+    content: '·';
+    margin-right: 4px;
 }
 
 .conversation-preview span.bold {
@@ -305,7 +311,7 @@
     background: var(--ig-surface);
     border: 1px solid var(--ig-border-color);
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     z-index: 100;
     min-width: 200px;
     overflow: hidden;
@@ -373,7 +379,7 @@
     bottom: calc(100% + 8px);
     left: 0;
     z-index: 200;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
     border-radius: 12px;
     overflow: hidden;
 }
@@ -510,22 +516,38 @@
     margin: 0;
 }
 
+/* Message Row — wraps message-wrapper + status label */
+.message-row {
+    display: flex;
+    flex-direction: column;
+    max-width: 65%;
+    margin-bottom: 2px;
+}
+
+.message-row.sent {
+    align-self: flex-end;
+    align-items: flex-end;
+}
+
+.message-row.received {
+    align-self: flex-start;
+    align-items: flex-start;
+}
+
 /* Message Bubbles */
 .message-wrapper {
     display: flex;
     align-items: flex-end;
     gap: 8px;
-    max-width: 65%;
-    margin-bottom: 2px;
+    position: relative;
 }
 
 .message-wrapper.sent {
-    align-self: flex-end;
     flex-direction: row-reverse;
 }
 
 .message-wrapper.received {
-    align-self: flex-start;
+    /* no special styles needed */
 }
 
 .message-avatar {
@@ -537,6 +559,11 @@
     height: 28px;
     border-radius: 50%;
     object-fit: cover;
+}
+
+.message-avatar-spacer {
+    width: 28px;
+    flex-shrink: 0;
 }
 
 .message-bubble {
@@ -565,21 +592,28 @@
     line-height: 1.4;
 }
 
-.message-time {
+/* Hover timestamp — hidden by default, appears on hover */
+.message-time-hover {
     font-size: 11px;
-    opacity: 0.7;
-    margin-top: 2px;
-    display: block;
-    text-align: right;
+    color: var(--ig-secondary-text);
+    white-space: nowrap;
+    align-self: center;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+    user-select: none;
 }
 
-.message-bubble.received .message-time {
-    color: var(--ig-secondary-text);
+.message-wrapper:hover .message-time-hover {
     opacity: 1;
 }
 
-.read-status {
+/* Status label (Sent / Delivered / Seen) — shown below last sent message */
+.message-status-label {
     font-size: 11px;
+    color: var(--ig-secondary-text);
+    margin-top: 2px;
+    padding-right: 2px;
 }
 
 /* Chat Input */
@@ -729,7 +763,7 @@
         display: flex;
     }
 
-    .message-wrapper {
+    .message-row {
         max-width: 80%;
     }
 
