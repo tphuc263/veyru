@@ -1,0 +1,12 @@
+version: "3"
+
+tasks:
+  format:
+    desc: Format Java sources with Spotless.
+    cmds:
+      - ./mvnw spotless:apply
+
+  format-check:
+    desc: Verify Java source formatting.
+    cmds:
+      - ./mvnw spotless:check
