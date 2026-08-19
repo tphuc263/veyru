@@ -3,8 +3,8 @@ package com.veyru.service.ai;
 import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -14,20 +14,15 @@ import org.springframework.stereotype.Service;
  * FT.CREATE with HNSW algorithm for fast ANN queries.
  */
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class RedisVectorService {
-
+  private static final Logger log = LoggerFactory.getLogger(RedisVectorService.class);
   private final RedisTemplate<String, Object> redisTemplate;
-
   // Redis key prefixes
   public static final String PHOTO_PREFIX = "photo_vec:";
   public static final String USER_PREFIX = "user_vec:";
-
   // Index names
   public static final String PHOTO_INDEX = "photo_vec_idx";
   public static final String USER_INDEX = "user_vec_idx";
-
   private static final int VECTOR_DIM = EmbeddingService.EMBEDDING_DIMENSION; // 768
 
   @PostConstruct
@@ -55,16 +50,16 @@ public class RedisVectorService {
           (RedisConnection connection) -> {
             try {
               connection.execute("FT.INFO", indexName.getBytes(StandardCharsets.UTF_8));
-              log.info("Index '{}' already exists", indexName);
+              log.info("Index \'{}\' already exists", indexName);
             } catch (Exception e) {
               // Index doesn't exist, create it
-              log.info("Creating index '{}'", indexName);
+              log.info("Creating index \'{}\'", indexName);
               createVectorIndex(connection, indexName, prefix, extraFields);
             }
             return null;
           });
     } catch (Exception e) {
-      log.warn("Failed to check/create index '{}': {}", indexName, e.getMessage());
+      log.warn("Failed to check/create index \'{}\': {}", indexName, e.getMessage());
     }
   }
 
@@ -74,7 +69,6 @@ public class RedisVectorService {
     // FT.CREATE {idx} ON HASH PREFIX 1 {prefix} SCHEMA
     //   embedding VECTOR HNSW 6 TYPE FLOAT32 DIM 768 DISTANCE_METRIC COSINE
     //   {extra fields...}
-
     List<byte[]> args = new ArrayList<>();
     args.add(indexName.getBytes(StandardCharsets.UTF_8));
     args.add("ON".getBytes(StandardCharsets.UTF_8));
@@ -83,7 +77,6 @@ public class RedisVectorService {
     args.add("1".getBytes(StandardCharsets.UTF_8));
     args.add(prefix.getBytes(StandardCharsets.UTF_8));
     args.add("SCHEMA".getBytes(StandardCharsets.UTF_8));
-
     // Embedding vector field
     args.add("embedding".getBytes(StandardCharsets.UTF_8));
     args.add("VECTOR".getBytes(StandardCharsets.UTF_8));
@@ -95,12 +88,10 @@ public class RedisVectorService {
     args.add(String.valueOf(VECTOR_DIM).getBytes(StandardCharsets.UTF_8));
     args.add("DISTANCE_METRIC".getBytes(StandardCharsets.UTF_8));
     args.add("COSINE".getBytes(StandardCharsets.UTF_8));
-
     // Extra fields (e.g., caption, userId, tags)
     for (String field : extraFields) {
       args.add(field.getBytes(StandardCharsets.UTF_8));
     }
-
     connection.execute("FT.CREATE", args.toArray(new byte[0][]));
     log.info("Created vector index: {}", indexName);
   }
@@ -125,7 +116,6 @@ public class RedisVectorService {
           (tags != null ? String.join(",", tags) : "").getBytes(StandardCharsets.UTF_8));
       hash.put(
           "photoId".getBytes(StandardCharsets.UTF_8), photoId.getBytes(StandardCharsets.UTF_8));
-
       redisTemplate.execute(
           (RedisConnection connection) -> {
             connection.hashCommands().hMSet(key.getBytes(StandardCharsets.UTF_8), hash);
@@ -155,7 +145,6 @@ public class RedisVectorService {
       hash.put(
           "userId".getBytes(StandardCharsets.UTF_8),
           visitorUserId.getBytes(StandardCharsets.UTF_8));
-
       redisTemplate.execute(
           (RedisConnection connection) -> {
             connection.hashCommands().hMSet(key.getBytes(StandardCharsets.UTF_8), hash);
@@ -181,12 +170,9 @@ public class RedisVectorService {
     try {
       // FT.SEARCH photo_vec_idx "*=>[KNN {topK} @embedding $query_vec AS score]"
       //   PARAMS 2 query_vec {blob} SORTBY score DIALECT 2
-
       byte[] vectorBytes = EmbeddingService.floatArrayToBytes(queryEmbedding);
       int searchK = topK + 5; // fetch extra to account for exclusions
-
       String queryStr = String.format("*=>[KNN %d @embedding $query_vec AS score]", searchK);
-
       List<byte[]> args = new ArrayList<>();
       args.add(PHOTO_INDEX.getBytes(StandardCharsets.UTF_8));
       args.add(queryStr.getBytes(StandardCharsets.UTF_8));
@@ -198,13 +184,11 @@ public class RedisVectorService {
       args.add("score".getBytes(StandardCharsets.UTF_8));
       args.add("DIALECT".getBytes(StandardCharsets.UTF_8));
       args.add("2".getBytes(StandardCharsets.UTF_8));
-
       List<Object> rawResult =
           (List<Object>)
               redisTemplate.execute(
                   (RedisConnection connection) ->
                       connection.execute("FT.SEARCH", args.toArray(new byte[0][])));
-
       return parseSearchResults(rawResult, "photoId", excludePhotoId, topK);
     } catch (Exception e) {
       log.error("Failed to search similar photos: {}", e.getMessage());
@@ -226,9 +210,7 @@ public class RedisVectorService {
     try {
       byte[] vectorBytes = EmbeddingService.floatArrayToBytes(queryEmbedding);
       int searchK = topK + 5;
-
       String queryStr = String.format("*=>[KNN %d @embedding $query_vec AS score]", searchK);
-
       List<byte[]> args = new ArrayList<>();
       args.add(USER_INDEX.getBytes(StandardCharsets.UTF_8));
       args.add(queryStr.getBytes(StandardCharsets.UTF_8));
@@ -240,13 +222,11 @@ public class RedisVectorService {
       args.add("score".getBytes(StandardCharsets.UTF_8));
       args.add("DIALECT".getBytes(StandardCharsets.UTF_8));
       args.add("2".getBytes(StandardCharsets.UTF_8));
-
       List<Object> rawResult =
           (List<Object>)
               redisTemplate.execute(
                   (RedisConnection connection) ->
                       connection.execute("FT.SEARCH", args.toArray(new byte[0][])));
-
       return parseSearchResults(rawResult, "userId", excludeUserId, topK);
     } catch (Exception e) {
       log.error("Failed to search similar users: {}", e.getMessage());
@@ -294,24 +274,19 @@ public class RedisVectorService {
     if (rawResult == null || rawResult.size() < 2) {
       return Collections.emptyList();
     }
-
     List<Map<String, Object>> results = new ArrayList<>();
-
     // rawResult[0] = total count (Long)
     // rawResult[1] = key, rawResult[2] = [field, value, ...], etc.
     for (int i = 1; i < rawResult.size() - 1; i += 2) {
       String redisKey = parseRedisValue(rawResult.get(i));
       List<Object> fields = (List<Object>) rawResult.get(i + 1);
-
       if (fields == null) continue;
-
       Map<String, Object> doc = new HashMap<>();
       for (int j = 0; j < fields.size() - 1; j += 2) {
         String fieldName = parseRedisValue(fields.get(j));
         String fieldValue = parseRedisValue(fields.get(j + 1));
         doc.put(fieldName, fieldValue);
       }
-
       // Extract the entity ID
       String entityId = (String) doc.get(idField);
       if (entityId == null) {
@@ -320,14 +295,11 @@ public class RedisVectorService {
           entityId = redisKey.substring(redisKey.indexOf(":") + 1);
         }
       }
-
       // Skip excluded ID
       if (excludeId != null && excludeId.equals(entityId)) {
         continue;
       }
-
       doc.put("entityId", entityId);
-
       // Parse score (lower = more similar for COSINE distance)
       if (doc.containsKey("score")) {
         try {
@@ -336,11 +308,9 @@ public class RedisVectorService {
           doc.put("score", 1.0);
         }
       }
-
       results.add(doc);
       if (results.size() >= topK) break;
     }
-
     return results;
   }
 
@@ -350,5 +320,9 @@ public class RedisVectorService {
       return new String((byte[]) value, StandardCharsets.UTF_8);
     }
     return value.toString();
+  }
+
+  public RedisVectorService(final RedisTemplate<String, Object> redisTemplate) {
+    this.redisTemplate = redisTemplate;
   }
 }

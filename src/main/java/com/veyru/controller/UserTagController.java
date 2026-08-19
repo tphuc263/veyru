@@ -2,19 +2,16 @@ package com.veyru.controller;
 
 import com.veyru.dto.request.usertag.CreateUserTagRequest;
 import com.veyru.dto.response.usertag.UserTagResponse;
-import com.veyru.service.usertag.IUserTagService;
+import com.veyru.service.usertag.UserTagService;
 import jakarta.validation.Valid;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("${api.prefix}/user-tags")
-@RequiredArgsConstructor
 public class UserTagController {
-
-  private final IUserTagService userTagService;
+  private final UserTagService userTagService;
 
   @PostMapping("/photo/{photoId}")
   public ResponseEntity<UserTagResponse> tagUserInPhoto(
@@ -41,5 +38,9 @@ public class UserTagController {
       @PathVariable String userId) {
     List<UserTagResponse> tags = userTagService.getPhotosWhereUserIsTagged(userId);
     return ResponseEntity.ok(tags);
+  }
+
+  public UserTagController(final UserTagService userTagService) {
+    this.userTagService = userTagService;
   }
 }

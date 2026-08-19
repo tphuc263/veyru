@@ -1,19 +1,16 @@
 package com.veyru.controller;
 
 import com.veyru.dto.response.notification.NotificationResponse;
-import com.veyru.service.notification.INotificationService;
+import com.veyru.service.notification.NotificationService;
 import com.veyru.service.user.UserService;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("${api.prefix}/notifications")
-@RequiredArgsConstructor
 public class NotificationController {
-
-  private final INotificationService notificationService;
+  private final NotificationService notificationService;
   private final UserService userService;
 
   @GetMapping
@@ -43,5 +40,11 @@ public class NotificationController {
     String userId = userService.getCurrentUser().getId();
     notificationService.markAllAsRead(userId);
     return ResponseEntity.noContent().build();
+  }
+
+  public NotificationController(
+      final NotificationService notificationService, final UserService userService) {
+    this.notificationService = notificationService;
+    this.userService = userService;
   }
 }

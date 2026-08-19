@@ -5,25 +5,21 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class UserAvatarCacheService {
-
+  private static final Logger log = LoggerFactory.getLogger(UserAvatarCacheService.class);
   private final RedisTemplate<String, Object> redisTemplate;
   private final UserRepository userRepository;
-
   private static final String AVATAR_KEY_PREFIX = "user:avatar:";
   private static final Duration CACHE_TTL = Duration.ofHours(24);
 
   public String getAvatar(String userId) {
     if (userId == null) return null;
-
     String key = AVATAR_KEY_PREFIX + userId;
     try {
       Object cached = redisTemplate.opsForValue().get(key);
@@ -33,7 +29,6 @@ public class UserAvatarCacheService {
     } catch (Exception e) {
       log.debug("Redis cache miss for avatar, userId: {}", userId);
     }
-
     // Fallback to DB
     return userRepository
         .findById(userId)
@@ -55,9 +50,7 @@ public class UserAvatarCacheService {
   public Map<String, String> getAvatars(List<String> userIds) {
     Map<String, String> result = new HashMap<>();
     if (userIds == null || userIds.isEmpty()) return result;
-
     List<String> missingIds = new java.util.ArrayList<>();
-
     // Try cache first
     for (String userId : userIds) {
       String key = AVATAR_KEY_PREFIX + userId;
@@ -72,7 +65,6 @@ public class UserAvatarCacheService {
         missingIds.add(userId);
       }
     }
-
     // Fetch missing from DB
     if (!missingIds.isEmpty()) {
       userRepository
@@ -92,7 +84,6 @@ public class UserAvatarCacheService {
                 }
               });
     }
-
     return result;
   }
 
@@ -115,5 +106,11 @@ public class UserAvatarCacheService {
     } catch (Exception e) {
       log.warn("Failed to evict avatar cache for userId: {}", userId);
     }
+  }
+
+  public UserAvatarCacheService(
+      final RedisTemplate<String, Object> redisTemplate, final UserRepository userRepository) {
+    this.redisTemplate = redisTemplate;
+    this.userRepository = userRepository;
   }
 }

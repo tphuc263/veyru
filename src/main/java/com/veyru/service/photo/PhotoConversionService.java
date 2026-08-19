@@ -6,33 +6,33 @@ import com.veyru.model.User;
 import com.veyru.repository.FavoriteRepository;
 import com.veyru.repository.LikeRepository;
 import com.veyru.service.user.UserAvatarCacheService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class PhotoConversionService {
-
-  private final ModelMapper modelMapper;
+  private static final Logger log = LoggerFactory.getLogger(PhotoConversionService.class);
   private final LikeRepository likeRepository;
   private final FavoriteRepository favoriteRepository;
   private final UserAvatarCacheService userAvatarCacheService;
 
   public PhotoResponse convertToPhotoResponse(Photo photo, @Nullable User currentUser) {
-    PhotoResponse response = modelMapper.map(photo, PhotoResponse.class);
+    PhotoResponse response = new PhotoResponse();
+    response.setId(photo.getId());
+    response.setImageUrl(photo.getImageUrl());
+    response.setCaption(photo.getCaption());
+    response.setCreatedAt(photo.getCreatedAt());
     if (photo.getUser() != null) {
       response.setUsername(photo.getUser().getUsername());
+      response.setUserId(photo.getUser().getUserId());
       response.setUserImageUrl(userAvatarCacheService.getAvatar(photo.getUser().getUserId()));
     }
     response.setLikeCount((int) photo.getLikeCount());
     response.setCommentCount((int) photo.getCommentCount());
     response.setShareCount((int) photo.getShareCount());
     response.setTags(photo.getTags());
-
     if (currentUser != null) {
       boolean isLiked = likeRepository.existsByPhotoIdAndUserId(photo.getId(), currentUser.getId());
       response.setLikedByCurrentUser(isLiked);
@@ -43,7 +43,15 @@ public class PhotoConversionService {
       response.setLikedByCurrentUser(false);
       response.setSavedByCurrentUser(false);
     }
-
     return response;
+  }
+
+  public PhotoConversionService(
+      LikeRepository likeRepository,
+      FavoriteRepository favoriteRepository,
+      UserAvatarCacheService userAvatarCacheService) {
+    this.likeRepository = likeRepository;
+    this.favoriteRepository = favoriteRepository;
+    this.userAvatarCacheService = userAvatarCacheService;
   }
 }

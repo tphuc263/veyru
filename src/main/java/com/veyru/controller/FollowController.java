@@ -1,17 +1,15 @@
 package com.veyru.controller;
 
 import com.veyru.dto.response.follow.FollowResponse;
-import com.veyru.service.follow.IFollowService;
+import com.veyru.service.follow.FollowService;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("${api.prefix}/follows")
-@RequiredArgsConstructor
 public class FollowController {
-  private final IFollowService followService;
+  private final FollowService followService;
 
   // Follow
   @PostMapping("/follow/{targetUserId}")
@@ -53,5 +51,9 @@ public class FollowController {
       @PathVariable String followerId, @PathVariable String followingId) {
     boolean isFollowing = followService.isFollowing(followerId, followingId);
     return ResponseEntity.ok(isFollowing);
+  }
+
+  public FollowController(final FollowService followService) {
+    this.followService = followService;
   }
 }
