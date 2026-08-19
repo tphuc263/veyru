@@ -1,17 +1,16 @@
 package com.veyru.service.follow;
 
 import com.veyru.dto.response.follow.FollowResponse;
-
 import java.util.List;
 
 public interface IFollowService {
-    void follow(String targetUserId);
+  void follow(String targetUserId);
 
-    void unfollow(String targetUserId);
+  void unfollow(String targetUserId);
 
-    List<FollowResponse> getFollowers(String userId, int page, int size);
+  List<FollowResponse> getFollowers(String userId, int page, int size);
 
-    List<FollowResponse> getFollowing(String userId, int page, int size);
+  List<FollowResponse> getFollowing(String userId, int page, int size);
 
-    boolean isFollowing(String followerId, String followingId);
+  boolean isFollowing(String followerId, String followingId);
 }

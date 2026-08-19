@@ -6,12 +6,12 @@ import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
+@EnableSpringDataWebSupport(
+    pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
 @EnableScheduling
 public class VeyruApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(VeyruApplication.class, args);
-    }
-
+  public static void main(String[] args) {
+    SpringApplication.run(VeyruApplication.class, args);
+  }
 }

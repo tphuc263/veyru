@@ -1,45 +1,37 @@
 package com.veyru.model.graph;
 
 import java.time.Instant;
-
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.neo4j.core.schema.GeneratedValue;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Property;
 import org.springframework.data.neo4j.core.schema.TargetNode;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-/**
- * Relationship: User follows User
- * Represents the follow connection between users
- */
+/** Relationship: User follows User Represents the follow connection between users */
 @org.springframework.data.neo4j.core.schema.RelationshipProperties
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class FollowRelationship {
 
-    @Id
-    @GeneratedValue
-    private String id;
+  @Id @GeneratedValue private String id;
 
-    @Property("type")
-    private String type = "FOLLOWS";
+  @Property("type")
+  private String type = "FOLLOWS";
 
-    @Property("followedAt")
-    private Instant followedAt;
+  @Property("followedAt")
+  private Instant followedAt;
 
-    @Property("weight")
-    private Double weight; // Weight based on follow duration
+  @Property("weight")
+  private Double weight; // Weight based on follow duration
 
-    @TargetNode
-    private GraphUser targetUser;
+  @TargetNode private GraphUser targetUser;
 
-    public FollowRelationship(GraphUser targetUser) {
-        this.targetUser = targetUser;
-        this.followedAt = Instant.now();
-        this.weight = 1.0;
-    }
+  public FollowRelationship(GraphUser targetUser) {
+    this.targetUser = targetUser;
+    this.followedAt = Instant.now();
+    this.weight = 1.0;
+  }
 }

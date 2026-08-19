@@ -1,35 +1,38 @@
 package com.veyru.repository;
 
+import com.veyru.model.User;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
-import com.veyru.model.User;
-
-import java.util.List;
-import java.util.Optional;
 
 public interface UserRepository extends MongoRepository<User, String> {
-    Optional<User> findByEmail(String email);
-    Optional<User> findByUsername(String username);
-    Optional<User> findByPhoneNumber(String phoneNumber);
+  Optional<User> findByEmail(String email);
 
-    boolean existsByEmail(String email);
-    boolean existsByUsername(String username);
-    boolean existsByPhoneNumber(String phoneNumber);
+  Optional<User> findByUsername(String username);
 
-    @Query("{ $or: [ " +
-            "{ 'username': { $regex: ?0, $options: 'i' } }, " +
-            "{ 'firstName': { $regex: ?0, $options: 'i' } }, " +
-            "{ 'lastName': { $regex: ?0, $options: 'i' } } " +
-            "] }")
-    Page<User> findByNameFields(String searchTerm, Pageable pageable);
+  Optional<User> findByPhoneNumber(String phoneNumber);
 
-    @Query("{ 'username': { $regex: ?0, $options: 'i' } }")
-    Page<User> findByUsernameRegex(String searchTerm, Pageable pageable);
+  boolean existsByEmail(String email);
 
-    Optional<User> findByResetToken(String resetToken);
+  boolean existsByUsername(String username);
 
-    List<User> findByIdIn(List<String> ids);
+  boolean existsByPhoneNumber(String phoneNumber);
+
+  @Query(
+      "{ $or: [ "
+          + "{ 'username': { $regex: ?0, $options: 'i' } }, "
+          + "{ 'firstName': { $regex: ?0, $options: 'i' } }, "
+          + "{ 'lastName': { $regex: ?0, $options: 'i' } } "
+          + "] }")
+  Page<User> findByNameFields(String searchTerm, Pageable pageable);
+
+  @Query("{ 'username': { $regex: ?0, $options: 'i' } }")
+  Page<User> findByUsernameRegex(String searchTerm, Pageable pageable);
+
+  Optional<User> findByResetToken(String resetToken);
+
+  List<User> findByIdIn(List<String> ids);
 }
-

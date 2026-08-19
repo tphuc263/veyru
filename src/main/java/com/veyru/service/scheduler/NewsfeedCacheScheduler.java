@@ -1,21 +1,21 @@
-//package com.veyru.service.scheduler;
+// package com.veyru.service.scheduler;
 //
-//import lombok.RequiredArgsConstructor;
-//import lombok.extern.slf4j.Slf4j;
-//import org.springframework.data.domain.Page;
-//import org.springframework.scheduling.annotation.Scheduled;
-//import org.springframework.stereotype.Service;
-//import com.veyru.dto.response.user.UserProfileResponse;
-//import com.veyru.service.photo.NewsfeedService;
-//import com.veyru.service.user.UserService;
+// import lombok.RequiredArgsConstructor;
+// import lombok.extern.slf4j.Slf4j;
+// import org.springframework.data.domain.Page;
+// import org.springframework.scheduling.annotation.Scheduled;
+// import org.springframework.stereotype.Service;
+// import com.veyru.dto.response.user.UserProfileResponse;
+// import com.veyru.service.photo.NewsfeedService;
+// import com.veyru.service.user.UserService;
 //
-//import java.util.List;
-//import java.util.concurrent.CompletableFuture;
+// import java.util.List;
+// import java.util.concurrent.CompletableFuture;
 //
-//@Service
-//@RequiredArgsConstructor
-//@Slf4j
-//public class NewsfeedCacheScheduler {
+// @Service
+// @RequiredArgsConstructor
+// @Slf4j
+// public class NewsfeedCacheScheduler {
 //
 //    private final NewsfeedService newsfeedService;
 //    private final UserService userService;
@@ -24,7 +24,8 @@
 //     * Pre-generate newsfeed cache for active users every 2 hours
 //     * This runs during off-peak hours to reduce load
 //     */
-////    @Scheduled(fixedRate = 7200000, initialDelay = 300000) // 2 hours interval, 5 min initial delay
+////    @Scheduled(fixedRate = 7200000, initialDelay = 300000) // 2 hours interval, 5 min initial
+// delay
 //    public void preGenerateActiveUserFeeds() {
 //        log.info("Starting scheduled newsfeed cache generation for active users");
 //
@@ -75,7 +76,8 @@
 //        // based on recent activity, login times, etc.
 //
 //        try {
-//            Page<UserProfileResponse> users = userService.getAllUsers(0, 1000); // Adjust as needed
+//            Page<UserProfileResponse> users = userService.getAllUsers(0, 1000); // Adjust as
+// needed
 //            return users.getContent().stream()
 //                    .map(UserProfileResponse::getId)
 //                    .toList();
@@ -97,4 +99,4 @@
 //            }
 //        }
 //    }
-//}
+// }

@@ -6,9 +6,9 @@ import com.veyru.dto.response.ai.ImageAnalysisResponse;
 import com.veyru.dto.response.ai.PostTimingSuggestionResponse;
 
 public interface IAIService {
-    EngagementAnalysisResponse analyzeEngagement(String userId, int recentPostCount);
+  EngagementAnalysisResponse analyzeEngagement(String userId, int recentPostCount);
 
-    PostTimingSuggestionResponse suggestPostTiming(String userId);
+  PostTimingSuggestionResponse suggestPostTiming(String userId);
 
-    ImageAnalysisResponse analyzeImage(ImageAnalysisRequest request);
+  ImageAnalysisResponse analyzeImage(ImageAnalysisRequest request);
 }

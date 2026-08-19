@@ -1,23 +1,22 @@
 package com.veyru.repository;
 
+import com.veyru.model.Share;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
-import com.veyru.model.Share;
-
-import java.util.List;
 
 public interface ShareRepository extends MongoRepository<Share, String> {
 
-    long countByPhotoId(String photoId);
+  long countByPhotoId(String photoId);
 
-    boolean existsByPhotoIdAndUserId(String photoId, String userId);
+  boolean existsByPhotoIdAndUserId(String photoId, String userId);
 
-    Page<Share> findByUserIdOrderByCreatedAtDesc(String userId, Pageable pageable);
+  Page<Share> findByUserIdOrderByCreatedAtDesc(String userId, Pageable pageable);
 
-    List<Share> findByPhotoIdOrderByCreatedAtDesc(String photoId);
+  List<Share> findByPhotoIdOrderByCreatedAtDesc(String photoId);
 
-    List<Share> findByUserIdInOrderByCreatedAtDesc(List<String> userIds);
+  List<Share> findByUserIdInOrderByCreatedAtDesc(List<String> userIds);
 
-    void deleteAllByPhotoId(String photoId);
+  void deleteAllByPhotoId(String photoId);
 }

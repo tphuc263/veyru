@@ -7,13 +7,13 @@ import com.veyru.dto.request.auth.ResetPasswordRequest;
 import com.veyru.dto.response.auth.LoginResponse;
 
 public interface IAuthService {
-    LoginResponse login(LoginRequest request);
+  LoginResponse login(LoginRequest request);
 
-    void register(RegisterRequest request);
+  void register(RegisterRequest request);
 
-    void forgotPassword(ForgotPasswordRequest request);
+  void forgotPassword(ForgotPasswordRequest request);
 
-    void resetPassword(ResetPasswordRequest request);
+  void resetPassword(ResetPasswordRequest request);
 
-    boolean validateResetToken(String token);
+  boolean validateResetToken(String token);
 }

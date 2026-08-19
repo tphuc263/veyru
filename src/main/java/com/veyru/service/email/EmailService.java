@@ -15,39 +15,39 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+  private final JavaMailSender mailSender;
 
-    @Value("${spring.mail.username:noreply@veyru.com}")
-    private String fromEmail;
+  @Value("${spring.mail.username:noreply@veyru.com}")
+  private String fromEmail;
 
-    @Value("${app.frontend.url:http://localhost:5173}")
-    private String frontendUrl;
+  @Value("${app.frontend.url:http://localhost:5173}")
+  private String frontendUrl;
 
-    @Async
-    public void sendPasswordResetEmail(String toEmail, String token, String username) {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+  @Async
+  public void sendPasswordResetEmail(String toEmail, String token, String username) {
+    try {
+      MimeMessage message = mailSender.createMimeMessage();
+      MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(fromEmail);
-            helper.setTo(toEmail);
-            helper.setSubject("Veyru - Password Reset Request");
+      helper.setFrom(fromEmail);
+      helper.setTo(toEmail);
+      helper.setSubject("Veyru - Password Reset Request");
 
-            String resetLink = frontendUrl + "/reset-password?token=" + token;
-            String htmlContent = buildPasswordResetEmail(username, resetLink);
+      String resetLink = frontendUrl + "/reset-password?token=" + token;
+      String htmlContent = buildPasswordResetEmail(username, resetLink);
 
-            helper.setText(htmlContent, true);
-            mailSender.send(message);
+      helper.setText(htmlContent, true);
+      mailSender.send(message);
 
-            log.info("Password reset email sent to: {}", toEmail);
-        } catch (MessagingException e) {
-            log.error("Failed to send password reset email to: {}", toEmail, e);
-            throw new RuntimeException("Failed to send password reset email", e);
-        }
+      log.info("Password reset email sent to: {}", toEmail);
+    } catch (MessagingException e) {
+      log.error("Failed to send password reset email to: {}", toEmail, e);
+      throw new RuntimeException("Failed to send password reset email", e);
     }
+  }
 
-    private String buildPasswordResetEmail(String username, String resetLink) {
-        return """
+  private String buildPasswordResetEmail(String username, String resetLink) {
+    return """
                 <!DOCTYPE html>
                 <html>
                 <head>
@@ -83,6 +83,7 @@ public class EmailService {
                     </div>
                 </body>
                 </html>
-                """.formatted(username, resetLink);
-    }
+                """
+        .formatted(username, resetLink);
+  }
 }

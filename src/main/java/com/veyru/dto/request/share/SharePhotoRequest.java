@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class SharePhotoRequest {
-    private String caption;
+  private String caption;
 }

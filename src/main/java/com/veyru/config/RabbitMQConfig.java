@@ -15,38 +15,38 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMQConfig {
 
-    public static final String NOTIFICATION_EXCHANGE = "notification.exchange";
-    public static final String NOTIFICATION_QUEUE = "notification.queue";
-    public static final String NOTIFICATION_ROUTING_KEY = "notification.routing.key";
+  public static final String NOTIFICATION_EXCHANGE = "notification.exchange";
+  public static final String NOTIFICATION_QUEUE = "notification.queue";
+  public static final String NOTIFICATION_ROUTING_KEY = "notification.routing.key";
 
-    @Bean
-    public Queue notificationQueue() {
-        return QueueBuilder.durable(NOTIFICATION_QUEUE)
-                .withArgument("x-message-ttl", 86400000) // 24 hours TTL
-                .build();
-    }
+  @Bean
+  public Queue notificationQueue() {
+    return QueueBuilder.durable(NOTIFICATION_QUEUE)
+        .withArgument("x-message-ttl", 86400000) // 24 hours TTL
+        .build();
+  }
 
-    @Bean
-    public DirectExchange notificationExchange() {
-        return new DirectExchange(NOTIFICATION_EXCHANGE);
-    }
+  @Bean
+  public DirectExchange notificationExchange() {
+    return new DirectExchange(NOTIFICATION_EXCHANGE);
+  }
 
-    @Bean
-    public Binding notificationBinding(Queue notificationQueue, DirectExchange notificationExchange) {
-        return BindingBuilder.bind(notificationQueue)
-                .to(notificationExchange)
-                .with(NOTIFICATION_ROUTING_KEY);
-    }
+  @Bean
+  public Binding notificationBinding(Queue notificationQueue, DirectExchange notificationExchange) {
+    return BindingBuilder.bind(notificationQueue)
+        .to(notificationExchange)
+        .with(NOTIFICATION_ROUTING_KEY);
+  }
 
-    @Bean
-    public MessageConverter jsonMessageConverter() {
-        return new Jackson2JsonMessageConverter();
-    }
+  @Bean
+  public MessageConverter jsonMessageConverter() {
+    return new Jackson2JsonMessageConverter();
+  }
 
-    @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
-        RabbitTemplate template = new RabbitTemplate(connectionFactory);
-        template.setMessageConverter(jsonMessageConverter());
-        return template;
-    }
+  @Bean
+  public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
+    RabbitTemplate template = new RabbitTemplate(connectionFactory);
+    template.setMessageConverter(jsonMessageConverter());
+    return template;
+  }
 }

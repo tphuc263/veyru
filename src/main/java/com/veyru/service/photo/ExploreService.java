@@ -1,5 +1,16 @@
 package com.veyru.service.photo;
 
+import com.veyru.dto.response.photo.PhotoResponse;
+import com.veyru.model.Follow;
+import com.veyru.model.Photo;
+import com.veyru.model.User;
+import com.veyru.repository.FollowRepository;
+import com.veyru.repository.PhotoRepository;
+import com.veyru.service.user.UserService;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
@@ -8,152 +19,153 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
-import com.veyru.dto.response.photo.PhotoResponse;
-import com.veyru.model.Follow;
-import com.veyru.model.Photo;
-import com.veyru.model.User;
-import com.veyru.repository.FollowRepository;
-import com.veyru.repository.PhotoRepository;
-import com.veyru.service.user.UserService;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ExploreService implements IExploreService {
 
-    private final PhotoRepository photoRepository;
-    private final MongoTemplate mongoTemplate;
-    private final PhotoConversionService photoConversionService;
-    private final UserService userService;
-    private final FollowRepository followRepository;
+  private final PhotoRepository photoRepository;
+  private final MongoTemplate mongoTemplate;
+  private final PhotoConversionService photoConversionService;
+  private final UserService userService;
+  private final FollowRepository followRepository;
 
-    @Override
-    public Page<PhotoResponse> getExploreFeed(String userId, int page, int size) {
-        log.info("Fetching explore feed for user: {}, page: {}, size: {}", userId, page, size);
+  @Override
+  public Page<PhotoResponse> getExploreFeed(String userId, int page, int size) {
+    log.info("Fetching explore feed for user: {}, page: {}, size: {}", userId, page, size);
 
-        User currentUser = userService.findUserById(userId);
+    User currentUser = userService.findUserById(userId);
 
-        // Get user's following list to exclude from explore
-        List<String> excludeUserIds = new ArrayList<>();
-        excludeUserIds.add(userId); // Exclude own photos
-        List<String> followingUserIds = followRepository.findByFollowerId(userId).stream()
-                .map(Follow::getFollowingId)
-                .toList();
-        excludeUserIds.addAll(followingUserIds);
+    // Get user's following list to exclude from explore
+    List<String> excludeUserIds = new ArrayList<>();
+    excludeUserIds.add(userId); // Exclude own photos
+    List<String> followingUserIds =
+        followRepository.findByFollowerId(userId).stream().map(Follow::getFollowingId).toList();
+    excludeUserIds.addAll(followingUserIds);
 
-        // Use MongoDB aggregation to get trending photos from non-followed users
-        Pageable pageable = PageRequest.of(page, size);
+    // Use MongoDB aggregation to get trending photos from non-followed users
+    Pageable pageable = PageRequest.of(page, size);
 
-        // Build aggregation pipeline
-        Criteria criteria = Criteria.where("user.userId").nin(excludeUserIds);
+    // Build aggregation pipeline
+    Criteria criteria = Criteria.where("user.userId").nin(excludeUserIds);
 
-        // Photos from last 30 days for freshness
-        Instant cutoff = Instant.now().minus(Duration.ofDays(30));
-        Criteria recentCriteria = criteria.and("createdAt").gte(cutoff);
+    // Photos from last 30 days for freshness
+    Instant cutoff = Instant.now().minus(Duration.ofDays(30));
+    Criteria recentCriteria = criteria.and("createdAt").gte(cutoff);
 
-        AggregationOperation match = Aggregation.match(recentCriteria);
+    AggregationOperation match = Aggregation.match(recentCriteria);
 
-        // Add a computed engagement score field: likeCount * 2 + commentCount * 3
-        AggregationOperation addScore = Aggregation.addFields()
-                .addFieldWithValue("engagementScore",
-                        new org.bson.Document("$add", List.of(
-                                new org.bson.Document("$multiply", List.of("$likeCount", 2)),
-                                new org.bson.Document("$multiply", List.of("$commentCount", 3))
-                        ))
-                ).build();
+    // Add a computed engagement score field: likeCount * 2 + commentCount * 3
+    AggregationOperation addScore =
+        Aggregation.addFields()
+            .addFieldWithValue(
+                "engagementScore",
+                new org.bson.Document(
+                    "$add",
+                    List.of(
+                        new org.bson.Document("$multiply", List.of("$likeCount", 2)),
+                        new org.bson.Document("$multiply", List.of("$commentCount", 3)))))
+            .build();
 
-        AggregationOperation sortByScore = Aggregation.sort(Sort.by(Sort.Direction.DESC, "engagementScore", "createdAt"));
-        AggregationOperation skip = Aggregation.skip((long) page * size);
-        AggregationOperation limit = Aggregation.limit(size);
+    AggregationOperation sortByScore =
+        Aggregation.sort(Sort.by(Sort.Direction.DESC, "engagementScore", "createdAt"));
+    AggregationOperation skip = Aggregation.skip((long) page * size);
+    AggregationOperation limit = Aggregation.limit(size);
 
-        Aggregation aggregation = Aggregation.newAggregation(match, addScore, sortByScore, skip, limit);
+    Aggregation aggregation = Aggregation.newAggregation(match, addScore, sortByScore, skip, limit);
 
-        List<Photo> photos = mongoTemplate.aggregate(aggregation, "photos", Photo.class).getMappedResults();
+    List<Photo> photos =
+        mongoTemplate.aggregate(aggregation, "photos", Photo.class).getMappedResults();
 
-        // If not enough recent photos, fallback to all-time popular
-        if (photos.isEmpty() && page == 0) {
-            log.info("No recent explore photos found, falling back to all-time popular");
-            return getPopularPhotos(page, size);
-        }
-
-        // Count total matching documents
-        Aggregation countAgg = Aggregation.newAggregation(
-                Aggregation.match(recentCriteria),
-                Aggregation.count().as("total")
-        );
-        org.bson.Document countResult = mongoTemplate.aggregate(countAgg, "photos", org.bson.Document.class)
-                .getUniqueMappedResult();
-        long total = countResult != null ? countResult.getInteger("total", 0) : 0;
-
-        List<PhotoResponse> responses = photos.stream()
-                .map(photo -> photoConversionService.convertToPhotoResponse(photo, currentUser))
-                .toList();
-
-        return new PageImpl<>(responses, pageable, total);
+    // If not enough recent photos, fallback to all-time popular
+    if (photos.isEmpty() && page == 0) {
+      log.info("No recent explore photos found, falling back to all-time popular");
+      return getPopularPhotos(page, size);
     }
 
-    @Override
-    public Page<PhotoResponse> getPopularPhotos(int page, int size) {
-        log.info("Fetching popular photos, page: {}, size: {}", page, size);
+    // Count total matching documents
+    Aggregation countAgg =
+        Aggregation.newAggregation(
+            Aggregation.match(recentCriteria), Aggregation.count().as("total"));
+    org.bson.Document countResult =
+        mongoTemplate
+            .aggregate(countAgg, "photos", org.bson.Document.class)
+            .getUniqueMappedResult();
+    long total = countResult != null ? countResult.getInteger("total", 0) : 0;
 
-        Pageable pageable = PageRequest.of(page, size);
+    List<PhotoResponse> responses =
+        photos.stream()
+            .map(photo -> photoConversionService.convertToPhotoResponse(photo, currentUser))
+            .toList();
 
-        AggregationOperation addScore = Aggregation.addFields()
-                .addFieldWithValue("engagementScore",
-                        new org.bson.Document("$add", List.of(
-                                new org.bson.Document("$multiply", List.of("$likeCount", 2)),
-                                new org.bson.Document("$multiply", List.of("$commentCount", 3))
-                        ))
-                ).build();
+    return new PageImpl<>(responses, pageable, total);
+  }
 
-        AggregationOperation sortByScore = Aggregation.sort(Sort.by(Sort.Direction.DESC, "engagementScore", "createdAt"));
-        AggregationOperation skip = Aggregation.skip((long) page * size);
-        AggregationOperation limit = Aggregation.limit(size);
+  @Override
+  public Page<PhotoResponse> getPopularPhotos(int page, int size) {
+    log.info("Fetching popular photos, page: {}, size: {}", page, size);
 
-        Aggregation aggregation = Aggregation.newAggregation(addScore, sortByScore, skip, limit);
+    Pageable pageable = PageRequest.of(page, size);
 
-        List<Photo> photos = mongoTemplate.aggregate(aggregation, "photos", Photo.class).getMappedResults();
-        long total = photoRepository.count();
+    AggregationOperation addScore =
+        Aggregation.addFields()
+            .addFieldWithValue(
+                "engagementScore",
+                new org.bson.Document(
+                    "$add",
+                    List.of(
+                        new org.bson.Document("$multiply", List.of("$likeCount", 2)),
+                        new org.bson.Document("$multiply", List.of("$commentCount", 3)))))
+            .build();
 
-        User currentUser = null;
-        try {
-            currentUser = userService.getCurrentUser();
-        } catch (Exception e) {
-            log.debug("No authenticated user for popular photos");
-        }
+    AggregationOperation sortByScore =
+        Aggregation.sort(Sort.by(Sort.Direction.DESC, "engagementScore", "createdAt"));
+    AggregationOperation skip = Aggregation.skip((long) page * size);
+    AggregationOperation limit = Aggregation.limit(size);
 
-        User finalCurrentUser = currentUser;
-        List<PhotoResponse> responses = photos.stream()
-                .map(photo -> photoConversionService.convertToPhotoResponse(photo, finalCurrentUser))
-                .toList();
+    Aggregation aggregation = Aggregation.newAggregation(addScore, sortByScore, skip, limit);
 
-        return new PageImpl<>(responses, pageable, total);
+    List<Photo> photos =
+        mongoTemplate.aggregate(aggregation, "photos", Photo.class).getMappedResults();
+    long total = photoRepository.count();
+
+    User currentUser = null;
+    try {
+      currentUser = userService.getCurrentUser();
+    } catch (Exception e) {
+      log.debug("No authenticated user for popular photos");
     }
 
-    @Override
-    public Page<PhotoResponse> getPhotosByTag(String tag, int page, int size) {
-        log.info("Fetching photos by tag: {}, page: {}, size: {}", tag, page, size);
+    User finalCurrentUser = currentUser;
+    List<PhotoResponse> responses =
+        photos.stream()
+            .map(photo -> photoConversionService.convertToPhotoResponse(photo, finalCurrentUser))
+            .toList();
 
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Photo> photos = photoRepository.findByTagsIn(List.of(tag.toLowerCase()), pageable);
+    return new PageImpl<>(responses, pageable, total);
+  }
 
-        User currentUser = null;
-        try {
-            currentUser = userService.getCurrentUser();
-        } catch (Exception e) {
-            log.debug("No authenticated user for tag photos");
-        }
+  @Override
+  public Page<PhotoResponse> getPhotosByTag(String tag, int page, int size) {
+    log.info("Fetching photos by tag: {}, page: {}, size: {}", tag, page, size);
 
-        User finalCurrentUser = currentUser;
-        List<PhotoResponse> responses = photos.getContent().stream()
-                .map(photo -> photoConversionService.convertToPhotoResponse(photo, finalCurrentUser))
-                .toList();
+    Pageable pageable = PageRequest.of(page, size);
+    Page<Photo> photos = photoRepository.findByTagsIn(List.of(tag.toLowerCase()), pageable);
 
-        return new PageImpl<>(responses, pageable, photos.getTotalElements());
+    User currentUser = null;
+    try {
+      currentUser = userService.getCurrentUser();
+    } catch (Exception e) {
+      log.debug("No authenticated user for tag photos");
     }
+
+    User finalCurrentUser = currentUser;
+    List<PhotoResponse> responses =
+        photos.getContent().stream()
+            .map(photo -> photoConversionService.convertToPhotoResponse(photo, finalCurrentUser))
+            .toList();
+
+    return new PageImpl<>(responses, pageable, photos.getTotalElements());
+  }
 }

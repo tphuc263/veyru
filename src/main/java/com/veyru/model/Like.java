@@ -1,12 +1,11 @@
 package com.veyru.model;
 
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import java.time.Instant;
 
 @Data
 @NoArgsConstructor
@@ -14,12 +13,11 @@ import java.time.Instant;
 @Document(collection = "likes")
 public class Like {
 
-    @Id
-    private String id;
+  @Id private String id;
 
-    private String photoId;
+  private String photoId;
 
-    private String userId;
+  private String userId;
 
-    private Instant createdAt;
+  private Instant createdAt;
 }
