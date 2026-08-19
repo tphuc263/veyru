@@ -1,18 +1,16 @@
-# 📸 VibeLens - Backend
+# 📸 Veyru Backend
 
 <div align="center">
 
 ![Neo4j](https://img.shields.io/badge/Neo4j-5.19-008CC1?style=for-the-badge&logo=neo4j&logoColor=white)
-![Live Website](https://img.shields.io/badge/Live-https://vibelens.me-00D09C?style=for-the-badge)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.3-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white)
 ![Java](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis&logoColor=white)
 ![RabbitMQ](https://img.shields.io/badge/RabbitMQ-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white)
 
-**RESTful API backend for VibeLens - A modern photo sharing platform**
+**The flow of moments we see, live, and share.**
 
-[Live Demo](https://vibelens.me) •
 [Features](#-features) •
 [Getting Started](#-getting-started) •
 [API Documentation](#-api-documentation) •
@@ -64,7 +62,7 @@
 ```bash
 # Clone repository
 git clone <repository-url>
-cd backend-photo-share
+cd veyru-backend
 
 # Create environment file
 cp .env.example .env
@@ -77,18 +75,18 @@ cp .env.example .env
 #### Option 2: Docker Compose (Recommended)
 
 ```bash
-# Start all services (MongoDB, Redis, RabbitMQ, Backend)
-docker-compose -f docker-compose.yml up -d
+# Start local infrastructure; run the Spring application from Maven with the local profile
+docker compose --profile local -f compose.yml up -d mongodb redis neo4j rabbitmq
 
 # View logs
-docker-compose logs -f app
+docker compose logs -f veyru-backend
 ```
 
 #### Option 3: Production Docker Compose
 
 ```bash
 # Full production stack with frontend, backend, and infrastructure
-docker-compose -f ../docker-compose.production.yml up -d
+docker compose -f ../compose.production.yml up -d
 ```
 
 ### Environment Variables
@@ -100,12 +98,8 @@ Create a `.env` file in the root directory:
 APP_PORT=8080
 APP_URL=http://localhost:8080
 
-# MongoDB
-MONGO_HOST=localhost
-MONGO_PORT=27017
-MONGO_DATABASE=vibelens
-MONGO_USERNAME=admin
-MONGO_PASSWORD=your-password
+# MongoDB Atlas
+MONGODB_URI=mongodb+srv://username:URL_ENCODED_PASSWORD@cluster.mongodb.net/veyru
 
 # Redis
 REDIS_HOST=localhost
@@ -279,8 +273,8 @@ When running locally, access Swagger UI at:
 ### Project Structure
 
 ```
-src/main/java/share_app/tphucshareapp/
-├── TphucshareappApplication.java    # Main application
+src/main/java/com/veyru/
+├── VeyruApplication.java            # Main application
 │
 ├── config/                          # Configuration classes
 │   ├── SecurityConfig.java          # Spring Security
@@ -651,8 +645,8 @@ jobs:
       - Log in to GHCR (GitHub Container Registry)
       - Build & push Docker image to GHCR
       - SSH to VPS and run:
-        - docker compose pull backend
-        - docker compose up -d backend
+        - docker compose pull veyru-backend
+        - docker compose up -d veyru-backend
 ```
 
 ### GitHub Secrets Required
@@ -672,7 +666,7 @@ git push origin main
 
 ### Container Registry
 
-- **Registry**: `ghcr.io/photo-sharing-platform/backend-photo-share`
+- **Registry**: `ghcr.io/<your-github-username>/veyru-backend`
 - **Tags**: `latest`, `sha-{commit-hash}`
 
 ---
@@ -682,32 +676,32 @@ git push origin main
 ### Development Stack
 
 ```bash
-# Start all services locally (MongoDB, Redis, RabbitMQ, Neo4j, Backend)
-docker-compose -f docker-compose.yml up -d
+# Start local infrastructure (run the backend separately with the local Spring profile)
+docker compose --profile local -f compose.yml up -d mongodb redis neo4j rabbitmq
 
 # View logs
-docker-compose logs -f backend
+docker compose logs -f veyru-backend
 ```
 
 ### Production Stack
 
 ```bash
 # Deploy full stack on VPS (infrastructure + backend + frontend + SSL)
-# Located in parent directory: ../docker-compose.yml
-docker-compose -f ../docker-compose.yml up -d
+# Located in parent directory: ../compose.yml
+docker compose -f ../compose.yml up -d
 
 # Stop services
-docker-compose -f ../docker-compose.yml down
+docker compose -f ../compose.yml down
 ```
 
 ### Build Docker Image Locally
 
 ```bash
 # Build backend image
-docker build -t backend-photo-share .
+docker build -t veyru-backend .
 
-# Run with docker-compose
-docker-compose up -d --build
+# Run with docker compose
+docker compose up -d --build
 ```
 
 ---
@@ -729,7 +723,7 @@ docker-compose up -d --build
 ./mvnw clean package -DskipTests
 
 # Run JAR
-java -jar target/tphucshareapp-0.0.1-SNAPSHOT.jar
+java -jar target/veyru-backend-0.0.1-SNAPSHOT.jar
 ```
 
 ### Code Quality
@@ -751,6 +745,6 @@ This project is private and for educational purposes.
 
 **Built with ❤️ using Spring Boot**
 
-[Live Demo](https://vibelens.me) • [API Docs](https://vibelens.me/api-docs)
+**Veyru — The flow of moments we see, live, and share.**
 
 </div>

@@ -1,0 +1,126 @@
+services:
+  mongodb:
+    profiles: [local]
+    image: mongo:7.0
+    container_name: veyru-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - veyru-mongo-data:/data/db
+    networks:
+      - veyru-network
+
+  redis:
+    image: redis/redis-stack:7.4.0-v3
+    container_name: veyru-redis
+    ports:
+      - "6379:6379"
+      - "8001:8001"
+    volumes:
+      - veyru-redis-data:/data
+    environment:
+      REDIS_ARGS: --appendonly yes
+    networks:
+      - veyru-network
+
+  neo4j:
+    image: neo4j:5.15.0
+    container_name: veyru-neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - veyru-neo4j-data:/data
+      - veyru-neo4j-logs:/logs
+    environment:
+      NEO4J_AUTH: neo4j/password
+      NEO4J_server_memory_heap_initial__size: 512m
+      NEO4J_server_memory_heap_max__size: 2G
+      NEO4J_server_memory_pagecache_size: 1G
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*
+      NEO4J_dbms_security_procedures_allowlist: apoc.*
+    networks:
+      - veyru-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: veyru-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - veyru-rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - veyru-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  veyru-backend:
+    build: .
+    container_name: veyru-backend
+    ports:
+      - "8080:8080"
+    environment:
+      MONGODB_URI: ${MONGODB_URI}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USERNAME: neo4j
+      NEO4J_PASSWORD: password
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      JWT_SECRET: ${JWT_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:5174}
+      OAUTH2_REDIRECT_URI: ${OAUTH2_REDIRECT_URI:-http://localhost:5173/auth/oauth2/redirect}
+      OAUTH2_FAILURE_REDIRECT_URI: ${OAUTH2_FAILURE_REDIRECT_URI:-http://localhost:5173/login?error=true}
+    depends_on:
+      redis:
+        condition: service_started
+      neo4j:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - veyru-network
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  veyru-mongo-data:
+  veyru-redis-data:
+  veyru-rabbitmq-data:
+  veyru-neo4j-data:
+  veyru-neo4j-logs:
+
+networks:
+  veyru-network:
+    driver: bridge

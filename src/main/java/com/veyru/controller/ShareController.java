@@ -1,0 +1,64 @@
+package com.veyru.controller;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import com.veyru.dto.request.share.SharePhotoRequest;
+import com.veyru.dto.response.ApiResponse;
+import com.veyru.dto.response.photo.PhotoResponse;
+import com.veyru.dto.response.share.ShareResponse;
+import com.veyru.dto.response.share.ShareWithPhotoResponse;
+import com.veyru.service.share.ShareService;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("${api.prefix}/shares")
+@RequiredArgsConstructor
+public class ShareController {
+
+    private final ShareService shareService;
+
+    // Share a photo to current user's profile
+    @PostMapping("/photo/{photoId}")
+    public ResponseEntity<ApiResponse<PhotoResponse>> sharePhoto(
+            @PathVariable String photoId,
+            @RequestBody(required = false) SharePhotoRequest request) {
+        String caption = (request != null) ? request.getCaption() : null;
+        PhotoResponse photo = shareService.sharePhoto(photoId, caption);
+        return ResponseEntity.ok(ApiResponse.success(photo, "Photo shared successfully"));
+    }
+
+    // Get all shares for a photo
+    @GetMapping("/photo/{photoId}")
+    public ResponseEntity<ApiResponse<List<ShareResponse>>> getPhotoShares(
+            @PathVariable String photoId) {
+        List<ShareResponse> shares = shareService.getPhotoShares(photoId);
+        return ResponseEntity.ok(ApiResponse.success(shares, "Photo shares retrieved successfully"));
+    }
+
+    // Get share count for a photo
+    @GetMapping("/photo/{photoId}/count")
+    public ResponseEntity<ApiResponse<Long>> getShareCount(@PathVariable String photoId) {
+        long count = shareService.getShareCount(photoId);
+        return ResponseEntity.ok(ApiResponse.success(count, "Share count retrieved successfully"));
+    }
+
+    // Check if current user has shared a photo
+    @GetMapping("/photo/{photoId}/check")
+    public ResponseEntity<ApiResponse<Boolean>> hasShared(@PathVariable String photoId) {
+        boolean shared = shareService.hasShared(photoId);
+        return ResponseEntity.ok(ApiResponse.success(shared, "Share status retrieved"));
+    }
+
+    // Get shares by user ID (for profile page)
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<ApiResponse<Page<ShareWithPhotoResponse>>> getUserShares(
+            @PathVariable String userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Page<ShareWithPhotoResponse> shares = shareService.getSharesByUserId(userId, page, size);
+        return ResponseEntity.ok(ApiResponse.success(shares, "User shares retrieved successfully"));
+    }
+}

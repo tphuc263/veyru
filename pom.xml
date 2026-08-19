@@ -8,11 +8,11 @@
         <version>3.4.3</version>
         <relativePath/>
     </parent>
-    <groupId>share-app</groupId>
-    <artifactId>tphucshareapp</artifactId>
+    <groupId>com.veyru</groupId>
+    <artifactId>veyru-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>tphucshareapp</name>
-    <description>Social Media - Instagram Idea</description>
+    <name>Veyru Backend</name>
+    <description>Veyru - The flow of moments we see, live, and share.</description>
     <url/>
     <licenses>
         <license/>

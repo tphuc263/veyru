@@ -1,0 +1,49 @@
+package com.veyru.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+import com.veyru.enums.UserRole;
+
+import java.time.Instant;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Document(collection = "users")
+public class User {
+
+    @Id
+    private String id;
+    
+    @Indexed(unique = true)
+    private String username;
+    
+    @Indexed(unique = true)
+    private String email;
+    
+    @Indexed(unique = true, sparse = true)
+    private String phoneNumber;
+    
+    private String password;
+    private UserRole role;
+    private String imageUrl;
+    private String bio;
+    private Instant createdAt;
+
+    private long photoCount;
+    private long followerCount;
+    private long followingCount;
+
+    private String resetToken;
+    private Instant resetTokenExpiry;
+
+    public boolean isResetTokenValid() {
+        return resetToken != null
+                && resetTokenExpiry != null
+                && Instant.now().isBefore(resetTokenExpiry);
+    }
+}
