@@ -3,11 +3,10 @@
 <div align="center">
 
 ![Neo4j](https://img.shields.io/badge/Neo4j-5.19-008CC1?style=for-the-badge&logo=neo4j&logoColor=white)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.3-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white)
-![Java](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white)
+![Java](https://img.shields.io/badge/Java-25-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis&logoColor=white)
-![RabbitMQ](https://img.shields.io/badge/RabbitMQ-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white)
 
 **The flow of moments we see, live, and share.**
 
@@ -36,8 +35,7 @@
 
 ### Technical Features
 - 📊 **Caching** - Redis for performance optimization and session management
-- 📈 **Monitoring** - Prometheus + Actuator metrics for observability
-- 🐰 **Message Queue** - RabbitMQ for async task processing (email, notifications)
+- 📈 **Monitoring** - Actuator health and metrics
 - 📧 **Email Service** - Password reset and notification emails via SMTP
 - 📝 **API Docs** - Swagger/OpenAPI interactive documentation
 - 🐳 **Containerization** - Full Docker and Docker Compose support
@@ -48,11 +46,10 @@
 
 ### Prerequisites
 
-- **Java** 21+
+- **Java** 25+
 - **Maven** 3.9+
 - **MongoDB** 7.0+
 - **Redis** 7.0+
-- **RabbitMQ** 3.13+ (optional, for async tasks)
 - **Docker** & **Docker Compose** (recommended)
 
 ### Installation
@@ -68,7 +65,8 @@ cd veyru-backend
 cp .env.example .env
 # Edit .env with your configurations
 
-# Run with Maven
+# Load it for a local Maven run; Docker Compose reads .env itself.
+set -a; source .env; set +a
 ./mvnw spring-boot:run
 ```
 
@@ -76,7 +74,7 @@ cp .env.example .env
 
 ```bash
 # Start local infrastructure; run the Spring application from Maven with the local profile
-docker compose --profile local -f compose.yml up -d mongodb redis neo4j rabbitmq
+docker compose --profile local -f compose.yml up -d mongodb redis neo4j
 
 # View logs
 docker compose logs -f veyru-backend
@@ -105,12 +103,6 @@ MONGODB_URI=mongodb+srv://username:URL_ENCODED_PASSWORD@cluster.mongodb.net/veyr
 REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=your-password
-
-# RabbitMQ (Optional - for async tasks)
-RABBITMQ_HOST=localhost
-RABBITMQ_PORT=5672
-RABBITMQ_USERNAME=guest
-RABBITMQ_PASSWORD=guest
 
 # JWT
 JWT_SECRET=your-secret-key
@@ -262,9 +254,7 @@ When running locally, access Swagger UI at:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/v1/health` | Health check |
 | `GET` | `/actuator/health` | Actuator health |
-| `GET` | `/actuator/prometheus` | Prometheus metrics |
 
 ---
 
@@ -383,7 +373,7 @@ src/main/java/com/veyru/
 │   │   ├── NotificationEvent.java
 │   │   └── PhotoEventListener.java
 │   │
-│   ├── notification/                    # RabbitMQ notification
+│   ├── notification/                    # in-process notification delivery
 │   │   ├── NotificationProducer.java
 │   │   └── NotificationConsumer.java
 │   │
@@ -430,19 +420,16 @@ src/main/java/com/veyru/
          │  ┌──────────────────────────────────────────────┐   │
          │  │  Event System: PhotoCreatedEvent → Listener   │   │
          │  └──────────────────────────────────────────────┘   │
-         │  ┌──────────────────────────────────────────────┐   │
-         │  │  RabbitMQ: Notification Producer → Consumer   │   │
-         │  └──────────────────────────────────────────────┘   │
          └──────────────────────────────────────────────────────┘
                                 │
           ┌──────────┬──────────┼────────┬──────────┬──────────┐
           │          │          │        │          │          │
           ▼          ▼          ▼        ▼          ▼          ▼
 ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-│    MongoDB      │ │     Redis       │ │   RabbitMQ      │ │     Neo4j       │
-│   (Database)    │ │    (Cache)      │ │   (Queue)       │ │   (Graph DB)    │
-│   Users, Photos │ │  Avatars, Feed │ │ Notifications   │ │ Follow graph,  │
-│   Comments...   │ │  Sessions      │ │ Emails (async)  │ │ Feed ranking    │
+│    MongoDB      │ │     Redis       │ │     Neo4j       │
+│   (Database)    │ │    (Cache)      │ │   (Graph DB)    │
+│   Users, Photos │ │  Avatars, Feed │ │ Follow graph,  │
+│   Comments...   │ │  Sessions      │ │ Feed ranking    │
 └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘
                                 │
                     ┌───────────┴───────────┐
@@ -537,19 +524,18 @@ src/main/java/com/veyru/
 
 | Category | Technology |
 |----------|------------|
-| **Framework** | Spring Boot 3.4.3 |
-| **Language** | Java 21 |
+| **Framework** | Spring Boot 4.1 |
+| **Language** | Java 25 |
 | **Database** | MongoDB 7.0 |
 | **Graph Database** | Neo4j 5.19 (Cypher queries, Dijkstra algorithm) |
 | **Cache** | Redis 7.x |
-| **Message Queue** | RabbitMQ 3.13 |
 | **Authentication** | Spring Security + JWT + OAuth2 (Google) |
 | **File Storage** | Cloudinary |
 | **Real-time** | Spring WebSocket (STOMP) |
 | **Documentation** | SpringDoc OpenAPI |
-| **Monitoring** | Spring Actuator + Prometheus |
+| **Monitoring** | Spring Actuator |
 | **Email** | Spring Mail |
-| **Mapping** | ModelMapper |
+| **Mapping** | Explicit constructors and mapping methods |
 | **Build** | Maven |
 
 ---
@@ -610,12 +596,6 @@ Weights:
 GET /actuator/health
 ```
 
-### Prometheus Metrics
-
-```bash
-GET /actuator/prometheus
-```
-
 ### Available Endpoints
 
 | Endpoint | Description |
@@ -623,7 +603,6 @@ GET /actuator/prometheus
 | `/actuator/health` | Application health status |
 | `/actuator/info` | Application information |
 | `/actuator/metrics` | Application metrics |
-| `/actuator/prometheus` | Prometheus format metrics |
 
 ---
 
@@ -677,7 +656,7 @@ git push origin main
 
 ```bash
 # Start local infrastructure (run the backend separately with the local Spring profile)
-docker compose --profile local -f compose.yml up -d mongodb redis neo4j rabbitmq
+docker compose --profile local -f compose.yml up -d mongodb redis neo4j
 
 # View logs
 docker compose logs -f veyru-backend
