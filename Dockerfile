@@ -1,5 +1,5 @@
 # Multi-stage build for Spring Boot Application - RAM Optimized
-FROM maven:3.9.9-eclipse-temurin-21-alpine AS build
+FROM maven:3.9.16-eclipse-temurin-25-alpine AS build
 
 WORKDIR /app
 COPY pom.xml .
@@ -8,7 +8,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Runtime stage - Using Alpine for smaller image size
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 
 # Install wget for healthcheck (alpine uses apk)
@@ -25,7 +25,7 @@ EXPOSE 8080
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/v1/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
 
 # JVM Memory Optimization Flags for Low RAM VPS:
 ENTRYPOINT ["java", \

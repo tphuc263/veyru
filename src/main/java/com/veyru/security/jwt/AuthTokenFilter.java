@@ -6,8 +6,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,10 +18,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
-@RequiredArgsConstructor
-@Slf4j
 public class AuthTokenFilter extends OncePerRequestFilter {
-
+  private static final Logger log = LoggerFactory.getLogger(AuthTokenFilter.class);
   private final JwtUtils jwtUtils;
   private final AppUserDetailsService userDetailsService;
   private final JwtEntryPoint authEntryPoint;
@@ -34,7 +32,6 @@ public class AuthTokenFilter extends OncePerRequestFilter {
       throws ServletException, IOException {
     try {
       String jwt = parseJwt(request);
-
       if (StringUtils.hasText(jwt) && jwtUtils.validateToken(jwt)) {
         authenticateUser(jwt);
       }
@@ -47,7 +44,6 @@ public class AuthTokenFilter extends OncePerRequestFilter {
       authEntryPoint.commence(request, response, new BadCredentialsException("Invalid token", e));
       return;
     }
-
     filterChain.doFilter(request, response);
   }
 
@@ -55,7 +51,6 @@ public class AuthTokenFilter extends OncePerRequestFilter {
     try {
       String username = jwtUtils.getEmailFromToken(jwt);
       UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
       var authentication =
           new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
       SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -71,5 +66,14 @@ public class AuthTokenFilter extends OncePerRequestFilter {
       return headerAuth.substring(7);
     }
     return null;
+  }
+
+  public AuthTokenFilter(
+      final JwtUtils jwtUtils,
+      final AppUserDetailsService userDetailsService,
+      final JwtEntryPoint authEntryPoint) {
+    this.jwtUtils = jwtUtils;
+    this.userDetailsService = userDetailsService;
+    this.authEntryPoint = authEntryPoint;
   }
 }

@@ -1,11 +1,9 @@
 package com.veyru.security.jwt;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -13,9 +11,9 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
-@RequiredArgsConstructor
 public class JwtEntryPoint implements AuthenticationEntryPoint {
   private final ObjectMapper objectMapper;
 
@@ -33,10 +31,13 @@ public class JwtEntryPoint implements AuthenticationEntryPoint {
     problem.setTitle("Unauthorized");
     problem.setInstance(URI.create(request.getRequestURI()));
     problem.setProperty("code", invalidToken ? "INVALID_TOKEN" : "AUTHENTICATION_REQUIRED");
-
     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
     response.setHeader("WWW-Authenticate", "Bearer");
     response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
     objectMapper.writeValue(response.getOutputStream(), problem);
+  }
+
+  public JwtEntryPoint(final ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
   }
 }

@@ -3,8 +3,8 @@ package com.veyru.config.websocket;
 import com.veyru.dto.websocket.WsEventEnvelope;
 import java.time.Instant;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
@@ -13,10 +13,8 @@ import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 @Component
-@Slf4j
-@RequiredArgsConstructor
 public class PresenceEventListener {
-
+  private static final Logger log = LoggerFactory.getLogger(PresenceEventListener.class);
   private final SimpMessagingTemplate messagingTemplate;
 
   @EventListener
@@ -25,7 +23,6 @@ public class PresenceEventListener {
     if (headerAccessor.getUser() != null) {
       String userId = headerAccessor.getUser().getName();
       log.info("User connected: {}", userId);
-
       WsEventEnvelope<String> envelope =
           WsEventEnvelope.<String>builder()
               .type("USER_ONLINE")
@@ -33,7 +30,6 @@ public class PresenceEventListener {
               .timestamp(Instant.now())
               .payload(userId)
               .build();
-
       messagingTemplate.convertAndSend("/topic/presence", envelope);
     }
   }
@@ -44,7 +40,6 @@ public class PresenceEventListener {
     if (headerAccessor.getUser() != null) {
       String userId = headerAccessor.getUser().getName();
       log.info("User disconnected: {}", userId);
-
       WsEventEnvelope<String> envelope =
           WsEventEnvelope.<String>builder()
               .type("USER_OFFLINE")
@@ -52,8 +47,11 @@ public class PresenceEventListener {
               .timestamp(Instant.now())
               .payload(userId)
               .build();
-
       messagingTemplate.convertAndSend("/topic/presence", envelope);
     }
+  }
+
+  public PresenceEventListener(final SimpMessagingTemplate messagingTemplate) {
+    this.messagingTemplate = messagingTemplate;
   }
 }

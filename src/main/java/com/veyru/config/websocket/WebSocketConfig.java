@@ -1,7 +1,6 @@
 package com.veyru.config.websocket;
 
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -13,9 +12,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 @Configuration
 @EnableWebSocketMessageBroker
-@RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
-
   private final WebSocketAuthInterceptor webSocketAuthInterceptor;
 
   @Value("${cors.allowed-origins}")
@@ -32,7 +29,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     taskScheduler.setPoolSize(1);
     taskScheduler.setThreadNamePrefix("wss-heartbeat-thread-");
     taskScheduler.initialize();
-
     registry
         .enableSimpleBroker("/topic", "/queue")
         .setHeartbeatValue(new long[] {10000, 10000})
@@ -44,5 +40,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   @Override
   public void configureClientInboundChannel(ChannelRegistration registration) {
     registration.interceptors(webSocketAuthInterceptor);
+  }
+
+  public WebSocketConfig(final WebSocketAuthInterceptor webSocketAuthInterceptor) {
+    this.webSocketAuthInterceptor = webSocketAuthInterceptor;
   }
 }

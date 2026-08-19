@@ -3,8 +3,8 @@ package com.veyru.config.websocket;
 import com.veyru.security.jwt.JwtUtils;
 import com.veyru.security.userdetails.StompPrincipal;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -14,20 +14,16 @@ import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
-@Slf4j
 public class WebSocketAuthInterceptor implements ChannelInterceptor {
-
+  private static final Logger log = LoggerFactory.getLogger(WebSocketAuthInterceptor.class);
   private final JwtUtils jwtUtils;
 
   @Override
   public Message<?> preSend(Message<?> message, MessageChannel channel) {
     StompHeaderAccessor accessor =
         MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
-
     if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
       List<String> authorization = accessor.getNativeHeader("Authorization");
-
       if (authorization != null && !authorization.isEmpty()) {
         String bearerToken = authorization.get(0);
         if (bearerToken.startsWith("Bearer ")) {
@@ -54,7 +50,10 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
       }
       throw new IllegalArgumentException("Missing or invalid Authorization header");
     }
-
     return message;
+  }
+
+  public WebSocketAuthInterceptor(final JwtUtils jwtUtils) {
+    this.jwtUtils = jwtUtils;
   }
 }

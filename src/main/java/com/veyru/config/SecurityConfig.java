@@ -7,7 +7,6 @@ import com.veyru.security.oauth2.OAuth2FailureHandler;
 import com.veyru.security.oauth2.OAuth2SuccessHandler;
 import com.veyru.security.userdetails.AppUserDetailsService;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,7 +27,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
   @Value("${api.prefix}")
   private String API;
@@ -50,8 +48,7 @@ public class SecurityConfig {
 
   @Bean
   public DaoAuthenticationProvider authenticationProvider() {
-    var authProvider = new DaoAuthenticationProvider();
-    authProvider.setUserDetailsService(userDetailsService);
+    var authProvider = new DaoAuthenticationProvider(userDetailsService);
     authProvider.setPasswordEncoder(passwordEncoder);
     return authProvider;
   }
@@ -70,7 +67,6 @@ public class SecurityConfig {
             API + "/ai/**",
             API + "/messages/**",
             API + "/newsfeed/**");
-
     http.csrf(AbstractHttpConfigurer::disable)
         .exceptionHandling(
             exception ->
@@ -99,7 +95,25 @@ public class SecurityConfig {
                     .successHandler(oAuth2SuccessHandler)
                     .failureHandler(oAuth2FailureHandler))
         .addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class);
-
     return http.build();
+  }
+
+  public SecurityConfig(
+      final AppUserDetailsService userDetailsService,
+      final JwtEntryPoint authEntryPoint,
+      final JwtAccessDeniedHandler accessDeniedHandler,
+      final AuthTokenFilter authTokenFilter,
+      final PasswordEncoder passwordEncoder,
+      final OAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService,
+      final OAuth2SuccessHandler oAuth2SuccessHandler,
+      final OAuth2FailureHandler oAuth2FailureHandler) {
+    this.userDetailsService = userDetailsService;
+    this.authEntryPoint = authEntryPoint;
+    this.accessDeniedHandler = accessDeniedHandler;
+    this.authTokenFilter = authTokenFilter;
+    this.passwordEncoder = passwordEncoder;
+    this.oAuth2UserService = oAuth2UserService;
+    this.oAuth2SuccessHandler = oAuth2SuccessHandler;
+    this.oAuth2FailureHandler = oAuth2FailureHandler;
   }
 }

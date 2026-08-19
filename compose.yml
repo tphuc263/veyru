@@ -47,25 +47,6 @@ services:
       timeout: 10s
       retries: 5
 
-  rabbitmq:
-    image: rabbitmq:3.13-management
-    container_name: veyru-rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    volumes:
-      - veyru-rabbitmq-data:/var/lib/rabbitmq
-    networks:
-      - veyru-network
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
   veyru-backend:
     build: .
     container_name: veyru-backend
@@ -78,10 +59,6 @@ services:
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_USERNAME: neo4j
       NEO4J_PASSWORD: password
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USERNAME: guest
-      RABBITMQ_PASSWORD: guest
       CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
@@ -100,15 +77,13 @@ services:
         condition: service_started
       neo4j:
         condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
     networks:
       - veyru-network
     volumes:
       - ./logs:/app/logs
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/v1/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -117,7 +92,6 @@ services:
 volumes:
   veyru-mongo-data:
   veyru-redis-data:
-  veyru-rabbitmq-data:
   veyru-neo4j-data:
   veyru-neo4j-logs:
 
