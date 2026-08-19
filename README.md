@@ -708,7 +708,7 @@ java -jar target/veyru-backend-0.0.1-SNAPSHOT.jar
 ### Code Quality
 
 - Follow Java naming conventions
-- Use Lombok for boilerplate reduction
+- Prefer Java records and explicit constructors over code-generation libraries
 - Write unit tests for services
 - Document APIs with OpenAPI annotations
 

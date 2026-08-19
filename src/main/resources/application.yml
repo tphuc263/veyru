@@ -4,9 +4,10 @@ server:
 spring:
   application:
     name: veyru-backend
+  mongodb:
+    uri: ${MONGODB_URI}
   data:
     mongodb:
-      uri: ${MONGODB_URI}
       auto-index-creation: false
     redis:
       host: ${REDIS_HOST:localhost}
