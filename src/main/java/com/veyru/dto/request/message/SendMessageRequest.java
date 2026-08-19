@@ -1,9 +1,11 @@
 package com.veyru.dto.request.message;
 
-import lombok.Data;
+public record SendMessageRequest(String receiverId, String text) {
+  public String getReceiverId() {
+    return receiverId;
+  }
 
-@Data
-public class SendMessageRequest {
-  private String receiverId;
-  private String text;
+  public String getText() {
+    return text;
+  }
 }

@@ -1,19 +1,15 @@
 package com.veyru.dto.request.ai;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+public record ImageAnalysisRequest(String imageBase64, String mimeType, String userId) {
+  public String getImageBase64() {
+    return imageBase64;
+  }
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class ImageAnalysisRequest {
-  /** Base64 encoded image data */
-  private String imageBase64;
+  public String getMimeType() {
+    return mimeType;
+  }
 
-  /** Optional: mime type (image/jpeg, image/png, image/webp) */
-  private String mimeType;
-
-  /** Optional: user context */
-  private String userId;
+  public String getUserId() {
+    return userId;
+  }
 }

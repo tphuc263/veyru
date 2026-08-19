@@ -8,21 +8,15 @@ import com.veyru.dto.response.ai.PostTimingSuggestionResponse;
 import com.veyru.model.User;
 import com.veyru.service.ai.AIService;
 import com.veyru.service.user.UserService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("${api.prefix}/ai")
-@RequiredArgsConstructor
-@Slf4j
 public class AIController {
-
+  private static final Logger log = LoggerFactory.getLogger(AIController.class);
   private final AIService aiService;
   private final UserService userService;
 
@@ -47,15 +41,20 @@ public class AIController {
   @PostMapping("/analyze-image")
   public ResponseEntity<ImageAnalysisResponse> analyzeImage(
       @RequestBody ImageAnalysisRequest request) {
-    // Get current user for personalization
+    ImageAnalysisRequest personalizedRequest = request;
     try {
       User currentUser = userService.getCurrentUser();
-      request.setUserId(currentUser.getId());
+      personalizedRequest =
+          new ImageAnalysisRequest(request.imageBase64(), request.mimeType(), currentUser.getId());
     } catch (Exception e) {
       log.debug("No authenticated user for image analysis");
     }
-
-    ImageAnalysisResponse response = aiService.analyzeImage(request);
+    ImageAnalysisResponse response = aiService.analyzeImage(personalizedRequest);
     return ResponseEntity.ok(response);
+  }
+
+  public AIController(final AIService aiService, final UserService userService) {
+    this.aiService = aiService;
+    this.userService = userService;
   }
 }

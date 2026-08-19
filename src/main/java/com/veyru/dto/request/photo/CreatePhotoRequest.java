@@ -1,12 +1,18 @@
 package com.veyru.dto.request.photo;
 
 import java.util.List;
-import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
-@Data
-public class CreatePhotoRequest {
-  private MultipartFile image;
-  private String caption;
-  private List<String> tags;
+public record CreatePhotoRequest(MultipartFile image, String caption, List<String> tags) {
+  public MultipartFile getImage() {
+    return image;
+  }
+
+  public String getCaption() {
+    return caption;
+  }
+
+  public List<String> getTags() {
+    return tags;
+  }
 }

@@ -1,8 +1,7 @@
 package com.veyru.dto.request.share;
 
-import lombok.Data;
-
-@Data
-public class SharePhotoRequest {
-  private String caption;
+public record SharePhotoRequest(String caption) {
+  public String getCaption() {
+    return caption;
+  }
 }

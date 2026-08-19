@@ -1,11 +1,17 @@
 package com.veyru.dto.request.user;
 
-import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
-@Data
-public class UpdateProfileRequest {
-  private String username;
-  private String bio;
-  private MultipartFile image;
+public record UpdateProfileRequest(String username, String bio, MultipartFile image) {
+  public String getUsername() {
+    return username;
+  }
+
+  public String getBio() {
+    return bio;
+  }
+
+  public MultipartFile getImage() {
+    return image;
+  }
 }
