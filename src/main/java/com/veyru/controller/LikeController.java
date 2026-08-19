@@ -4,13 +4,11 @@ import com.veyru.dto.response.like.LikeResponse;
 import com.veyru.dto.response.photo.PhotoResponse;
 import com.veyru.service.like.LikeService;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("${api.prefix}/likes")
-@RequiredArgsConstructor
 public class LikeController {
   private final LikeService likeService;
 
@@ -33,5 +31,9 @@ public class LikeController {
   public ResponseEntity<Long> getPhotoLikesCount(@PathVariable String photoId) {
     long count = likeService.getPhotoLikesCount(photoId);
     return ResponseEntity.ok(count);
+  }
+
+  public LikeController(final LikeService likeService) {
+    this.likeService = likeService;
   }
 }

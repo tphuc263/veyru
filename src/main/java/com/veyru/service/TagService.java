@@ -5,8 +5,8 @@ import static org.springframework.data.mongodb.core.aggregation.Aggregation.*;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
@@ -14,18 +14,14 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class TagService {
-
+  private static final Logger log = LoggerFactory.getLogger(TagService.class);
   private final MongoTemplate mongoTemplate;
 
   /** Get trending hashtags from the last 7 days Based on photo count per tag */
   public List<String> getTrendingHashtags(int limit) {
     log.info("Fetching trending hashtags with limit: {}", limit);
-
     Instant sevenDaysAgo = Instant.now().minus(7, ChronoUnit.DAYS);
-
     Aggregation aggregation =
         Aggregation.newAggregation(
             // Match photos created in last 7 days
@@ -42,10 +38,8 @@ public class TagService {
             limit(limit),
             // Project to get just the tag name
             project().and("_id").as("tag").and("count").as("usageCount"));
-
     AggregationResults<TrendingTagResult> results =
         mongoTemplate.aggregate(aggregation, "photos", TrendingTagResult.class);
-
     return results.getMappedResults().stream().map(TrendingTagResult::getTag).toList();
   }
 
@@ -55,10 +49,70 @@ public class TagService {
   }
 
   /** Simple result class for aggregation */
-  @lombok.Data
-  @lombok.AllArgsConstructor
   public static class TrendingTagResult {
     private String tag;
     private long usageCount;
+
+    public String getTag() {
+      return this.tag;
+    }
+
+    public long getUsageCount() {
+      return this.usageCount;
+    }
+
+    public void setTag(final String tag) {
+      this.tag = tag;
+    }
+
+    public void setUsageCount(final long usageCount) {
+      this.usageCount = usageCount;
+    }
+
+    @java.lang.Override
+    public boolean equals(final java.lang.Object o) {
+      if (o == this) return true;
+      if (!(o instanceof TagService.TrendingTagResult)) return false;
+      final TagService.TrendingTagResult other = (TagService.TrendingTagResult) o;
+      if (!other.canEqual((java.lang.Object) this)) return false;
+      if (this.getUsageCount() != other.getUsageCount()) return false;
+      final java.lang.Object this$tag = this.getTag();
+      final java.lang.Object other$tag = other.getTag();
+      if (this$tag == null ? other$tag != null : !this$tag.equals(other$tag)) return false;
+      return true;
+    }
+
+    protected boolean canEqual(final java.lang.Object other) {
+      return other instanceof TagService.TrendingTagResult;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      final int PRIME = 59;
+      int result = 1;
+      final long $usageCount = this.getUsageCount();
+      result = result * PRIME + (int) ($usageCount >>> 32 ^ $usageCount);
+      final java.lang.Object $tag = this.getTag();
+      result = result * PRIME + ($tag == null ? 43 : $tag.hashCode());
+      return result;
+    }
+
+    @java.lang.Override
+    public java.lang.String toString() {
+      return "TagService.TrendingTagResult(tag="
+          + this.getTag()
+          + ", usageCount="
+          + this.getUsageCount()
+          + ")";
+    }
+
+    public TrendingTagResult(final String tag, final long usageCount) {
+      this.tag = tag;
+      this.usageCount = usageCount;
+    }
+  }
+
+  public TagService(final MongoTemplate mongoTemplate) {
+    this.mongoTemplate = mongoTemplate;
   }
 }

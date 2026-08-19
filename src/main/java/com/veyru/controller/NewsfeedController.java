@@ -5,17 +5,16 @@ import com.veyru.dto.response.photo.PhotoResponse;
 import com.veyru.dto.response.post.UnifiedPostResponse;
 import com.veyru.service.photo.NewsfeedService;
 import com.veyru.service.user.UserService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("${api.prefix}/newsfeed")
-@RequiredArgsConstructor
-@Slf4j
 public class NewsfeedController {
+  private static final Logger log = LoggerFactory.getLogger(NewsfeedController.class);
   private final NewsfeedService newsfeedService;
   private final UserService userService;
 
@@ -23,7 +22,6 @@ public class NewsfeedController {
   @GetMapping
   public ResponseEntity<PageResponse<PhotoResponse>> getNewsfeed(
       @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
-
     try {
       log.info("Fetching newsfeed for page: {}, size: {}", page, size);
       // Get current user from security context
@@ -31,7 +29,6 @@ public class NewsfeedController {
       log.info("Fetching newsfeed for user: {}", userId);
       Page<PhotoResponse> newsfeed = newsfeedService.getSmartNewsfeed(userId, page, size);
       log.info("Successfully fetched {} items for newsfeed", newsfeed.getContent().size());
-
       return ResponseEntity.ok(PageResponse.from(newsfeed));
     } catch (Exception e) {
       log.error("Error fetching newsfeed: ", e);
@@ -43,17 +40,14 @@ public class NewsfeedController {
   public ResponseEntity<Void> refreshNewsfeed() {
     String userId = userService.getCurrentUser().getId();
     newsfeedService.generateNewsfeedCache(userId);
-
     return ResponseEntity.noContent().build();
   }
 
   @GetMapping("/realtime")
   public ResponseEntity<PageResponse<PhotoResponse>> getRealtimeNewsfeed(
       @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-
     String userId = userService.getCurrentUser().getId();
     Page<PhotoResponse> newsfeed = newsfeedService.getNewsfeed(userId, page, size);
-
     return ResponseEntity.ok(PageResponse.from(newsfeed));
   }
 
@@ -61,17 +55,20 @@ public class NewsfeedController {
   @GetMapping("/unified")
   public ResponseEntity<PageResponse<UnifiedPostResponse>> getUnifiedNewsfeed(
       @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-
     try {
       log.info("Fetching unified newsfeed for page: {}, size: {}", page, size);
       String userId = userService.getCurrentUser().getId();
       Page<UnifiedPostResponse> newsfeed = newsfeedService.getUnifiedNewsfeed(userId, page, size);
       log.info("Successfully fetched {} items for unified newsfeed", newsfeed.getContent().size());
-
       return ResponseEntity.ok(PageResponse.from(newsfeed));
     } catch (Exception e) {
       log.error("Error fetching unified newsfeed: ", e);
       throw e;
     }
+  }
+
+  public NewsfeedController(final NewsfeedService newsfeedService, final UserService userService) {
+    this.newsfeedService = newsfeedService;
+    this.userService = userService;
   }
 }

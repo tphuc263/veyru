@@ -5,7 +5,6 @@ import com.veyru.dto.response.PageResponse;
 import com.veyru.dto.response.photo.PhotoDetailResponse;
 import com.veyru.dto.response.photo.PhotoResponse;
 import com.veyru.service.photo.PhotoService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("${api.prefix}/photos")
-@RequiredArgsConstructor
 public class PhotoController {
   private final PhotoService photoService;
 
@@ -54,5 +52,9 @@ public class PhotoController {
   public ResponseEntity<Void> deletePhoto(@PathVariable String photoId) {
     photoService.deletePhoto(photoId);
     return ResponseEntity.noContent().build();
+  }
+
+  public PhotoController(final PhotoService photoService) {
+    this.photoService = photoService;
   }
 }

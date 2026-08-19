@@ -7,18 +7,16 @@ import com.veyru.exceptions.ApiException;
 import com.veyru.exceptions.ErrorCode;
 import com.veyru.service.message.MessageService;
 import java.security.Principal;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 @Controller
-@RequiredArgsConstructor
-@Slf4j
 public class WebSocketMessageController {
-
+  private static final Logger log = LoggerFactory.getLogger(WebSocketMessageController.class);
   private final MessageService messageService;
   private final SimpMessagingTemplate messagingTemplate;
 
@@ -29,10 +27,8 @@ public class WebSocketMessageController {
       log.warn("Unauthenticated user tried to send message");
       return;
     }
-
     String senderId = principal.getName();
     SendMessageRequest request = envelope.getPayload();
-
     if (request == null || request.getReceiverId() == null || request.getText() == null) {
       sendError(
           senderId,
@@ -41,7 +37,6 @@ public class WebSocketMessageController {
           "Message receiver and text are required.");
       return;
     }
-
     try {
       messageService.sendMessage(
           senderId, request.getReceiverId(), request.getText(), envelope.getClientMessageId());
@@ -68,5 +63,11 @@ public class WebSocketMessageController {
             .timestamp(java.time.Instant.now())
             .payload(new WsError(code.name(), detail))
             .build());
+  }
+
+  public WebSocketMessageController(
+      final MessageService messageService, final SimpMessagingTemplate messagingTemplate) {
+    this.messageService = messageService;
+    this.messagingTemplate = messagingTemplate;
   }
 }

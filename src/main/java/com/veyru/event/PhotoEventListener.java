@@ -2,8 +2,8 @@ package com.veyru.event;
 
 import com.veyru.service.ai.RecommendationService;
 import com.veyru.service.photo.NewsfeedService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -13,10 +13,8 @@ import org.springframework.stereotype.Component;
  * asynchronously when photos are created
  */
 @Component
-@RequiredArgsConstructor
-@Slf4j
 public class PhotoEventListener {
-
+  private static final Logger log = LoggerFactory.getLogger(PhotoEventListener.class);
   private final NewsfeedService newsfeedService;
   private final RecommendationService recommendationService;
 
@@ -25,20 +23,18 @@ public class PhotoEventListener {
    * blocking photo creation
    */
   @EventListener
-  @Async("eventExecutor")
+  @Async
   public void handlePhotoCreated(PhotoCreatedEvent event) {
     log.info(
         "Handling photo created event - photoId: {}, authorId: {}",
         event.getPhotoId(),
         event.getAuthorId());
-
     try {
       newsfeedService.updateFollowersFeeds(event.getPhotoId(), event.getAuthorId());
-      log.info("Successfully updated followers' feeds for photo: {}", event.getPhotoId());
+      log.info("Successfully updated followers\' feeds for photo: {}", event.getPhotoId());
     } catch (Exception e) {
-      log.error("Error updating followers' feeds for photo: {}", event.getPhotoId(), e);
+      log.error("Error updating followers\' feeds for photo: {}", event.getPhotoId(), e);
     }
-
     // Index the new photo embedding for AI recommendations
     try {
       recommendationService.indexNewPhoto(event.getPhotoId());
@@ -46,5 +42,11 @@ public class PhotoEventListener {
     } catch (Exception e) {
       log.warn("Failed to index embedding for photo: {}", event.getPhotoId(), e);
     }
+  }
+
+  public PhotoEventListener(
+      final NewsfeedService newsfeedService, final RecommendationService recommendationService) {
+    this.newsfeedService = newsfeedService;
+    this.recommendationService = recommendationService;
   }
 }

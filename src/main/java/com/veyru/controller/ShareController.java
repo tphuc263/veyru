@@ -7,16 +7,13 @@ import com.veyru.dto.response.share.ShareResponse;
 import com.veyru.dto.response.share.ShareWithPhotoResponse;
 import com.veyru.service.share.ShareService;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("${api.prefix}/shares")
-@RequiredArgsConstructor
 public class ShareController {
-
   private final ShareService shareService;
 
   // Share a photo to current user's profile
@@ -57,5 +54,9 @@ public class ShareController {
       @RequestParam(defaultValue = "20") int size) {
     Page<ShareWithPhotoResponse> shares = shareService.getSharesByUserId(userId, page, size);
     return ResponseEntity.ok(PageResponse.from(shares));
+  }
+
+  public ShareController(final ShareService shareService) {
+    this.shareService = shareService;
   }
 }

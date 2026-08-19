@@ -7,8 +7,8 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -20,11 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 @Transactional
 public class OAuth2UserService extends DefaultOAuth2UserService {
-
+  private static final Logger log = LoggerFactory.getLogger(OAuth2UserService.class);
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
 
@@ -38,17 +36,14 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
   private OAuth2User processOAuth2User(String provider, OAuth2User oAuth2User) {
     Map<String, Object> attributes = oAuth2User.getAttributes();
     String email = extractEmail(attributes, provider);
-
     if (!StringUtils.hasText(email)) {
-      throw new OAuth2AuthenticationException("Can't take email from provider: " + provider);
+      throw new OAuth2AuthenticationException("Can\'t take email from provider: " + provider);
     }
-
     User user = userRepository.findByEmail(email).orElse(null);
     if (user == null) {
       user = createUser(attributes, email, provider);
       log.info("Created new OAuth2 user from {}: {}", provider, email);
     }
-
     return new CustomOAuth2User(
         user, attributes, Set.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
   }
@@ -64,7 +59,6 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
 
   private User createUser(Map<String, Object> attributes, String email, String provider) {
     String picture = null;
-
     if ("google".equalsIgnoreCase(provider)) {
       picture = (String) attributes.get("picture");
     } else if ("facebook".equalsIgnoreCase(provider)) {
@@ -79,7 +73,6 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
         }
       }
     }
-
     User user = new User();
     user.setEmail(email);
     user.setUsername(email.split("@")[0] + "_" + UUID.randomUUID().toString().substring(0, 8));
@@ -91,7 +84,12 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
     user.setPhotoCount(0);
     user.setFollowerCount(0);
     user.setFollowingCount(0);
-
     return userRepository.save(user);
+  }
+
+  public OAuth2UserService(
+      final UserRepository userRepository, final PasswordEncoder passwordEncoder) {
+    this.userRepository = userRepository;
+    this.passwordEncoder = passwordEncoder;
   }
 }

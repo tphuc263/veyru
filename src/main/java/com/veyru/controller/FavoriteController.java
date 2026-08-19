@@ -3,15 +3,12 @@ package com.veyru.controller;
 import com.veyru.dto.response.photo.PhotoResponse;
 import com.veyru.service.favorite.FavoriteService;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("${api.prefix}/favorites")
-@RequiredArgsConstructor
 public class FavoriteController {
-
   private final FavoriteService favoriteService;
 
   // Toggle save/unsave a photo
@@ -34,5 +31,9 @@ public class FavoriteController {
   public ResponseEntity<Boolean> checkFavorite(@PathVariable String photoId) {
     boolean isFavorited = favoriteService.isFavorited(photoId);
     return ResponseEntity.ok(isFavorited);
+  }
+
+  public FavoriteController(final FavoriteService favoriteService) {
+    this.favoriteService = favoriteService;
   }
 }

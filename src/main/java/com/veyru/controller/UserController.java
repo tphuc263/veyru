@@ -4,8 +4,8 @@ import com.veyru.dto.request.user.UpdateProfileRequest;
 import com.veyru.dto.response.PageResponse;
 import com.veyru.dto.response.user.UserProfileResponse;
 import com.veyru.service.user.UserService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -13,9 +13,8 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("${api.prefix}/users")
-@RequiredArgsConstructor
-@Slf4j
 public class UserController {
+  private static final Logger log = LoggerFactory.getLogger(UserController.class);
   private final UserService userService;
 
   @GetMapping("/all")
@@ -42,5 +41,9 @@ public class UserController {
       @ModelAttribute UpdateProfileRequest request) {
     UserProfileResponse updatedProfile = userService.updateProfile(request);
     return ResponseEntity.ok(updatedProfile);
+  }
+
+  public UserController(final UserService userService) {
+    this.userService = userService;
   }
 }

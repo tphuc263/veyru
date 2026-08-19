@@ -6,13 +6,11 @@ import com.veyru.dto.response.comment.CommentResponse;
 import com.veyru.service.comment.CommentService;
 import jakarta.validation.Valid;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("${api.prefix}/comments")
-@RequiredArgsConstructor
 public class CommentController {
   private final CommentService commentService;
 
@@ -75,5 +73,9 @@ public class CommentController {
   public ResponseEntity<CommentResponse> toggleCommentLike(@PathVariable String commentId) {
     CommentResponse comment = commentService.toggleCommentLike(commentId);
     return ResponseEntity.ok(comment);
+  }
+
+  public CommentController(final CommentService commentService) {
+    this.commentService = commentService;
   }
 }

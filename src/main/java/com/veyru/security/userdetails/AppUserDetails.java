@@ -3,14 +3,11 @@ package com.veyru.security.userdetails;
 import com.veyru.model.User;
 import java.util.Collection;
 import java.util.List;
-import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-@Getter
 public class AppUserDetails implements UserDetails {
-
   private final String id;
   private final String username;
   private final String email;
@@ -35,7 +32,6 @@ public class AppUserDetails implements UserDetails {
 
   public static AppUserDetails buildUserDetails(User user) {
     List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(user.getRole().name()));
-
     return new AppUserDetails(
         user.getId(), user.getUsername(), user.getEmail(), user.getPassword(), true, authorities);
   }
@@ -73,5 +69,13 @@ public class AppUserDetails implements UserDetails {
   @Override
   public boolean isEnabled() {
     return enabled;
+  }
+
+  public String getId() {
+    return this.id;
+  }
+
+  public String getEmail() {
+    return this.email;
   }
 }

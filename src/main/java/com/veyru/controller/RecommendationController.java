@@ -7,17 +7,15 @@ import com.veyru.service.ai.RecommendationService;
 import com.veyru.service.user.UserService;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("${api.prefix}/recommendations")
-@RequiredArgsConstructor
-@Slf4j
 public class RecommendationController {
-
+  private static final Logger log = LoggerFactory.getLogger(RecommendationController.class);
   private final RecommendationService recommendationService;
   private final UserService userService;
 
@@ -29,14 +27,12 @@ public class RecommendationController {
   public ResponseEntity<List<PhotoResponse>> getRelatedPhotos(
       @PathVariable String photoId, @RequestParam(defaultValue = "12") int limit) {
     log.info("Getting related photos for photoId: {}, limit: {}", photoId, limit);
-
     User currentUser = null;
     try {
       currentUser = userService.getCurrentUser();
     } catch (Exception e) {
       log.debug("No authenticated user for related photos");
     }
-
     List<PhotoResponse> relatedPhotos =
         recommendationService.getRelatedPhotos(photoId, limit, currentUser);
     return ResponseEntity.ok(relatedPhotos);
@@ -50,7 +46,6 @@ public class RecommendationController {
   public ResponseEntity<List<RecommendedUserResponse>> getSuggestedUsers(
       @RequestParam(defaultValue = "5") int limit) {
     log.info("Getting suggested users, limit: {}", limit);
-
     String userId = userService.getCurrentUser().getId();
     List<RecommendedUserResponse> suggestions =
         recommendationService.getSuggestedUsers(userId, limit);
@@ -64,15 +59,16 @@ public class RecommendationController {
   @PostMapping("/admin/index-all")
   public ResponseEntity<Map<String, Integer>> batchIndexAll() {
     log.info("Starting batch indexing of all photos and users");
-
     int photosIndexed = recommendationService.batchIndexAllPhotos();
     int usersIndexed = recommendationService.batchIndexAllUsers();
-
     Map<String, Integer> result =
-        Map.of(
-            "photosIndexed", photosIndexed,
-            "usersIndexed", usersIndexed);
-
+        Map.of("photosIndexed", photosIndexed, "usersIndexed", usersIndexed);
     return ResponseEntity.ok(result);
+  }
+
+  public RecommendationController(
+      final RecommendationService recommendationService, final UserService userService) {
+    this.recommendationService = recommendationService;
+    this.userService = userService;
   }
 }

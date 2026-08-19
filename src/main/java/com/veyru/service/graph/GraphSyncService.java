@@ -9,8 +9,8 @@ import com.veyru.repository.PhotoRepository;
 import com.veyru.repository.UserRepository;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -19,10 +19,8 @@ import org.springframework.stereotype.Service;
  * create, photo create, follow, like, comment
  */
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class GraphSyncService {
-
+  private static final Logger log = LoggerFactory.getLogger(GraphSyncService.class);
   private final Neo4jGraphService neo4jGraphService;
   private final UserRepository userRepository;
   private final PhotoRepository photoRepository;
@@ -30,12 +28,10 @@ public class GraphSyncService {
   private final LikeRepository likeRepository;
 
   // ==================== USER OPERATIONS ====================
-
   /** Sync a user to Neo4j (called when user is created/updated) */
   @Async
   public CompletableFuture<Void> syncUser(String userId) {
     log.info("Syncing user to Neo4j: {}", userId);
-
     userRepository
         .findById(userId)
         .ifPresent(
@@ -48,7 +44,6 @@ public class GraphSyncService {
                   user.getPhotoCount(),
                   user.getBio());
             });
-
     return CompletableFuture.completedFuture(null);
   }
 
@@ -56,7 +51,6 @@ public class GraphSyncService {
   public void syncAllUsers() {
     log.info("Starting full user sync to Neo4j");
     List<User> allUsers = userRepository.findAll();
-
     for (User user : allUsers) {
       try {
         neo4jGraphService.upsertUser(
@@ -70,17 +64,14 @@ public class GraphSyncService {
         log.error("Failed to sync user {}: {}", user.getId(), e.getMessage());
       }
     }
-
     log.info("Completed syncing {} users to Neo4j", allUsers.size());
   }
 
   // ==================== PHOTO OPERATIONS ====================
-
   /** Sync a photo to Neo4j (called when photo is created) */
   @Async
   public CompletableFuture<Void> syncPhoto(String photoId) {
     log.info("Syncing photo to Neo4j: {}", photoId);
-
     photoRepository
         .findById(photoId)
         .ifPresent(
@@ -97,14 +88,12 @@ public class GraphSyncService {
                   photo.getShareCount(),
                   photo.getCreatedAt());
             });
-
     return CompletableFuture.completedFuture(null);
   }
 
   /** Sync all photos to Neo4j (initial sync) */
   public void syncAllPhotos() {
     log.info("Starting full photo sync to Neo4j");
-
     photoRepository
         .findAll()
         .forEach(
@@ -125,20 +114,16 @@ public class GraphSyncService {
                 log.error("Failed to sync photo {}: {}", photo.getId(), e.getMessage());
               }
             });
-
     log.info("Completed syncing photos to Neo4j");
   }
 
   // ==================== FOLLOW OPERATIONS ====================
-
   /** Create follow relationship in Neo4j */
   public void createFollow(String followerId, String followingId) {
     log.info("Syncing follow relationship: {} -> {}", followerId, followingId);
-
     // Ensure both users exist in Neo4j
     syncUser(followerId);
     syncUser(followingId);
-
     // Create the follow relationship
     neo4jGraphService.createFollowRelationship(followerId, followingId);
   }
@@ -152,9 +137,7 @@ public class GraphSyncService {
   /** Sync all follow relationships (initial sync) */
   public void syncAllFollows() {
     log.info("Starting full follow sync to Neo4j");
-
     List<Follow> allFollows = followRepository.findAll();
-
     for (Follow follow : allFollows) {
       try {
         createFollow(follow.getFollowerId(), follow.getFollowingId());
@@ -166,16 +149,13 @@ public class GraphSyncService {
             e.getMessage());
       }
     }
-
     log.info("Completed syncing {} follows to Neo4j", allFollows.size());
   }
 
   // ==================== LIKE OPERATIONS ====================
-
   /** Create like relationship in Neo4j */
   public void createLike(String userId, String photoId) {
     log.info("Syncing like relationship: {} -> {}", userId, photoId);
-
     neo4jGraphService.createLikeRelationship(userId, photoId);
   }
 
@@ -188,9 +168,7 @@ public class GraphSyncService {
   /** Sync all likes to Neo4j (initial sync) */
   public void syncAllLikes() {
     log.info("Starting full like sync to Neo4j");
-
     List<Like> allLikes = likeRepository.findAll();
-
     for (Like like : allLikes) {
       try {
         neo4jGraphService.createLikeRelationship(like.getUserId(), like.getPhotoId());
@@ -202,35 +180,26 @@ public class GraphSyncService {
             e.getMessage());
       }
     }
-
     log.info("Completed syncing {} likes to Neo4j", allLikes.size());
   }
 
   // ==================== FULL SYNC ====================
-
   /** Perform full sync of all data to Neo4j Call this once during initial setup */
   public String performFullSync() {
     log.info("Starting full sync to Neo4j graph database");
     long startTime = System.currentTimeMillis();
-
     // 1. Sync all users
     syncAllUsers();
-
     // 2. Sync all follows
     syncAllFollows();
-
     // 3. Sync all photos
     syncAllPhotos();
-
     // 4. Sync all likes
     syncAllLikes();
-
     long duration = System.currentTimeMillis() - startTime;
     log.info("Full sync completed in {} ms", duration);
-
     // Get stats
     var stats = neo4jGraphService.getGraphStats();
-
     return String.format("Full sync completed in %d ms. Stats: %s", duration, stats);
   }
 
@@ -243,5 +212,18 @@ public class GraphSyncService {
         stats.getOrDefault("photos", 0L),
         stats.getOrDefault("follows", 0L),
         stats.getOrDefault("likes", 0L));
+  }
+
+  public GraphSyncService(
+      final Neo4jGraphService neo4jGraphService,
+      final UserRepository userRepository,
+      final PhotoRepository photoRepository,
+      final FollowRepository followRepository,
+      final LikeRepository likeRepository) {
+    this.neo4jGraphService = neo4jGraphService;
+    this.userRepository = userRepository;
+    this.photoRepository = photoRepository;
+    this.followRepository = followRepository;
+    this.likeRepository = likeRepository;
   }
 }

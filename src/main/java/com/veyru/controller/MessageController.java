@@ -7,8 +7,8 @@ import com.veyru.dto.response.message.MessageResponse;
 import com.veyru.service.message.MessageService;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.user.SimpUserRegistry;
@@ -16,10 +16,8 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("${api.prefix}/messages")
-@RequiredArgsConstructor
-@Slf4j
 public class MessageController {
-
+  private static final Logger log = LoggerFactory.getLogger(MessageController.class);
   private final MessageService messageService;
   private final SimpUserRegistry simpUserRegistry;
 
@@ -91,5 +89,11 @@ public class MessageController {
     String userId = messageService.getCurrentUserId();
     var conversation = messageService.getOrCreateConversation(userId, otherUserId);
     return ResponseEntity.ok(Map.of("conversationId", conversation.getId()));
+  }
+
+  public MessageController(
+      final MessageService messageService, final SimpUserRegistry simpUserRegistry) {
+    this.messageService = messageService;
+    this.simpUserRegistry = simpUserRegistry;
   }
 }

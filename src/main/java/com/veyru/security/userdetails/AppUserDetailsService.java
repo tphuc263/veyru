@@ -2,8 +2,8 @@ package com.veyru.security.userdetails;
 
 import com.veyru.model.User;
 import com.veyru.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -11,16 +11,14 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class AppUserDetailsService implements UserDetailsService {
+  private static final Logger log = LoggerFactory.getLogger(AppUserDetailsService.class);
   private final UserRepository userRepository;
 
   @Override
   public UserDetails loadUserByUsername(String identifier)
       throws UsernameNotFoundException, DisabledException {
     log.debug("Loading user by identifier: {}", identifier);
-
     User user =
         userRepository
             .findByEmail(identifier)
@@ -32,8 +30,11 @@ public class AppUserDetailsService implements UserDetailsService {
                   return new UsernameNotFoundException(
                       "User not found with identifier: " + identifier);
                 });
-
     log.debug("User loaded successfully: {}", user.getUsername());
     return AppUserDetails.buildUserDetails(user);
+  }
+
+  public AppUserDetailsService(final UserRepository userRepository) {
+    this.userRepository = userRepository;
   }
 }
