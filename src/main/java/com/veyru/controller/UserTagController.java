@@ -1,48 +1,45 @@
 package com.veyru.controller;
 
+import com.veyru.dto.request.usertag.CreateUserTagRequest;
+import com.veyru.dto.response.usertag.UserTagResponse;
+import com.veyru.service.usertag.IUserTagService;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.veyru.dto.request.usertag.CreateUserTagRequest;
-import com.veyru.dto.response.ApiResponse;
-import com.veyru.dto.response.usertag.UserTagResponse;
-import com.veyru.service.usertag.IUserTagService;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("${api.prefix}/user-tags")
 @RequiredArgsConstructor
 public class UserTagController {
-    
-    private final IUserTagService userTagService;
 
-    @PostMapping("/photo/{photoId}")
-    public ResponseEntity<ApiResponse<UserTagResponse>> tagUserInPhoto(
-            @PathVariable String photoId,
-            @Valid @RequestBody CreateUserTagRequest request) {
-        UserTagResponse response = userTagService.tagUserInPhoto(photoId, request);
-        return ResponseEntity.ok(ApiResponse.success(response, "User tagged successfully"));
-    }
+  private final IUserTagService userTagService;
 
-    @DeleteMapping("/photo/{photoId}/user/{taggedUserId}")
-    public ResponseEntity<ApiResponse<Void>> removeUserTag(
-            @PathVariable String photoId,
-            @PathVariable String taggedUserId) {
-        userTagService.removeUserTag(photoId, taggedUserId);
-        return ResponseEntity.ok(ApiResponse.success(null, "User tag removed successfully"));
-    }
+  @PostMapping("/photo/{photoId}")
+  public ResponseEntity<UserTagResponse> tagUserInPhoto(
+      @PathVariable String photoId, @Valid @RequestBody CreateUserTagRequest request) {
+    UserTagResponse response = userTagService.tagUserInPhoto(photoId, request);
+    return ResponseEntity.status(201).body(response);
+  }
 
-    @GetMapping("/photo/{photoId}")
-    public ResponseEntity<ApiResponse<List<UserTagResponse>>> getPhotoUserTags(@PathVariable String photoId) {
-        List<UserTagResponse> tags = userTagService.getPhotoUserTags(photoId);
-        return ResponseEntity.ok(ApiResponse.success(tags, "Photo user tags retrieved successfully"));
-    }
+  @DeleteMapping("/photo/{photoId}/user/{taggedUserId}")
+  public ResponseEntity<Void> removeUserTag(
+      @PathVariable String photoId, @PathVariable String taggedUserId) {
+    userTagService.removeUserTag(photoId, taggedUserId);
+    return ResponseEntity.noContent().build();
+  }
 
-    @GetMapping("/user/{userId}/tagged-photos")
-    public ResponseEntity<ApiResponse<List<UserTagResponse>>> getPhotosWhereUserIsTagged(@PathVariable String userId) {
-        List<UserTagResponse> tags = userTagService.getPhotosWhereUserIsTagged(userId);
-        return ResponseEntity.ok(ApiResponse.success(tags, "User tagged photos retrieved successfully"));
-    }
+  @GetMapping("/photo/{photoId}")
+  public ResponseEntity<List<UserTagResponse>> getPhotoUserTags(@PathVariable String photoId) {
+    List<UserTagResponse> tags = userTagService.getPhotoUserTags(photoId);
+    return ResponseEntity.ok(tags);
+  }
+
+  @GetMapping("/user/{userId}/tagged-photos")
+  public ResponseEntity<List<UserTagResponse>> getPhotosWhereUserIsTagged(
+      @PathVariable String userId) {
+    List<UserTagResponse> tags = userTagService.getPhotosWhereUserIsTagged(userId);
+    return ResponseEntity.ok(tags);
+  }
 }
