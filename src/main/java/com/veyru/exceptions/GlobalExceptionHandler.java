@@ -1,138 +1,194 @@
 package com.veyru.exceptions;
 
+import jakarta.validation.ConstraintViolationException;
+import java.net.URI;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.ProblemDetail;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import com.veyru.dto.response.ApiResponse;
-
-import java.util.HashMap;
-import java.util.Map;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
+@Order(Ordered.HIGHEST_PRECEDENCE)
 @Slf4j
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(DuplicateResourceException.class)
-    public ResponseEntity<ApiResponse<Void>> handleDuplicateResource(DuplicateResourceException ex) {
-        log.warn("Duplicate resource: {}", ex.getMessage());
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error(ex.getMessage()));
-    }
+  @ExceptionHandler(ApiException.class)
+  public ProblemDetail handleApiException(ApiException ex, WebRequest request) {
+    log.warn("API error {}: {}", ex.code(), ex.getMessage());
+    return problem(ex.code(), ex.getMessage(), request);
+  }
 
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleResourceNotFound(ResourceNotFoundException ex) {
-        log.warn("Resource not found: {}", ex.getMessage());
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error(ex.getMessage()));
-    }
+  @ExceptionHandler({NoHandlerFoundException.class, NoResourceFoundException.class})
+  public ProblemDetail handleNotFound(Exception ex, WebRequest request) {
+    return problem(ErrorCode.RESOURCE_NOT_FOUND, null, request);
+  }
 
-    @ExceptionHandler(UsernameNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleUsernameNotFound(UsernameNotFoundException ex) {
-        log.warn("User not found during authentication");
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error("Invalid email or password"));
-    }
+  @ExceptionHandler(DuplicateKeyException.class)
+  public ProblemDetail handleConflict(Exception ex, WebRequest request) {
+    return problem(ErrorCode.RESOURCE_CONFLICT, null, request);
+  }
 
-    @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ApiResponse<Void>> handleBadCredentials(BadCredentialsException ex) {
-        log.warn("Authentication failed: Invalid credentials");
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error("Invalid email or password"));
-    }
+  @ExceptionHandler(MethodArgumentNotValidException.class)
+  public ProblemDetail handleValidation(MethodArgumentNotValidException ex, WebRequest request) {
+    List<ValidationError> errors =
+        ex.getBindingResult().getFieldErrors().stream()
+            .map(
+                error ->
+                    new ValidationError(
+                        error.getField(),
+                        constraintCode(error.getCode()),
+                        error.getDefaultMessage()))
+            .toList();
+    ProblemDetail problem = problem(ErrorCode.VALIDATION_FAILED, null, request);
+    problem.setProperty("errors", errors);
+    return problem;
+  }
 
-    @ExceptionHandler(InternalAuthenticationServiceException.class)
-    public ResponseEntity<ApiResponse<Void>> handleInternalAuthenticationService(InternalAuthenticationServiceException ex) {
-        log.error("Authentication service error: {}", ex.getMessage(), ex);
-        
-        // Check if it's caused by non-unique email
-        if (ex.getMessage() != null && ex.getMessage().contains("non unique result")) {
-            log.error("CRITICAL: Database integrity issue - Multiple users found with same email");
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Database integrity issue detected. Please contact support."));
-        }
-        
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error("Authentication failed"));
-    }
+  @ExceptionHandler(ConstraintViolationException.class)
+  public ProblemDetail handleConstraintViolation(
+      ConstraintViolationException ex, WebRequest request) {
+    List<ValidationError> errors =
+        ex.getConstraintViolations().stream()
+            .map(
+                error ->
+                    new ValidationError(
+                        error.getPropertyPath().toString(),
+                        constraintCode(
+                            error
+                                .getConstraintDescriptor()
+                                .getAnnotation()
+                                .annotationType()
+                                .getSimpleName()),
+                        error.getMessage()))
+            .toList();
+    ProblemDetail problem = problem(ErrorCode.VALIDATION_FAILED, null, request);
+    problem.setProperty("errors", errors);
+    return problem;
+  }
 
-    @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ApiResponse<Void>> handleAuthenticationException(AuthenticationException ex) {
-        log.warn("Authentication failed: {}", ex.getMessage());
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error("Authentication failed"));
-    }
+  @ExceptionHandler({
+    HttpMessageNotReadableException.class,
+    MissingServletRequestParameterException.class,
+    MissingServletRequestPartException.class
+  })
+  public ProblemDetail handleMalformedRequest(Exception ex, WebRequest request) {
+    return problem(
+        ex instanceof MissingServletRequestParameterException
+                || ex instanceof MissingServletRequestPartException
+            ? ErrorCode.MISSING_REQUEST_VALUE
+            : ErrorCode.MALFORMED_REQUEST,
+        null,
+        request);
+  }
 
-    @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
-        log.error("Database integrity violation: {}", ex.getMessage());
-        
-        String message = "Database error occurred";
-        if (ex.getMessage() != null && ex.getMessage().contains("duplicate key")) {
-            message = "A record with this information already exists";
-        }
-        
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error(message));
-    }
+  @ExceptionHandler({MethodArgumentTypeMismatchException.class, IllegalArgumentException.class})
+  public ProblemDetail handleInvalidValue(Exception ex, WebRequest request) {
+    return problem(
+        ex instanceof IllegalArgumentException
+            ? ErrorCode.VALIDATION_FAILED
+            : ErrorCode.INVALID_REQUEST_VALUE,
+        null,
+        request);
+  }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationErrors(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getFieldErrors().forEach(error -> 
-            errors.put(error.getField(), error.getDefaultMessage())
-        );
-        
-        log.warn("Validation failed: {}", errors);
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(new ApiResponse<>(errors, "Validation failed"));
-    }
+  @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+  public ProblemDetail handleMethodNotAllowed(
+      HttpRequestMethodNotSupportedException ex, WebRequest request) {
+    return problem(ErrorCode.METHOD_NOT_ALLOWED, null, request);
+  }
 
-    @ExceptionHandler(NullPointerException.class)
-    public ResponseEntity<ApiResponse<Void>> handleNullPointerException(NullPointerException ex) {
-        log.error("Null pointer exception occurred", ex);
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("An unexpected error occurred"));
-    }
+  @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
+  public ProblemDetail handleNotAcceptable(
+      HttpMediaTypeNotAcceptableException ex, WebRequest request) {
+    return problem(ErrorCode.NOT_ACCEPTABLE, null, request);
+  }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
-        log.warn("Illegal argument: {}", ex.getMessage());
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(ex.getMessage()));
-    }
+  @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+  public ProblemDetail handleUnsupportedMediaType(
+      HttpMediaTypeNotSupportedException ex, WebRequest request) {
+    return problem(ErrorCode.UNSUPPORTED_MEDIA_TYPE, null, request);
+  }
 
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException ex) {
-        log.error("Runtime exception occurred", ex);
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error(ex.getMessage()));
-    }
+  @ExceptionHandler(MaxUploadSizeExceededException.class)
+  public ProblemDetail handlePayloadTooLarge(
+      MaxUploadSizeExceededException ex, WebRequest request) {
+    return problem(ErrorCode.PAYLOAD_TOO_LARGE, null, request);
+  }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
-        log.error("Unexpected error occurred", ex);
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("An unexpected error occurred. Please try again later."));
+  @ExceptionHandler(BadCredentialsException.class)
+  public ProblemDetail handleBadCredentials(BadCredentialsException ex, WebRequest request) {
+    return problem(ErrorCode.INVALID_CREDENTIALS, null, request);
+  }
+
+  @ExceptionHandler(AuthenticationException.class)
+  public ProblemDetail handleAuthentication(AuthenticationException ex, WebRequest request) {
+    return problem(ErrorCode.AUTHENTICATION_REQUIRED, null, request);
+  }
+
+  @ExceptionHandler(AccessDeniedException.class)
+  public ProblemDetail handleAccessDenied(AccessDeniedException ex, WebRequest request) {
+    return problem(ErrorCode.ACCESS_DENIED, null, request);
+  }
+
+  @ExceptionHandler(DataAccessResourceFailureException.class)
+  public ProblemDetail handleServiceUnavailable(
+      DataAccessResourceFailureException ex, WebRequest request) {
+    log.error("Database dependency unavailable", ex);
+    return problem(ErrorCode.SERVICE_UNAVAILABLE, null, request);
+  }
+
+  @ExceptionHandler(DataAccessException.class)
+  public ProblemDetail handleDataAccess(DataAccessException ex, WebRequest request) {
+    log.error("Database error", ex);
+    return problem(ErrorCode.INTERNAL_ERROR, null, request);
+  }
+
+  @ExceptionHandler(Exception.class)
+  public ProblemDetail handleUnexpected(Exception ex, WebRequest request) {
+    log.error("Unexpected error", ex);
+    return problem(ErrorCode.INTERNAL_ERROR, null, request);
+  }
+
+  private ProblemDetail problem(ErrorCode code, String detail, WebRequest request) {
+    ProblemDetail problem =
+        ProblemDetail.forStatusAndDetail(code.status(), detail == null ? code.detail() : detail);
+    problem.setTitle(code.status().getReasonPhrase());
+    problem.setProperty("code", code.name());
+    String description = request.getDescription(false);
+    if (description.startsWith("uri=")) {
+      problem.setInstance(URI.create(description.substring(4)));
     }
+    return problem;
+  }
+
+  private String constraintCode(String code) {
+    return switch (code) {
+      case "NotBlank", "NotEmpty", "NotNull" -> "REQUIRED";
+      case "Email" -> "INVALID_EMAIL";
+      case "Size" -> "INVALID_SIZE";
+      case "Pattern" -> "INVALID_FORMAT";
+      default -> "INVALID_VALUE";
+    };
+  }
 }

@@ -1,12 +1,24 @@
 package com.veyru.service.follow;
 
+import com.veyru.dto.response.follow.FollowResponse;
+import com.veyru.exceptions.ApiException;
+import com.veyru.exceptions.ErrorCode;
+import com.veyru.model.Follow;
+import com.veyru.model.User;
+import com.veyru.repository.FollowRepository;
+import com.veyru.repository.UserRepository;
+import com.veyru.security.userdetails.AppUserDetails;
+import com.veyru.service.graph.Neo4jGraphService;
+import com.veyru.service.notification.INotificationService;
+import com.veyru.service.user.UserAvatarCacheService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,223 +31,223 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import com.veyru.dto.response.follow.FollowResponse;
-import com.veyru.model.Follow;
-import com.veyru.model.User;
-import com.veyru.repository.FollowRepository;
-import com.veyru.repository.UserRepository;
-import com.veyru.security.userdetails.AppUserDetails;
-import com.veyru.service.graph.Neo4jGraphService;
-import com.veyru.service.notification.INotificationService;
-import com.veyru.service.user.UserAvatarCacheService;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class FollowService implements IFollowService {
-    private final FollowRepository followRepository;
-    private final UserRepository userRepository;
-    private final ModelMapper modelMapper;
-    private final MongoTemplate mongoTemplate;
-    private final INotificationService notificationService;
-    private final UserAvatarCacheService userAvatarCacheService;
-    private final Neo4jGraphService neo4jGraphService;
+  private final FollowRepository followRepository;
+  private final UserRepository userRepository;
+  private final ModelMapper modelMapper;
+  private final MongoTemplate mongoTemplate;
+  private final INotificationService notificationService;
+  private final UserAvatarCacheService userAvatarCacheService;
+  private final Neo4jGraphService neo4jGraphService;
 
-    @Override
-    public void follow(String targetUserId) {
-        User currentUser = getCurrentUser();
-        Follow existingFollow = checkBeforeFollow(targetUserId, currentUser);
+  @Override
+  public void follow(String targetUserId) {
+    User currentUser = getCurrentUser();
+    Follow existingFollow = checkBeforeFollow(targetUserId, currentUser);
 
-        if (existingFollow != null) {
-            throw new RuntimeException("You are already following this user");
-        }
-
-        Follow follow = new Follow();
-        follow.setFollowerId(currentUser.getId());
-        follow.setFollowingId(targetUserId);
-        follow.setCreatedAt(Instant.now());
-
-        followRepository.save(follow);
-        log.info("User {} followed user {}", currentUser.getId(), targetUserId);
-
-        // Sync to Neo4j graph
-        try {
-            neo4jGraphService.upsertUser(currentUser.getId(), currentUser.getUsername(),
-                    currentUser.getImageUrl(), currentUser.getFollowingCount(),
-                    currentUser.getPhotoCount(), currentUser.getBio());
-
-            User targetUser = userRepository.findById(targetUserId).orElse(null);
-            if (targetUser != null) {
-                neo4jGraphService.upsertUser(targetUser.getId(), targetUser.getUsername(),
-                        targetUser.getImageUrl(), targetUser.getFollowingCount(),
-                        targetUser.getPhotoCount(), targetUser.getBio());
-            }
-
-            neo4jGraphService.createFollowRelationship(currentUser.getId(), targetUserId);
-            log.debug("Synced follow relationship to Neo4j: {} -> {}", currentUser.getId(), targetUserId);
-        } catch (Exception e) {
-            log.warn("Failed to sync follow to Neo4j: {}", e.getMessage());
-        }
-
-        // increase following count of person click follow
-        Query followerQuery = new Query(Criteria.where("_id").is(currentUser.getId()));
-        Update followerUpdate = new Update().inc("followingCount", 1);
-        mongoTemplate.updateFirst(followerQuery, followerUpdate, User.class);
-
-        // increase follower of person who have new follower
-        Query followingQuery = new Query(Criteria.where("_id").is(targetUserId));
-        Update followingUpdate = new Update().inc("followerCount", 1);
-        mongoTemplate.updateFirst(followingQuery, followingUpdate, User.class);
-
-        // Send notification to the user being followed
-        notificationService.sendNewFollowerNotification(targetUserId, currentUser);
-
-        log.info("User {} followed user {}", currentUser.getId(), targetUserId);
-
-        // try {
-        // newsfeedService.generateNewsfeedCache(currentUser.getId());
-        // log.info("Regenerated newsfeed cache after follow for user: {}",
-        // currentUser.getId());
-        // } catch (Exception e) {
-        // log.error("Error regenerating newsfeed cache after follow", e);
-        // }
+    if (existingFollow != null) {
+      throw new ApiException(ErrorCode.RESOURCE_CONFLICT);
     }
 
-    @Override
-    public void unfollow(String targetUserId) {
-        User currentUser = getCurrentUser();
-        Follow existingFollow = checkBeforeFollow(targetUserId, currentUser);
+    Follow follow = new Follow();
+    follow.setFollowerId(currentUser.getId());
+    follow.setFollowingId(targetUserId);
+    follow.setCreatedAt(Instant.now());
 
-        if (existingFollow == null) {
-            throw new RuntimeException("You are not following this user");
-        }
+    followRepository.save(follow);
+    log.info("User {} followed user {}", currentUser.getId(), targetUserId);
 
-        followRepository.delete(existingFollow);
-        log.info("User {} unfollowed user {}", currentUser.getId(), targetUserId);
+    // Sync to Neo4j graph
+    try {
+      neo4jGraphService.upsertUser(
+          currentUser.getId(),
+          currentUser.getUsername(),
+          currentUser.getImageUrl(),
+          currentUser.getFollowingCount(),
+          currentUser.getPhotoCount(),
+          currentUser.getBio());
 
-        Query followerQuery = new Query(Criteria.where("_id").is(currentUser.getId()));
-        Update followerUpdate = new Update().inc("followingCount", -1);
-        mongoTemplate.updateFirst(followerQuery, followerUpdate, User.class);
+      User targetUser = userRepository.findById(targetUserId).orElse(null);
+      if (targetUser != null) {
+        neo4jGraphService.upsertUser(
+            targetUser.getId(),
+            targetUser.getUsername(),
+            targetUser.getImageUrl(),
+            targetUser.getFollowingCount(),
+            targetUser.getPhotoCount(),
+            targetUser.getBio());
+      }
 
-        Query followingQuery = new Query(Criteria.where("_id").is(targetUserId));
-        Update followingUpdate = new Update().inc("followerCount", -1);
-        mongoTemplate.updateFirst(followingQuery, followingUpdate, User.class);
-
-        // try {
-        // newsfeedService.generateNewsfeedCache(currentUser.getId());
-        // log.info("Regenerated newsfeed cache after unfollow for user: {}",
-        // currentUser.getId());
-        // } catch (Exception e) {
-        // log.error("Error regenerating newsfeed cache after unfollow", e);
-        // }
+      neo4jGraphService.createFollowRelationship(currentUser.getId(), targetUserId);
+      log.debug("Synced follow relationship to Neo4j: {} -> {}", currentUser.getId(), targetUserId);
+    } catch (Exception e) {
+      log.warn("Failed to sync follow to Neo4j: {}", e.getMessage());
     }
 
-    @Override
-    public List<FollowResponse> getFollowers(String userId, int page, int size) {
-        // Validate user exists
-        userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+    // increase following count of person click follow
+    Query followerQuery = new Query(Criteria.where("_id").is(currentUser.getId()));
+    Update followerUpdate = new Update().inc("followingCount", 1);
+    mongoTemplate.updateFirst(followerQuery, followerUpdate, User.class);
 
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Follow> follows = followRepository.findByFollowingIdOrderByCreatedAtDesc(userId, pageable);
+    // increase follower of person who have new follower
+    Query followingQuery = new Query(Criteria.where("_id").is(targetUserId));
+    Update followingUpdate = new Update().inc("followerCount", 1);
+    mongoTemplate.updateFirst(followingQuery, followingUpdate, User.class);
 
-        List<String> followerIds = follows.getContent().stream()
-                .map(Follow::getFollowerId)
-                .toList();
+    // Send notification to the user being followed
+    notificationService.sendNewFollowerNotification(targetUserId, currentUser);
 
-        return convertToFollowResponses(followerIds, true);
+    log.info("User {} followed user {}", currentUser.getId(), targetUserId);
+
+    // try {
+    // newsfeedService.generateNewsfeedCache(currentUser.getId());
+    // log.info("Regenerated newsfeed cache after follow for user: {}",
+    // currentUser.getId());
+    // } catch (Exception e) {
+    // log.error("Error regenerating newsfeed cache after follow", e);
+    // }
+  }
+
+  @Override
+  public void unfollow(String targetUserId) {
+    User currentUser = getCurrentUser();
+    Follow existingFollow = checkBeforeFollow(targetUserId, currentUser);
+
+    if (existingFollow == null) {
+      throw new ApiException(ErrorCode.RESOURCE_CONFLICT);
     }
 
-    @Override
-    public List<FollowResponse> getFollowing(String userId, int page, int size) {
-        // Validate user exists
-        userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+    followRepository.delete(existingFollow);
+    log.info("User {} unfollowed user {}", currentUser.getId(), targetUserId);
 
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Follow> follows = followRepository.findByFollowerIdOrderByCreatedAtDesc(userId, pageable);
+    Query followerQuery = new Query(Criteria.where("_id").is(currentUser.getId()));
+    Update followerUpdate = new Update().inc("followingCount", -1);
+    mongoTemplate.updateFirst(followerQuery, followerUpdate, User.class);
 
-        List<String> followingIds = follows.getContent().stream()
-                .map(Follow::getFollowingId)
-                .toList();
+    Query followingQuery = new Query(Criteria.where("_id").is(targetUserId));
+    Update followingUpdate = new Update().inc("followerCount", -1);
+    mongoTemplate.updateFirst(followingQuery, followingUpdate, User.class);
 
-        return convertToFollowResponses(followingIds, false);
+    // try {
+    // newsfeedService.generateNewsfeedCache(currentUser.getId());
+    // log.info("Regenerated newsfeed cache after unfollow for user: {}",
+    // currentUser.getId());
+    // } catch (Exception e) {
+    // log.error("Error regenerating newsfeed cache after unfollow", e);
+    // }
+  }
+
+  @Override
+  public List<FollowResponse> getFollowers(String userId, int page, int size) {
+    // Validate user exists
+    userRepository
+        .findById(userId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
+
+    Pageable pageable = PageRequest.of(page, size);
+    Page<Follow> follows = followRepository.findByFollowingIdOrderByCreatedAtDesc(userId, pageable);
+
+    List<String> followerIds = follows.getContent().stream().map(Follow::getFollowerId).toList();
+
+    return convertToFollowResponses(followerIds, true);
+  }
+
+  @Override
+  public List<FollowResponse> getFollowing(String userId, int page, int size) {
+    // Validate user exists
+    userRepository
+        .findById(userId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
+
+    Pageable pageable = PageRequest.of(page, size);
+    Page<Follow> follows = followRepository.findByFollowerIdOrderByCreatedAtDesc(userId, pageable);
+
+    List<String> followingIds = follows.getContent().stream().map(Follow::getFollowingId).toList();
+
+    return convertToFollowResponses(followingIds, false);
+  }
+
+  @Override
+  public boolean isFollowing(String followerId, String followingId) {
+    return followRepository.existsByFollowerIdAndFollowingId(followerId, followingId);
+  }
+
+  // Helper methods
+  private List<FollowResponse> convertToFollowResponses(
+      List<String> userIds, boolean isFollowersList) {
+    if (userIds.isEmpty()) {
+      return List.of();
     }
 
-    @Override
-    public boolean isFollowing(String followerId, String followingId) {
-        return followRepository.existsByFollowerIdAndFollowingId(followerId, followingId);
+    // Fetch users in batch
+    Map<String, User> usersMap =
+        userRepository.findAllById(userIds).stream()
+            .collect(Collectors.toMap(User::getId, user -> user));
+
+    // Get current user's following list for follow status
+    Set<String> currentUserFollowing = getCurrentUserFollowing();
+
+    return userIds.stream()
+        .map(
+            userId -> {
+              User user = usersMap.get(userId);
+              if (user != null) {
+                FollowResponse response = modelMapper.map(user, FollowResponse.class);
+                response.setUserId(user.getId());
+                response.setUserImageUrl(userAvatarCacheService.getAvatar(user.getId()));
+                response.setFollowedByCurrentUser(currentUserFollowing.contains(userId));
+                return response;
+              }
+              return null;
+            })
+        .filter(Objects::nonNull)
+        .toList();
+  }
+
+  private Set<String> getCurrentUserFollowing() {
+    try {
+      User currentUser = getCurrentUser();
+      return followRepository.findByFollowerId(currentUser.getId()).stream()
+          .map(Follow::getFollowingId)
+          .collect(Collectors.toSet());
+    } catch (Exception e) {
+      return Set.of();
+    }
+  }
+
+  private Follow checkBeforeFollow(String targetUserId, User currentUser) {
+    userRepository
+        .findById(targetUserId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
+
+    // Prevent self-following
+    if (currentUser.getId().equals(targetUserId)) {
+      throw new ApiException(ErrorCode.VALIDATION_FAILED);
     }
 
-    // Helper methods
-    private List<FollowResponse> convertToFollowResponses(List<String> userIds, boolean isFollowersList) {
-        if (userIds.isEmpty()) {
-            return List.of();
-        }
+    return followRepository
+        .findByFollowerIdAndFollowingId(currentUser.getId(), targetUserId)
+        .orElse(null);
+  }
 
-        // Fetch users in batch
-        Map<String, User> usersMap = userRepository.findAllById(userIds)
-                .stream()
-                .collect(Collectors.toMap(User::getId, user -> user));
+  // helper methods
+  private User getCurrentUser() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        // Get current user's following list for follow status
-        Set<String> currentUserFollowing = getCurrentUserFollowing();
-
-        return userIds.stream()
-                .map(userId -> {
-                    User user = usersMap.get(userId);
-                    if (user != null) {
-                        FollowResponse response = modelMapper.map(user, FollowResponse.class);
-                        response.setUserId(user.getId());
-                        response.setUserImageUrl(userAvatarCacheService.getAvatar(user.getId()));
-                        response.setFollowedByCurrentUser(currentUserFollowing.contains(userId));
-                        return response;
-                    }
-                    return null;
-                })
-                .filter(Objects::nonNull)
-                .toList();
+    if (authentication == null
+        || !authentication.isAuthenticated()
+        || !(authentication.getPrincipal() instanceof AppUserDetails userDetails)) {
+      throw new ApiException(ErrorCode.AUTHENTICATION_REQUIRED);
     }
-
-    private Set<String> getCurrentUserFollowing() {
-        try {
-            User currentUser = getCurrentUser();
-            return followRepository.findByFollowerId(currentUser.getId())
-                    .stream()
-                    .map(Follow::getFollowingId)
-                    .collect(Collectors.toSet());
-        } catch (Exception e) {
-            return Set.of();
-        }
-    }
-
-    private Follow checkBeforeFollow(String targetUserId, User currentUser) {
-        userRepository.findById(targetUserId)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + targetUserId));
-
-        // Prevent self-following
-        if (currentUser.getId().equals(targetUserId)) {
-            throw new RuntimeException("You cannot follow yourself");
-        }
-
-        return followRepository.findByFollowerIdAndFollowingId(
-                currentUser.getId(), targetUserId).orElse(null);
-    }
-
-    // helper methods
-    private User getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated()
-                || !(authentication.getPrincipal() instanceof AppUserDetails userDetails)) {
-            throw new RuntimeException("User not authenticated properly");
-        }
-        return userRepository.findById(userDetails.getId())
-                .orElseThrow(() -> {
-                    log.error("User not found with ID: {}", userDetails.getId());
-                    return new RuntimeException("User not found with ID: " + userDetails.getId());
-                });
-    }
+    return userRepository
+        .findById(userDetails.getId())
+        .orElseThrow(
+            () -> {
+              log.error("User not found with ID: {}", userDetails.getId());
+              return new ApiException(ErrorCode.RESOURCE_NOT_FOUND);
+            });
+  }
 }

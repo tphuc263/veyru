@@ -1,9 +1,13 @@
 package com.veyru.dto.request.auth;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
 public class LoginRequest {
-    private String identifier; // Can be email, username, or phone number
-    private String password;
+  @NotBlank(message = "Identifier must not be blank")
+  private String identifier; // Can be email, username, or phone number
+
+  @NotBlank(message = "Password must not be blank")
+  private String password;
 }
