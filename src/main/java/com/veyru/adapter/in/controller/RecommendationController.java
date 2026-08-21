@@ -2,6 +2,7 @@ package com.veyru.adapter.in.controller;
 
 import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
 import com.veyru.adapter.in.dto.response.recommendation.RecommendedUserResponse;
+import com.veyru.domain.exception.ApiException;
 import com.veyru.domain.model.User;
 import com.veyru.domain.service.ai.RecommendationService;
 import com.veyru.domain.service.user.UserService;
@@ -29,7 +30,7 @@ public class RecommendationController {
     User currentUser = null;
     try {
       currentUser = userService.getCurrentUser();
-    } catch (Exception e) {
+    } catch (ApiException e) {
       log.debug("No authenticated user for related photos");
     }
     List<PhotoResponse> relatedPhotos =

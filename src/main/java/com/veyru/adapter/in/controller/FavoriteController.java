@@ -1,7 +1,7 @@
 package com.veyru.adapter.in.controller;
 
-import com.veyru.domain.service.favorite.FavoriteService;
 import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
+import com.veyru.domain.service.favorite.FavoriteService;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

@@ -59,8 +59,8 @@ public class Neo4jGraphService {
               "bio",
               bio != null ? bio : ""));
       log.debug("Upserted user in Neo4j: {}", userId);
-    } catch (Exception e) {
-      log.error("Failed to upsert user in Neo4j: {}", e.getMessage());
+    } catch (RuntimeException e) {
+      throw e;
     }
   }
 
@@ -76,8 +76,8 @@ public class Neo4jGraphService {
     try (Session session = neo4jDriver.session()) {
       session.run(cypher, Values.parameters("followerId", followerId, "followingId", followingId));
       log.debug("Created follow relationship: {} -> {}", followerId, followingId);
-    } catch (Exception e) {
-      log.error("Failed to create follow relationship: {}", e.getMessage());
+    } catch (RuntimeException e) {
+      throw e;
     }
   }
 
@@ -91,8 +91,8 @@ public class Neo4jGraphService {
     try (Session session = neo4jDriver.session()) {
       session.run(cypher, Values.parameters("followerId", followerId, "followingId", followingId));
       log.debug("Removed follow relationship: {} -> {}", followerId, followingId);
-    } catch (Exception e) {
-      log.error("Failed to remove follow relationship: {}", e.getMessage());
+    } catch (RuntimeException e) {
+      throw e;
     }
   }
 
@@ -150,8 +150,8 @@ public class Neo4jGraphService {
               "createdAt",
               createdAt.toEpochMilli()));
       log.debug("Upserted photo in Neo4j: {}", photoId);
-    } catch (Exception e) {
-      log.error("Failed to upsert photo in Neo4j: {}", e.getMessage());
+    } catch (RuntimeException e) {
+      throw e;
     }
   }
 
@@ -169,8 +169,8 @@ public class Neo4jGraphService {
     try (Session session = neo4jDriver.session()) {
       session.run(cypher, Values.parameters("userId", userId, "photoId", photoId));
       log.debug("Created like relationship: {} -> {}", userId, photoId);
-    } catch (Exception e) {
-      log.error("Failed to create like relationship: {}", e.getMessage());
+    } catch (RuntimeException e) {
+      throw e;
     }
   }
 
@@ -187,8 +187,8 @@ public class Neo4jGraphService {
     try (Session session = neo4jDriver.session()) {
       session.run(cypher, Values.parameters("userId", userId, "photoId", photoId));
       log.debug("Removed like relationship: {} -> {}", userId, photoId);
-    } catch (Exception e) {
-      log.error("Failed to remove like relationship: {}", e.getMessage());
+    } catch (RuntimeException e) {
+      throw e;
     }
   }
 
@@ -205,8 +205,8 @@ public class Neo4jGraphService {
       """;
     try (Session session = neo4jDriver.session()) {
       session.run(cypher, Values.parameters("userId", userId, "photoId", photoId));
-    } catch (Exception e) {
-      log.error("Failed to create comment relationship: {}", e.getMessage());
+    } catch (RuntimeException e) {
+      throw e;
     }
   }
 
@@ -310,9 +310,8 @@ public class Neo4jGraphService {
       }
       log.info("Found {} candidate photos for user {} using Dijkstra", feedNodes.size(), userId);
       return feedNodes;
-    } catch (Exception e) {
-      log.error("Failed to compute Dijkstra feed: {}", e.getMessage());
-      return Collections.emptyList();
+    } catch (RuntimeException e) {
+      throw e;
     }
   }
 
@@ -396,9 +395,8 @@ public class Neo4jGraphService {
                 ));
       }
       return feedNodes;
-    } catch (Exception e) {
-      log.error("Failed to compute weighted path feed: {}", e.getMessage());
-      return Collections.emptyList();
+    } catch (RuntimeException e) {
+      throw e;
     }
   }
 
@@ -425,9 +423,8 @@ public class Neo4jGraphService {
         suggestions.add(result.next().get("userId").asString());
       }
       return suggestions;
-    } catch (Exception e) {
-      log.error("Failed to get suggested users from graph: {}", e.getMessage());
-      return Collections.emptyList();
+    } catch (RuntimeException e) {
+      throw e;
     }
   }
 
@@ -441,8 +438,8 @@ public class Neo4jGraphService {
     try (Session session = neo4jDriver.session()) {
       session.run(cypher, Values.parameters("userId", userId));
       log.info("Deleted user from Neo4j graph: {}", userId);
-    } catch (Exception e) {
-      log.error("Failed to delete user from graph: {}", e.getMessage());
+    } catch (RuntimeException e) {
+      throw e;
     }
   }
 
@@ -456,8 +453,8 @@ public class Neo4jGraphService {
     try (Session session = neo4jDriver.session()) {
       session.run(cypher, Values.parameters("photoId", photoId));
       log.info("Deleted photo from Neo4j graph: {}", photoId);
-    } catch (Exception e) {
-      log.error("Failed to delete photo from graph: {}", e.getMessage());
+    } catch (RuntimeException e) {
+      throw e;
     }
   }
 
@@ -481,8 +478,8 @@ public class Neo4jGraphService {
       if (likeCount.hasNext()) {
         stats.put("likes", likeCount.next().get("count").asLong());
       }
-    } catch (Exception e) {
-      log.error("Failed to get graph stats: {}", e.getMessage());
+    } catch (RuntimeException e) {
+      throw e;
     }
     return stats;
   }
@@ -616,8 +613,7 @@ public class Neo4jGraphService {
       if (this.getLikeCount() != other.getLikeCount()) return false;
       if (this.getCommentCount() != other.getCommentCount()) return false;
       if (this.getShareCount() != other.getShareCount()) return false;
-      if (Double.compare(this.getRelevanceScore(), other.getRelevanceScore()) != 0)
-        return false;
+      if (Double.compare(this.getRelevanceScore(), other.getRelevanceScore()) != 0) return false;
       final Object this$photoId = this.getPhotoId();
       final Object other$photoId = other.getPhotoId();
       if (this$photoId == null ? other$photoId != null : !this$photoId.equals(other$photoId))

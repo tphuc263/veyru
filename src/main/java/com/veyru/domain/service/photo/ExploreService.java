@@ -1,11 +1,11 @@
 package com.veyru.domain.service.photo;
 
 import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
+import com.veyru.application.port.out.FollowRepository;
+import com.veyru.application.port.out.PhotoRepository;
 import com.veyru.domain.model.Follow;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
-import com.veyru.application.port.out.FollowRepository;
-import com.veyru.application.port.out.PhotoRepository;
 import com.veyru.domain.service.user.UserService;
 import java.time.Duration;
 import java.time.Instant;
@@ -107,11 +107,9 @@ public class ExploreService {
         mongoTemplate.aggregate(aggregation, "photos", Photo.class).getMappedResults();
     long total = photoRepository.count();
     User currentUser = null;
-    try {
-      currentUser = userService.getCurrentUser();
-    } catch (Exception e) {
-      log.debug("No authenticated user for popular photos");
-    }
+
+    currentUser = userService.getCurrentUser();
+
     User finalCurrentUser = currentUser;
     List<PhotoResponse> responses =
         photos.stream()
@@ -125,11 +123,9 @@ public class ExploreService {
     Pageable pageable = PageRequest.of(page, size);
     Page<Photo> photos = photoRepository.findByTagsIn(List.of(tag.toLowerCase()), pageable);
     User currentUser = null;
-    try {
-      currentUser = userService.getCurrentUser();
-    } catch (Exception e) {
-      log.debug("No authenticated user for tag photos");
-    }
+
+    currentUser = userService.getCurrentUser();
+
     User finalCurrentUser = currentUser;
     List<PhotoResponse> responses =
         photos.getContent().stream()

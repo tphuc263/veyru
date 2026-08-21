@@ -21,14 +21,12 @@ public class UserAvatarCacheService {
   public String getAvatar(String userId) {
     if (userId == null) return null;
     String key = AVATAR_KEY_PREFIX + userId;
-    try {
-      Object cached = redisTemplate.opsForValue().get(key);
-      if (cached != null) {
-        return cached.toString();
-      }
-    } catch (Exception e) {
-      log.debug("Redis cache miss for avatar, userId: {}", userId);
+
+    Object cached = redisTemplate.opsForValue().get(key);
+    if (cached != null) {
+      return cached.toString();
     }
+
     // Fallback to DB
     return userRepository
         .findById(userId)
@@ -36,11 +34,8 @@ public class UserAvatarCacheService {
             user -> {
               String imageUrl = user.getImageUrl();
               if (imageUrl != null) {
-                try {
-                  redisTemplate.opsForValue().set(key, imageUrl, CACHE_TTL);
-                } catch (Exception e) {
-                  log.debug("Failed to cache avatar for userId: {}", userId);
-                }
+
+                redisTemplate.opsForValue().set(key, imageUrl, CACHE_TTL);
               }
               return imageUrl;
             })
@@ -54,14 +49,11 @@ public class UserAvatarCacheService {
     // Try cache first
     for (String userId : userIds) {
       String key = AVATAR_KEY_PREFIX + userId;
-      try {
-        Object cached = redisTemplate.opsForValue().get(key);
-        if (cached != null) {
-          result.put(userId, cached.toString());
-        } else {
-          missingIds.add(userId);
-        }
-      } catch (Exception e) {
+
+      Object cached = redisTemplate.opsForValue().get(key);
+      if (cached != null) {
+        result.put(userId, cached.toString());
+      } else {
         missingIds.add(userId);
       }
     }
@@ -74,13 +66,10 @@ public class UserAvatarCacheService {
                 String imageUrl = user.getImageUrl();
                 result.put(user.getId(), imageUrl);
                 if (imageUrl != null) {
-                  try {
-                    redisTemplate
-                        .opsForValue()
-                        .set(AVATAR_KEY_PREFIX + user.getId(), imageUrl, CACHE_TTL);
-                  } catch (Exception e) {
-                    log.debug("Failed to cache avatar for userId: {}", user.getId());
-                  }
+
+                  redisTemplate
+                      .opsForValue()
+                      .set(AVATAR_KEY_PREFIX + user.getId(), imageUrl, CACHE_TTL);
                 }
               });
     }
@@ -89,23 +78,17 @@ public class UserAvatarCacheService {
 
   public void updateAvatar(String userId, String imageUrl) {
     String key = AVATAR_KEY_PREFIX + userId;
-    try {
-      if (imageUrl != null) {
-        redisTemplate.opsForValue().set(key, imageUrl, CACHE_TTL);
-      } else {
-        redisTemplate.delete(key);
-      }
-    } catch (Exception e) {
-      log.warn("Failed to update avatar cache for userId: {}", userId);
+
+    if (imageUrl != null) {
+      redisTemplate.opsForValue().set(key, imageUrl, CACHE_TTL);
+    } else {
+      redisTemplate.delete(key);
     }
   }
 
   public void evictAvatar(String userId) {
-    try {
-      redisTemplate.delete(AVATAR_KEY_PREFIX + userId);
-    } catch (Exception e) {
-      log.warn("Failed to evict avatar cache for userId: {}", userId);
-    }
+
+    redisTemplate.delete(AVATAR_KEY_PREFIX + userId);
   }
 
   public UserAvatarCacheService(

@@ -4,8 +4,8 @@ import com.veyru.adapter.in.dto.request.ai.ImageAnalysisRequest;
 import com.veyru.adapter.in.dto.response.ai.EngagementAnalysisResponse;
 import com.veyru.adapter.in.dto.response.ai.ImageAnalysisResponse;
 import com.veyru.adapter.in.dto.response.ai.PostTimingSuggestionResponse;
-import com.veyru.domain.model.Photo;
 import com.veyru.application.port.out.PhotoRepository;
+import com.veyru.domain.model.Photo;
 import java.time.DayOfWeek;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -90,39 +90,36 @@ public class AIService {
       context.setHasHistory(false);
       return context;
     }
-    try {
-      List<Photo> userPhotos = photoRepository.findByUser_UserIdOrderByCreatedAtDesc(userId);
-      List<Photo> recentPhotos = userPhotos.stream().limit(10).toList();
-      if (recentPhotos.isEmpty()) {
-        context.setHasHistory(false);
-        return context;
-      }
-      context.setHasHistory(true);
-      List<String> recentCaptions =
-          recentPhotos.stream()
-              .map(Photo::getCaption)
-              .filter(c -> c != null && !c.isBlank())
-              .toList();
-      if (!recentCaptions.isEmpty()) {
-        double avgLength = recentCaptions.stream().mapToInt(String::length).average().orElse(0);
-        context.setAvgCaptionLength(avgLength);
-      }
-      List<String> topTags =
-          recentPhotos.stream()
-              .filter(p -> p.getTags() != null)
-              .flatMap(p -> p.getTags().stream())
-              .collect(Collectors.groupingBy(t -> t, Collectors.counting()))
-              .entrySet()
-              .stream()
-              .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-              .limit(5)
-              .map(Map.Entry::getKey)
-              .toList();
-      context.setTopTags(topTags);
-    } catch (Exception e) {
-      log.warn("Failed to build user context: {}", e.getMessage());
+
+    List<Photo> userPhotos = photoRepository.findByUser_UserIdOrderByCreatedAtDesc(userId);
+    List<Photo> recentPhotos = userPhotos.stream().limit(10).toList();
+    if (recentPhotos.isEmpty()) {
       context.setHasHistory(false);
+      return context;
     }
+    context.setHasHistory(true);
+    List<String> recentCaptions =
+        recentPhotos.stream()
+            .map(Photo::getCaption)
+            .filter(c -> c != null && !c.isBlank())
+            .toList();
+    if (!recentCaptions.isEmpty()) {
+      double avgLength = recentCaptions.stream().mapToInt(String::length).average().orElse(0);
+      context.setAvgCaptionLength(avgLength);
+    }
+    List<String> topTags =
+        recentPhotos.stream()
+            .filter(p -> p.getTags() != null)
+            .flatMap(p -> p.getTags().stream())
+            .collect(Collectors.groupingBy(t -> t, Collectors.counting()))
+            .entrySet()
+            .stream()
+            .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+            .limit(5)
+            .map(Map.Entry::getKey)
+            .toList();
+    context.setTopTags(topTags);
+
     return context;
   }
 

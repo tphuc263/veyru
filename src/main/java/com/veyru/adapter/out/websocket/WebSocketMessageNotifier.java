@@ -35,8 +35,8 @@ public class WebSocketMessageNotifier implements MessageNotifier {
               .build();
       messagingTemplate.convertAndSendToUser(receiverId, DESTINATION, envelope);
       messagingTemplate.convertAndSendToUser(senderId, DESTINATION, envelope);
-    } catch (Exception exception) {
-      log.error("Failed to send real-time message", exception);
+    } catch (RuntimeException exception) {
+      throw exception;
     }
   }
 
@@ -51,8 +51,8 @@ public class WebSocketMessageNotifier implements MessageNotifier {
               .timestamp(clock.instant())
               .payload(Map.of("conversationId", conversationId, "readBy", readBy))
               .build());
-    } catch (Exception exception) {
-      log.error("Failed to send MESSAGES_READ notification to user: {}", recipientId, exception);
+    } catch (RuntimeException exception) {
+      throw exception;
     }
   }
 }

@@ -2,11 +2,11 @@ package com.veyru.domain.service.user;
 
 import com.veyru.adapter.in.dto.request.user.UpdateProfileRequest;
 import com.veyru.adapter.in.dto.response.user.UserProfileResponse;
+import com.veyru.adapter.in.security.userdetails.AppUserDetails;
+import com.veyru.application.port.out.UserRepository;
 import com.veyru.domain.exception.ApiException;
 import com.veyru.domain.exception.ErrorCode;
 import com.veyru.domain.model.User;
-import com.veyru.application.port.out.UserRepository;
-import com.veyru.adapter.in.security.userdetails.AppUserDetails;
 import com.veyru.domain.service.follow.FollowService;
 import com.veyru.domain.service.photo.CloudinaryService;
 import java.util.HashMap;
@@ -62,24 +62,20 @@ public class UserService {
     updateUserFields(user, request);
     // Handle image update if provided
     if (request.getImage() != null && !request.getImage().isEmpty()) {
-      try {
-        // Delete old image if exists
-        if (oldImageUrl != null && !oldImageUrl.isEmpty()) {
-          String publicId = cloudinaryService.extractPublicIdFromUrl(oldImageUrl);
-          if (publicId != null) {
-            cloudinaryService.deleteImage(publicId);
-            log.info("Old profile image deleted for user ID: {}", user.getId());
-          }
+
+      // Delete old image if exists
+      if (oldImageUrl != null && !oldImageUrl.isEmpty()) {
+        String publicId = cloudinaryService.extractPublicIdFromUrl(oldImageUrl);
+        if (publicId != null) {
+          cloudinaryService.deleteImage(publicId);
+          log.info("Old profile image deleted for user ID: {}", user.getId());
         }
-        // Upload new imag
-        Map<String, Object> uploadResult = cloudinaryService.uploadImage(request.getImage());
-        String newImageUrl = (String) uploadResult.get("secure_url");
-        user.setImageUrl(newImageUrl);
-        log.info("New profile image uploaded for user ID: {}", user.getId());
-      } catch (Exception e) {
-        log.error("Failed to update profile image for user ID: {}", user.getId(), e);
-        throw new RuntimeException("Failed to update profile image", e);
       }
+      // Upload new imag
+      Map<String, Object> uploadResult = cloudinaryService.uploadImage(request.getImage());
+      String newImageUrl = (String) uploadResult.get("secure_url");
+      user.setImageUrl(newImageUrl);
+      log.info("New profile image uploaded for user ID: {}", user.getId());
     }
     User updatedUser = userRepository.save(user);
     // Update avatar cache if image changed

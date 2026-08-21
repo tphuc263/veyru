@@ -1,10 +1,10 @@
 package com.veyru.adapter.in.security.jwt;
 
+import com.veyru.domain.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -22,16 +22,12 @@ public class JwtEntryPoint implements AuthenticationEntryPoint {
       HttpServletRequest request, HttpServletResponse response, AuthenticationException exception)
       throws IOException {
     boolean invalidToken = exception instanceof BadCredentialsException;
-    ProblemDetail problem =
-        ProblemDetail.forStatusAndDetail(
-            HttpStatus.UNAUTHORIZED,
-            invalidToken
-                ? "The access token is invalid or expired."
-                : "Authentication is required.");
-    problem.setTitle("Unauthorized");
+    ErrorCode code = invalidToken ? ErrorCode.INVALID_TOKEN : ErrorCode.AUTHENTICATION_REQUIRED;
+    ProblemDetail problem = ProblemDetail.forStatusAndDetail(code.status(), code.detail());
+    problem.setTitle(code.status().getReasonPhrase());
     problem.setInstance(URI.create(request.getRequestURI()));
-    problem.setProperty("code", invalidToken ? "INVALID_TOKEN" : "AUTHENTICATION_REQUIRED");
-    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    problem.setProperty("code", code.name());
+    response.setStatus(problem.getStatus());
     response.setHeader("WWW-Authenticate", "Bearer");
     response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
     objectMapper.writeValue(response.getOutputStream(), problem);

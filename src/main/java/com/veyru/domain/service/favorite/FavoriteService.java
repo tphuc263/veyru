@@ -1,13 +1,13 @@
 package com.veyru.domain.service.favorite;
 
 import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
+import com.veyru.application.port.out.FavoriteRepository;
+import com.veyru.application.port.out.PhotoRepository;
+import com.veyru.domain.exception.ApiException;
+import com.veyru.domain.exception.ErrorCode;
 import com.veyru.domain.model.Favorite;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
-import com.veyru.domain.exception.ApiException;
-import com.veyru.domain.exception.ErrorCode;
-import com.veyru.application.port.out.FavoriteRepository;
-import com.veyru.application.port.out.PhotoRepository;
 import com.veyru.domain.service.photo.PhotoConversionService;
 import com.veyru.domain.service.user.UserService;
 import java.time.Instant;
@@ -55,7 +55,9 @@ public class FavoriteService {
 
   public void favorite(String photoId) {
     User currentUser = userService.getCurrentUser();
-    photoRepository.findById(photoId).orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
+    photoRepository
+        .findById(photoId)
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
     if (favoriteRepository.existsByUserIdAndPhotoId(currentUser.getId(), photoId)) return;
     Favorite favorite = new Favorite();
     favorite.setUserId(currentUser.getId());
@@ -66,7 +68,9 @@ public class FavoriteService {
 
   public void unfavorite(String photoId) {
     User currentUser = userService.getCurrentUser();
-    favoriteRepository.findByUserIdAndPhotoId(currentUser.getId(), photoId).ifPresent(favoriteRepository::delete);
+    favoriteRepository
+        .findByUserIdAndPhotoId(currentUser.getId(), photoId)
+        .ifPresent(favoriteRepository::delete);
   }
 
   public List<PhotoResponse> getFavorites(int page, int size) {

@@ -127,12 +127,11 @@ public class GraphFeedController {
       final GraphFeedController.FeedComparisonResponse other =
           (GraphFeedController.FeedComparisonResponse) o;
       if (!other.canEqual((Object) this)) return false;
-      if (Double.compare(this.getGraphWeightedOverlap(), other.getGraphWeightedOverlap())
-          != 0) return false;
-      if (Double.compare(this.getGraphHybridOverlap(), other.getGraphHybridOverlap())
-          != 0) return false;
-      if (Double.compare(
-              this.getGraphTraditionalOverlap(), other.getGraphTraditionalOverlap())
+      if (Double.compare(this.getGraphWeightedOverlap(), other.getGraphWeightedOverlap()) != 0)
+        return false;
+      if (Double.compare(this.getGraphHybridOverlap(), other.getGraphHybridOverlap()) != 0)
+        return false;
+      if (Double.compare(this.getGraphTraditionalOverlap(), other.getGraphTraditionalOverlap())
           != 0) return false;
       final Object this$graphFeed = this.getGraphFeed();
       final Object other$graphFeed = other.getGraphFeed();
@@ -165,11 +164,9 @@ public class GraphFeedController {
     public int hashCode() {
       final int PRIME = 59;
       int result = 1;
-      final long $graphWeightedOverlap =
-          Double.doubleToLongBits(this.getGraphWeightedOverlap());
+      final long $graphWeightedOverlap = Double.doubleToLongBits(this.getGraphWeightedOverlap());
       result = result * PRIME + (int) ($graphWeightedOverlap >>> 32 ^ $graphWeightedOverlap);
-      final long $graphHybridOverlap =
-          Double.doubleToLongBits(this.getGraphHybridOverlap());
+      final long $graphHybridOverlap = Double.doubleToLongBits(this.getGraphHybridOverlap());
       result = result * PRIME + (int) ($graphHybridOverlap >>> 32 ^ $graphHybridOverlap);
       final long $graphTraditionalOverlap =
           Double.doubleToLongBits(this.getGraphTraditionalOverlap());
@@ -206,8 +203,7 @@ public class GraphFeedController {
   }
 
   public GraphFeedController(
-      final GraphFeedService graphFeedService,
-      final UserService userService) {
+      final GraphFeedService graphFeedService, final UserService userService) {
     this.graphFeedService = graphFeedService;
     this.userService = userService;
   }

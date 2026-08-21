@@ -5,8 +5,8 @@ import com.veyru.application.port.out.ConversationStore;
 import com.veyru.application.port.out.MessageNotifier;
 import com.veyru.application.port.out.MessageStore;
 import com.veyru.application.port.out.MessagingUserLookup;
-import com.veyru.domain.model.Message;
 import com.veyru.domain.model.Conversation;
+import com.veyru.domain.model.Message;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -63,8 +63,7 @@ public final class ConversationService {
     if (!conversation.hasParticipant(userId)) {
       throw new MessagingException(Reason.ACCESS_DENIED);
     }
-    PageResult<Message> messages =
-        messageStore.findByConversationId(conversationId, page, size);
+    PageResult<Message> messages = messageStore.findByConversationId(conversationId, page, size);
     return new PageResult<>(
         messages.items().stream().map(MessageResult::from).toList(),
         messages.page(),

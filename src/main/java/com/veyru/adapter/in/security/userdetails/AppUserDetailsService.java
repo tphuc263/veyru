@@ -1,7 +1,7 @@
 package com.veyru.adapter.in.security.userdetails;
 
-import com.veyru.domain.model.User;
 import com.veyru.application.port.out.UserRepository;
+import com.veyru.domain.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.DisabledException;

@@ -1,11 +1,11 @@
 package com.veyru.domain.service.photo;
 
-import com.veyru.application.port.out.*;
-import com.veyru.domain.model.Share;
 import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
 import com.veyru.adapter.in.dto.response.post.UnifiedPostResponse;
+import com.veyru.application.port.out.*;
 import com.veyru.domain.model.Follow;
 import com.veyru.domain.model.Photo;
+import com.veyru.domain.model.Share;
 import com.veyru.domain.model.User;
 import com.veyru.domain.service.share.ShareService;
 import com.veyru.domain.service.user.UserAvatarCacheService;
@@ -74,102 +74,91 @@ public class NewsfeedService {
   public Page<PhotoResponse> getCachedNewsfeed(String userId, int page, int size) {
     User currentUser = userService.findUserById(userId);
     String cacheKey = NEWSFEED_CACHE_KEY + userId;
-    try {
-      // Get cached photo IDs
-      List<String> cachedPhotoIds = (List<String>) redisTemplate.opsForValue().get(cacheKey);
-      if (cachedPhotoIds == null || cachedPhotoIds.isEmpty()) {
-        log.info("No cached feed found for user: {}, generating new one", userId);
-        generateNewsfeedCache(userId);
-        cachedPhotoIds = (List<String>) redisTemplate.opsForValue().get(cacheKey);
-      }
-      if (cachedPhotoIds == null || cachedPhotoIds.isEmpty()) {
-        return Page.empty();
-      }
-      // Paginate cached IDs
-      Pageable pageable = PageRequest.of(page, size);
-      int start = (int) pageable.getOffset();
-      int end = Math.min(start + size, cachedPhotoIds.size());
-      if (start >= cachedPhotoIds.size()) {
-        return Page.empty();
-      }
-      List<String> pagePhotoIds = cachedPhotoIds.subList(start, end);
-      // Fetch photos and convert to response
-      List<Photo> photos = photoRepository.findAllById(pagePhotoIds);
-      List<PhotoResponse> photoResponses =
-          photos.stream()
-              .map(photo -> photoConversionService.convertToPhotoResponse(photo, currentUser))
-              .toList();
-      // Maintain order from cache
-      photoResponses.sort(
-          (a, b) ->
-              Integer.compare(pagePhotoIds.indexOf(a.getId()), pagePhotoIds.indexOf(b.getId())));
-      return new PageImpl<>(photoResponses, pageable, cachedPhotoIds.size());
-    } catch (Exception e) {
-      log.error("Error retrieving cached newsfeed for user: {}", userId, e);
-      // Fallback to real-time generation
-      return getNewsfeed(userId, page, size);
+
+    // Get cached photo IDs
+    List<String> cachedPhotoIds = (List<String>) redisTemplate.opsForValue().get(cacheKey);
+    if (cachedPhotoIds == null || cachedPhotoIds.isEmpty()) {
+      log.info("No cached feed found for user: {}, generating new one", userId);
+      generateNewsfeedCache(userId);
+      cachedPhotoIds = (List<String>) redisTemplate.opsForValue().get(cacheKey);
     }
+    if (cachedPhotoIds == null || cachedPhotoIds.isEmpty()) {
+      return Page.empty();
+    }
+    // Paginate cached IDs
+    Pageable pageable = PageRequest.of(page, size);
+    int start = (int) pageable.getOffset();
+    int end = Math.min(start + size, cachedPhotoIds.size());
+    if (start >= cachedPhotoIds.size()) {
+      return Page.empty();
+    }
+    List<String> pagePhotoIds = cachedPhotoIds.subList(start, end);
+    // Fetch photos and convert to response
+    List<Photo> photos = photoRepository.findAllById(pagePhotoIds);
+    List<PhotoResponse> photoResponses =
+        photos.stream()
+            .map(photo -> photoConversionService.convertToPhotoResponse(photo, currentUser))
+            .toList();
+    // Maintain order from cache
+    photoResponses.sort(
+        (a, b) ->
+            Integer.compare(pagePhotoIds.indexOf(a.getId()), pagePhotoIds.indexOf(b.getId())));
+    return new PageImpl<>(photoResponses, pageable, cachedPhotoIds.size());
   }
 
   public void generateNewsfeedCache(String userId) {
     log.info("Generating newsfeed cache for user: {}", userId);
-    try {
-      // Generate feed using real-time algorithm
-      List<String> followingIds = new ArrayList<>(getFollowingUserIds(userId));
-      if (followingIds.isEmpty()) {
-        return;
-      }
-      // Include user's own photos in feed
-      followingIds.add(userId);
-      // Fetch recent photos
-      Instant cutoffTime = Instant.now().minus(Duration.ofDays(30));
-      List<Photo> candidatePhotos =
-          photoRepository.findByUser_UserIdInAndCreatedAtAfterOrderByCreatedAtDesc(
-              followingIds, cutoffTime);
-      List<Photo> rankedPhotos = rankPhotos(candidatePhotos);
-      // Limit cache size for performance
-      List<String> photoIds =
-          rankedPhotos.stream()
-              .limit(MAX_CACHED_ITEMS)
-              .map(Photo::getId)
-              .collect(Collectors.toList());
-      // Store in cache
-      String cacheKey = NEWSFEED_CACHE_KEY + userId;
-      redisTemplate.opsForValue().set(cacheKey, photoIds, CACHE_TTL);
-      log.info("Cached {} photos for user: {}", photoIds.size(), userId);
-    } catch (Exception e) {
-      log.error("Error generating newsfeed cache for user: {}", userId, e);
+
+    // Generate feed using real-time algorithm
+    List<String> followingIds = new ArrayList<>(getFollowingUserIds(userId));
+    if (followingIds.isEmpty()) {
+      return;
     }
+    // Include user's own photos in feed
+    followingIds.add(userId);
+    // Fetch recent photos
+    Instant cutoffTime = Instant.now().minus(Duration.ofDays(30));
+    List<Photo> candidatePhotos =
+        photoRepository.findByUser_UserIdInAndCreatedAtAfterOrderByCreatedAtDesc(
+            followingIds, cutoffTime);
+    List<Photo> rankedPhotos = rankPhotos(candidatePhotos);
+    // Limit cache size for performance
+    List<String> photoIds =
+        rankedPhotos.stream()
+            .limit(MAX_CACHED_ITEMS)
+            .map(Photo::getId)
+            .collect(Collectors.toList());
+    // Store in cache
+    String cacheKey = NEWSFEED_CACHE_KEY + userId;
+    redisTemplate.opsForValue().set(cacheKey, photoIds, CACHE_TTL);
+    log.info("Cached {} photos for user: {}", photoIds.size(), userId);
   }
 
   @SuppressWarnings("unchecked")
   public void updateFollowersFeeds(String photoId, String authorId) {
     log.info("Updating followers\' feeds with new photo: {} from author: {}", photoId, authorId);
-    try {
-      // Get all followers of the photo author
-      List<Follow> followers = followRepository.findByFollowingId(authorId);
-      for (Follow follow : followers) {
-        String followerId = follow.getFollowerId();
-        String cacheKey = NEWSFEED_CACHE_KEY + followerId;
-        // Get current cached feed
-        List<String> cachedPhotoIds = (List<String>) redisTemplate.opsForValue().get(cacheKey);
-        if (cachedPhotoIds != null) {
-          // Add new photo to the beginning of feed
-          List<String> updatedFeed = new ArrayList<>();
-          updatedFeed.add(photoId);
-          updatedFeed.addAll(cachedPhotoIds);
-          // Limit size
-          if (updatedFeed.size() > MAX_CACHED_ITEMS) {
-            updatedFeed = updatedFeed.subList(0, MAX_CACHED_ITEMS);
-          }
-          // Update cache
-          redisTemplate.opsForValue().set(cacheKey, updatedFeed, CACHE_TTL);
+
+    // Get all followers of the photo author
+    List<Follow> followers = followRepository.findByFollowingId(authorId);
+    for (Follow follow : followers) {
+      String followerId = follow.getFollowerId();
+      String cacheKey = NEWSFEED_CACHE_KEY + followerId;
+      // Get current cached feed
+      List<String> cachedPhotoIds = (List<String>) redisTemplate.opsForValue().get(cacheKey);
+      if (cachedPhotoIds != null) {
+        // Add new photo to the beginning of feed
+        List<String> updatedFeed = new ArrayList<>();
+        updatedFeed.add(photoId);
+        updatedFeed.addAll(cachedPhotoIds);
+        // Limit size
+        if (updatedFeed.size() > MAX_CACHED_ITEMS) {
+          updatedFeed = updatedFeed.subList(0, MAX_CACHED_ITEMS);
         }
+        // Update cache
+        redisTemplate.opsForValue().set(cacheKey, updatedFeed, CACHE_TTL);
       }
-      log.info("Updated feeds for {} followers", followers.size());
-    } catch (Exception e) {
-      log.error("Error updating followers\' feeds for photo: {}", photoId, e);
     }
+    log.info("Updated feeds for {} followers", followers.size());
   }
 
   public Page<PhotoResponse> getSmartNewsfeed(String userId, int page, int size) {

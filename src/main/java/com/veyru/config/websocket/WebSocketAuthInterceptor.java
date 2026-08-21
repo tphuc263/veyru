@@ -28,18 +28,15 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
         String bearerToken = authorization.get(0);
         if (bearerToken.startsWith("Bearer ")) {
           String token = bearerToken.substring(7);
-          try {
-            if (jwtUtils.validateToken(token)) {
-              String userId = jwtUtils.getUserIdFromToken(token);
-              accessor.setUser(new StompPrincipal(userId));
-              return message;
-            } else {
-              log.warn("Invalid JWT token during WebSocket handshake");
-            }
-          } catch (Exception e) {
-            log.error("Error validating WebSocket token", e);
-            throw new IllegalArgumentException("Invalid WebSocket authentication token", e);
+
+          if (jwtUtils.validateToken(token)) {
+            String userId = jwtUtils.getUserIdFromToken(token);
+            accessor.setUser(new StompPrincipal(userId));
+            return message;
+          } else {
+            log.warn("Invalid JWT token during WebSocket handshake");
           }
+
         } else {
           log.warn("Authorization header does not start with Bearer");
         }

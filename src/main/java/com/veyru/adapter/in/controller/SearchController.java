@@ -59,15 +59,10 @@ public class SearchController {
   @GetMapping("/explore")
   public ResponseEntity<PageResponse<PhotoResponse>> getExploreFeed(
       @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-    try {
-      String userId = userService.getCurrentUser().getId();
-      log.info("Fetching explore feed for user: {}", userId);
-      Page<PhotoResponse> exploreFeed = exploreService.getExploreFeed(userId, page, size);
-      return ResponseEntity.ok(PageResponse.from(exploreFeed));
-    } catch (Exception e) {
-      log.error("Error fetching explore feed: ", e);
-      throw e;
-    }
+    String userId = userService.getCurrentUser().getId();
+    log.info("Fetching explore feed for user: {}", userId);
+    Page<PhotoResponse> exploreFeed = exploreService.getExploreFeed(userId, page, size);
+    return ResponseEntity.ok(PageResponse.from(exploreFeed));
   }
 
   @GetMapping("/explore/popular")

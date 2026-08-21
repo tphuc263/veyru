@@ -23,10 +23,14 @@ public class PhotoController {
 
   // Create a photo
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ResponseEntity<PhotoResponse> createPhoto(@Valid @ModelAttribute CreatePhotoRequest request) {
+  public ResponseEntity<PhotoResponse> createPhoto(
+      @Valid @ModelAttribute CreatePhotoRequest request) {
     PhotoResponse photo = photoService.createPhoto(request);
     return ResponseEntity.created(
-            ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(photo.getId()).toUri())
+            ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(photo.getId())
+                .toUri())
         .body(photo);
   }
 
@@ -37,7 +41,9 @@ public class PhotoController {
       @RequestParam(defaultValue = "0") @Min(0) int page,
       @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
     Page<PhotoResponse> photos =
-        userId == null ? photoService.getAllPhotos(page, size) : photoService.getPhotosByUserId(userId, page, size);
+        userId == null
+            ? photoService.getAllPhotos(page, size)
+            : photoService.getPhotosByUserId(userId, page, size);
     return ResponseEntity.ok(PageResponse.from(photos));
   }
 

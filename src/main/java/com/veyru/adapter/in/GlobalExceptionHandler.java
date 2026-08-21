@@ -40,7 +40,6 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(ApiException.class)
   public ProblemDetail handleApiException(ApiException ex, WebRequest request) {
-    log.warn("API error {}: {}", ex.code(), ex.getMessage());
     return problem(ex.code(), ex.getMessage(), request);
   }
 
@@ -185,14 +184,13 @@ public class GlobalExceptionHandler {
   }
 
   private ProblemDetail problem(ErrorCode code, String detail, WebRequest request) {
+    String description = request.getDescription(false);
+    URI instance = description.startsWith("uri=") ? URI.create(description.substring(4)) : null;
     ProblemDetail problem =
         ProblemDetail.forStatusAndDetail(code.status(), detail == null ? code.detail() : detail);
     problem.setTitle(code.status().getReasonPhrase());
+    problem.setInstance(instance);
     problem.setProperty("code", code.name());
-    String description = request.getDescription(false);
-    if (description.startsWith("uri=")) {
-      problem.setInstance(URI.create(description.substring(4)));
-    }
     return problem;
   }
 

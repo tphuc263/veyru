@@ -1,12 +1,12 @@
 package com.veyru.domain.service.post;
 
 import com.veyru.adapter.in.dto.response.post.UnifiedPostResponse;
-import com.veyru.domain.model.Photo;
-import com.veyru.domain.model.Share;
-import com.veyru.domain.model.User;
 import com.veyru.application.port.out.PhotoRepository;
 import com.veyru.application.port.out.ShareRepository;
 import com.veyru.application.port.out.UserRepository;
+import com.veyru.domain.model.Photo;
+import com.veyru.domain.model.Share;
+import com.veyru.domain.model.User;
 import com.veyru.domain.service.user.UserAvatarCacheService;
 import com.veyru.domain.service.user.UserService;
 import java.util.ArrayList;
@@ -48,10 +48,9 @@ public class UnifiedPostService {
     List<UnifiedPostResponse> allPosts = new ArrayList<>();
     // Add photos
     User currentUser = null;
-    try {
-      currentUser = userService.getCurrentUser();
-    } catch (Exception e) {
-    }
+
+    currentUser = userService.getCurrentUser();
+
     // Not logged in, that's okay
     for (Photo photo : photos) {
       UnifiedPostResponse post = convertPhotoToUnifiedPost(photo, currentUser);

@@ -62,7 +62,7 @@ public class JwtUtils {
       Claims claims =
           Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token).getPayload();
       return claims.getSubject();
-    } catch (Exception e) {
+    } catch (JwtException | IllegalArgumentException e) {
       throw new IllegalArgumentException("Invalid or expired JWT token", e);
     }
   }
@@ -72,7 +72,7 @@ public class JwtUtils {
       Claims claims =
           Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token).getPayload();
       return claims.get("id", String.class);
-    } catch (Exception e) {
+    } catch (JwtException | IllegalArgumentException e) {
       throw new IllegalArgumentException("Invalid or expired JWT token", e);
     }
   }

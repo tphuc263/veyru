@@ -2,14 +2,14 @@ package com.veyru.domain.service.ai;
 
 import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
 import com.veyru.adapter.in.dto.response.recommendation.RecommendedUserResponse;
-import com.veyru.domain.model.Favorite;
-import com.veyru.domain.model.Follow;
-import com.veyru.domain.model.Photo;
-import com.veyru.domain.model.User;
 import com.veyru.application.port.out.FavoriteRepository;
 import com.veyru.application.port.out.FollowRepository;
 import com.veyru.application.port.out.PhotoRepository;
 import com.veyru.application.port.out.UserRepository;
+import com.veyru.domain.model.Favorite;
+import com.veyru.domain.model.Follow;
+import com.veyru.domain.model.Photo;
+import com.veyru.domain.model.User;
 import com.veyru.domain.service.photo.PhotoConversionService;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -48,40 +48,35 @@ public class RecommendationService {
       return Collections.emptyList();
     }
     // Try vector similarity search first
-    try {
-      // Ensure source photo has an embedding
-      ensurePhotoEmbedding(sourcePhoto);
-      // Build query embedding from this photo
-      String photoText =
-          embeddingService.buildPhotoText(sourcePhoto.getCaption(), sourcePhoto.getTags());
-      float[] queryEmbedding = embeddingService.generateEmbedding(photoText);
-      if (queryEmbedding != null) {
-        List<Map<String, Object>> results =
-            redisVectorService.searchSimilarPhotos(queryEmbedding, limit, photoId);
-        if (!results.isEmpty()) {
-          List<String> photoIds =
-              results.stream()
-                  .map(r -> (String) r.get("entityId"))
-                  .filter(Objects::nonNull)
-                  .toList();
-          List<Photo> photos = photoRepository.findAllById(photoIds);
-          // Maintain order from vector search
-          Map<String, Photo> photoMap =
-              photos.stream().collect(Collectors.toMap(Photo::getId, p -> p));
-          List<PhotoResponse> responses = new ArrayList<>();
-          for (String pid : photoIds) {
-            Photo p = photoMap.get(pid);
-            if (p != null) {
-              responses.add(photoConversionService.convertToPhotoResponse(p, currentUser));
-            }
+
+    // Ensure source photo has an embedding
+    ensurePhotoEmbedding(sourcePhoto);
+    // Build query embedding from this photo
+    String photoText =
+        embeddingService.buildPhotoText(sourcePhoto.getCaption(), sourcePhoto.getTags());
+    float[] queryEmbedding = embeddingService.generateEmbedding(photoText);
+    if (queryEmbedding != null) {
+      List<Map<String, Object>> results =
+          redisVectorService.searchSimilarPhotos(queryEmbedding, limit, photoId);
+      if (!results.isEmpty()) {
+        List<String> photoIds =
+            results.stream().map(r -> (String) r.get("entityId")).filter(Objects::nonNull).toList();
+        List<Photo> photos = photoRepository.findAllById(photoIds);
+        // Maintain order from vector search
+        Map<String, Photo> photoMap =
+            photos.stream().collect(Collectors.toMap(Photo::getId, p -> p));
+        List<PhotoResponse> responses = new ArrayList<>();
+        for (String pid : photoIds) {
+          Photo p = photoMap.get(pid);
+          if (p != null) {
+            responses.add(photoConversionService.convertToPhotoResponse(p, currentUser));
           }
-          log.info("Found {} related photos via vector search for {}", responses.size(), photoId);
-          return responses;
         }
+        log.info("Found {} related photos via vector search for {}", responses.size(), photoId);
+        return responses;
       }
-    } catch (Exception e) {
-      log.warn("Vector search failed for related photos, falling back to tags: {}", e.getMessage());
     }
+
     // Fallback: tag-based matching
     return getRelatedPhotosByTags(sourcePhoto, limit, currentUser);
   }
@@ -116,47 +111,45 @@ public class RecommendationService {
       return Collections.emptyList();
     }
     // Try vector similarity
-    try {
-      // Ensure current user has an embedding
-      ensureUserEmbedding(currentUser);
-      // Build current user's profile embedding
-      float[] userEmbedding = buildAndGetUserEmbedding(currentUser);
-      if (userEmbedding != null) {
-        // Search for similar users (fetch extra to filter out already-followed)
-        List<Map<String, Object>> results =
-            redisVectorService.searchSimilarUsers(userEmbedding, limit + 20, userId);
-        if (!results.isEmpty()) {
-          // Get already-followed user IDs
-          Set<String> followingIds = getFollowingIds(userId);
-          List<RecommendedUserResponse> suggestions = new ArrayList<>();
-          for (Map<String, Object> result : results) {
-            String candidateId = (String) result.get("entityId");
-            if (candidateId == null || followingIds.contains(candidateId)) {
-              continue;
-            }
-            User candidate = userRepository.findById(candidateId).orElse(null);
-            if (candidate == null) continue;
-            double score =
-                result.containsKey("score") ? ((Number) result.get("score")).doubleValue() : 0.0;
-            RecommendedUserResponse resp = new RecommendedUserResponse();
-            resp.setId(candidate.getId());
-            resp.setUsername(candidate.getUsername());
-            resp.setImageUrl(candidate.getImageUrl());
-            resp.setBio(candidate.getBio());
-            resp.setFollowerCount(candidate.getFollowerCount());
-            resp.setPhotoCount(candidate.getPhotoCount());
-            resp.setSimilarityScore(1.0 - score); // Convert distance to similarity
-            resp.setReason(generateRecommendationReason(currentUser, candidate));
-            suggestions.add(resp);
-            if (suggestions.size() >= limit) break;
+
+    // Ensure current user has an embedding
+    ensureUserEmbedding(currentUser);
+    // Build current user's profile embedding
+    float[] userEmbedding = buildAndGetUserEmbedding(currentUser);
+    if (userEmbedding != null) {
+      // Search for similar users (fetch extra to filter out already-followed)
+      List<Map<String, Object>> results =
+          redisVectorService.searchSimilarUsers(userEmbedding, limit + 20, userId);
+      if (!results.isEmpty()) {
+        // Get already-followed user IDs
+        Set<String> followingIds = getFollowingIds(userId);
+        List<RecommendedUserResponse> suggestions = new ArrayList<>();
+        for (Map<String, Object> result : results) {
+          String candidateId = (String) result.get("entityId");
+          if (candidateId == null || followingIds.contains(candidateId)) {
+            continue;
           }
-          log.info("Found {} suggested users via vector search for {}", suggestions.size(), userId);
-          return suggestions;
+          User candidate = userRepository.findById(candidateId).orElse(null);
+          if (candidate == null) continue;
+          double score =
+              result.containsKey("score") ? ((Number) result.get("score")).doubleValue() : 0.0;
+          RecommendedUserResponse resp = new RecommendedUserResponse();
+          resp.setId(candidate.getId());
+          resp.setUsername(candidate.getUsername());
+          resp.setImageUrl(candidate.getImageUrl());
+          resp.setBio(candidate.getBio());
+          resp.setFollowerCount(candidate.getFollowerCount());
+          resp.setPhotoCount(candidate.getPhotoCount());
+          resp.setSimilarityScore(1.0 - score); // Convert distance to similarity
+          resp.setReason(generateRecommendationReason(currentUser, candidate));
+          suggestions.add(resp);
+          if (suggestions.size() >= limit) break;
         }
+        log.info("Found {} suggested users via vector search for {}", suggestions.size(), userId);
+        return suggestions;
       }
-    } catch (Exception e) {
-      log.warn("Vector search failed for user suggestions, falling back: {}", e.getMessage());
     }
+
     // Fallback: suggest popular users not followed
     return getFallbackSuggestedUsers(currentUser, limit);
   }
@@ -304,29 +297,23 @@ public class RecommendationService {
   /** Index a newly created photo (called from PhotoCreatedEvent listener). */
   @Async
   public void indexNewPhoto(String photoId) {
-    try {
-      Photo photo = photoRepository.findById(photoId).orElse(null);
-      if (photo == null) return;
-      ensurePhotoEmbedding(photo);
-      log.info("Indexed new photo embedding: {}", photoId);
-    } catch (Exception e) {
-      log.error("Failed to index new photo {}: {}", photoId, e.getMessage());
-    }
+
+    Photo photo = photoRepository.findById(photoId).orElse(null);
+    if (photo == null) return;
+    ensurePhotoEmbedding(photo);
+    log.info("Indexed new photo embedding: {}", photoId);
   }
 
   /** Re-index a user's profile embedding (e.g., after they post, like, or update profile). */
   @Async
   public void reindexUser(String userId) {
-    try {
-      User user = userRepository.findById(userId).orElse(null);
-      if (user == null) return;
-      // Force re-build by deleting existing
-      redisVectorService.deleteUserEmbedding(userId);
-      buildAndStoreUserEmbedding(user);
-      log.info("Re-indexed user embedding: {}", userId);
-    } catch (Exception e) {
-      log.error("Failed to re-index user {}: {}", userId, e.getMessage());
-    }
+
+    User user = userRepository.findById(userId).orElse(null);
+    if (user == null) return;
+    // Force re-build by deleting existing
+    redisVectorService.deleteUserEmbedding(userId);
+    buildAndStoreUserEmbedding(user);
+    log.info("Re-indexed user embedding: {}", userId);
   }
 
   /** Batch index all existing photos (admin/init operation). */
@@ -335,12 +322,9 @@ public class RecommendationService {
     List<Photo> allPhotos = photoRepository.findAll();
     int indexed = 0;
     for (Photo photo : allPhotos) {
-      try {
-        ensurePhotoEmbedding(photo);
-        indexed++;
-      } catch (Exception e) {
-        log.warn("Failed to index photo {}: {}", photo.getId(), e.getMessage());
-      }
+
+      ensurePhotoEmbedding(photo);
+      indexed++;
     }
     log.info("Batch indexed {}/{} photos", indexed, allPhotos.size());
     return indexed;
@@ -352,12 +336,9 @@ public class RecommendationService {
     List<User> allUsers = userRepository.findAll();
     int indexed = 0;
     for (User user : allUsers) {
-      try {
-        ensureUserEmbedding(user);
-        indexed++;
-      } catch (Exception e) {
-        log.warn("Failed to index user {}: {}", user.getId(), e.getMessage());
-      }
+
+      ensureUserEmbedding(user);
+      indexed++;
     }
     log.info("Batch indexed {}/{} users", indexed, allUsers.size());
     return indexed;

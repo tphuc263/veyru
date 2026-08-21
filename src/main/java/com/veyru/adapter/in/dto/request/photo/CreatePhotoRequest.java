@@ -1,8 +1,8 @@
 package com.veyru.adapter.in.dto.request.photo;
 
-import java.util.List;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
 
 public record CreatePhotoRequest(

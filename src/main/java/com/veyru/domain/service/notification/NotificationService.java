@@ -2,13 +2,13 @@ package com.veyru.domain.service.notification;
 
 import com.veyru.adapter.in.dto.response.notification.NotificationResponse;
 import com.veyru.adapter.in.dto.websocket.WsEventEnvelope;
+import com.veyru.application.event.NotificationEvent;
+import com.veyru.application.port.out.NotificationRepository;
 import com.veyru.domain.enums.NotificationType;
 import com.veyru.domain.exception.ApiException;
 import com.veyru.domain.exception.ErrorCode;
-import com.veyru.application.event.NotificationEvent;
 import com.veyru.domain.model.Notification;
 import com.veyru.domain.model.User;
-import com.veyru.application.port.out.NotificationRepository;
 import com.veyru.domain.service.user.UserAvatarCacheService;
 import java.time.Instant;
 import java.util.List;
@@ -209,18 +209,15 @@ public class NotificationService {
 
   // Send real-time notification via WebSocket
   private void sendRealTimeNotification(String userId, NotificationResponse response) {
-    try {
-      WsEventEnvelope<NotificationResponse> envelope =
-          WsEventEnvelope.<NotificationResponse>builder()
-              .type("NOTIFICATION")
-              .timestamp(Instant.now())
-              .payload(response)
-              .build();
-      messagingTemplate.convertAndSendToUser(userId, "/queue/notifications", envelope);
-      log.info("Sent real-time notification to user: {}", userId);
-    } catch (Exception e) {
-      log.error("Failed to send real-time notification to user: {}", userId, e);
-    }
+
+    WsEventEnvelope<NotificationResponse> envelope =
+        WsEventEnvelope.<NotificationResponse>builder()
+            .type("NOTIFICATION")
+            .timestamp(Instant.now())
+            .payload(response)
+            .build();
+    messagingTemplate.convertAndSendToUser(userId, "/queue/notifications", envelope);
+    log.info("Sent real-time notification to user: {}", userId);
   }
 
   private NotificationResponse convertToResponse(Notification notification) {

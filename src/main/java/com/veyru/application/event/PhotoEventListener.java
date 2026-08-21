@@ -29,19 +29,14 @@ public class PhotoEventListener {
         "Handling photo created event - photoId: {}, authorId: {}",
         event.getPhotoId(),
         event.getAuthorId());
-    try {
-      newsfeedService.updateFollowersFeeds(event.getPhotoId(), event.getAuthorId());
-      log.info("Successfully updated followers\' feeds for photo: {}", event.getPhotoId());
-    } catch (Exception e) {
-      log.error("Error updating followers\' feeds for photo: {}", event.getPhotoId(), e);
-    }
+
+    newsfeedService.updateFollowersFeeds(event.getPhotoId(), event.getAuthorId());
+    log.info("Successfully updated followers\' feeds for photo: {}", event.getPhotoId());
+
     // Index the new photo embedding for AI recommendations
-    try {
-      recommendationService.indexNewPhoto(event.getPhotoId());
-      recommendationService.reindexUser(event.getAuthorId());
-    } catch (Exception e) {
-      log.warn("Failed to index embedding for photo: {}", event.getPhotoId(), e);
-    }
+
+    recommendationService.indexNewPhoto(event.getPhotoId());
+    recommendationService.reindexUser(event.getAuthorId());
   }
 
   public PhotoEventListener(

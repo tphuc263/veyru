@@ -1,14 +1,14 @@
 package com.veyru.adapter.in.web;
 
-import com.veyru.adapter.in.dto.response.PageResponse;
 import com.veyru.adapter.in.dto.SendMessageRequest;
+import com.veyru.adapter.in.dto.response.PageResponse;
+import com.veyru.adapter.in.security.userdetails.AppUserDetails;
 import com.veyru.application.messaging.ConversationResult;
 import com.veyru.application.messaging.ConversationService;
 import com.veyru.application.messaging.MessageResult;
 import com.veyru.application.messaging.PageResult;
 import com.veyru.application.messaging.SendMessageCommand;
 import com.veyru.application.messaging.SendMessageUseCase;
-import com.veyru.adapter.in.security.userdetails.AppUserDetails;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

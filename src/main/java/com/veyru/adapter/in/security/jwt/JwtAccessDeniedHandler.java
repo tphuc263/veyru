@@ -1,10 +1,10 @@
 package com.veyru.adapter.in.security.jwt;
 
+import com.veyru.domain.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
@@ -22,11 +22,11 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
       throws IOException {
     ProblemDetail problem =
         ProblemDetail.forStatusAndDetail(
-            HttpStatus.FORBIDDEN, "You do not have permission to perform this action.");
-    problem.setTitle("Forbidden");
+            ErrorCode.ACCESS_DENIED.status(), ErrorCode.ACCESS_DENIED.detail());
+    problem.setTitle(ErrorCode.ACCESS_DENIED.status().getReasonPhrase());
     problem.setInstance(URI.create(request.getRequestURI()));
-    problem.setProperty("code", "ACCESS_DENIED");
-    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+    problem.setProperty("code", ErrorCode.ACCESS_DENIED.name());
+    response.setStatus(problem.getStatus());
     response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
     objectMapper.writeValue(response.getOutputStream(), problem);
   }

@@ -2,14 +2,14 @@ package com.veyru.domain.service.like;
 
 import com.veyru.adapter.in.dto.response.like.LikeResponse;
 import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
-import com.veyru.domain.model.Like;
-import com.veyru.domain.model.Photo;
-import com.veyru.domain.model.User;
-import com.veyru.domain.exception.ApiException;
-import com.veyru.domain.exception.ErrorCode;
 import com.veyru.application.port.out.LikeRepository;
 import com.veyru.application.port.out.PhotoRepository;
 import com.veyru.application.port.out.UserRepository;
+import com.veyru.domain.exception.ApiException;
+import com.veyru.domain.exception.ErrorCode;
+import com.veyru.domain.model.Like;
+import com.veyru.domain.model.Photo;
+import com.veyru.domain.model.User;
 import com.veyru.domain.service.graph.Neo4jGraphService;
 import com.veyru.domain.service.notification.NotificationService;
 import com.veyru.domain.service.photo.PhotoConversionService;
@@ -59,11 +59,9 @@ public class LikeService {
       mongoTemplate.updateFirst(query, update, Photo.class);
       photo.setLikeCount(Math.max(0, photo.getLikeCount() - 1));
       // Sync to Neo4j graph - remove like relationship
-      try {
-        neo4jGraphService.removeLikeRelationship(currentUser.getId(), photoId);
-      } catch (Exception e) {
-        log.warn("Failed to sync unlike to Neo4j: {}", e.getMessage());
-      }
+
+      neo4jGraphService.removeLikeRelationship(currentUser.getId(), photoId);
+
       log.info("User {} unliked photo {}", currentUser.getId(), photoId);
     } else {
       // Like
@@ -77,11 +75,9 @@ public class LikeService {
       mongoTemplate.updateFirst(query, update, Photo.class);
       photo.setLikeCount(photo.getLikeCount() + 1);
       // Sync to Neo4j graph - create like relationship
-      try {
-        neo4jGraphService.createLikeRelationship(currentUser.getId(), photoId);
-      } catch (Exception e) {
-        log.warn("Failed to sync like to Neo4j: {}", e.getMessage());
-      }
+
+      neo4jGraphService.createLikeRelationship(currentUser.getId(), photoId);
+
       // Send notification to photo owner
       if (photo.getUser() != null) {
         notificationService.sendLikePhotoNotification(
@@ -112,11 +108,9 @@ public class LikeService {
     Update update = new Update().inc("likeCount", 1);
     mongoTemplate.updateFirst(query, update, Photo.class);
     // Sync to Neo4j graph - create like relationship
-    try {
-      neo4jGraphService.createLikeRelationship(currentUser.getId(), photoId);
-    } catch (Exception e) {
-      log.warn("Failed to sync like to Neo4j: {}", e.getMessage());
-    }
+
+    neo4jGraphService.createLikeRelationship(currentUser.getId(), photoId);
+
     // Send notification
     if (photo.getUser() != null) {
       notificationService.sendLikePhotoNotification(
@@ -134,11 +128,9 @@ public class LikeService {
     Update update = new Update().inc("likeCount", -1);
     mongoTemplate.updateFirst(query, update, Photo.class);
     // Sync to Neo4j graph - remove like relationship
-    try {
-      neo4jGraphService.removeLikeRelationship(currentUser.getId(), photoId);
-    } catch (Exception e) {
-      log.warn("Failed to sync unlike to Neo4j: {}", e.getMessage());
-    }
+
+    neo4jGraphService.removeLikeRelationship(currentUser.getId(), photoId);
+
     log.info("User {} unliked photo {}", currentUser.getId(), photoId);
   }
 

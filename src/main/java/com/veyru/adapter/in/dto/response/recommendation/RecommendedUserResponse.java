@@ -85,8 +85,7 @@ public class RecommendedUserResponse {
     if (!other.canEqual((Object) this)) return false;
     if (this.getFollowerCount() != other.getFollowerCount()) return false;
     if (this.getPhotoCount() != other.getPhotoCount()) return false;
-    if (Double.compare(this.getSimilarityScore(), other.getSimilarityScore()) != 0)
-      return false;
+    if (Double.compare(this.getSimilarityScore(), other.getSimilarityScore()) != 0) return false;
     final Object this$id = this.getId();
     final Object other$id = other.getId();
     if (this$id == null ? other$id != null : !this$id.equals(other$id)) return false;

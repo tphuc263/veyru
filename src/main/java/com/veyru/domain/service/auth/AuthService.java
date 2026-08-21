@@ -5,13 +5,13 @@ import com.veyru.adapter.in.dto.request.auth.LoginRequest;
 import com.veyru.adapter.in.dto.request.auth.RegisterRequest;
 import com.veyru.adapter.in.dto.request.auth.ResetPasswordRequest;
 import com.veyru.adapter.in.dto.response.auth.LoginResponse;
+import com.veyru.adapter.in.security.jwt.JwtUtils;
+import com.veyru.adapter.in.security.userdetails.AppUserDetails;
+import com.veyru.application.port.out.UserRepository;
 import com.veyru.domain.enums.UserRole;
 import com.veyru.domain.exception.ApiException;
 import com.veyru.domain.exception.ErrorCode;
 import com.veyru.domain.model.User;
-import com.veyru.application.port.out.UserRepository;
-import com.veyru.adapter.in.security.jwt.JwtUtils;
-import com.veyru.adapter.in.security.userdetails.AppUserDetails;
 import com.veyru.domain.service.email.EmailService;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -85,13 +85,7 @@ public class AuthService {
     user.setResetToken(token);
     user.setResetTokenExpiry(Instant.now().plus(RESET_TOKEN_EXPIRY_MINUTES, ChronoUnit.MINUTES));
     userRepository.save(user);
-    // Send email asynchronously
-    try {
-      emailService.sendPasswordResetEmail(user.getEmail(), token, user.getUsername());
-    } catch (RuntimeException ex) {
-      log.error("Unable to send password reset email", ex);
-    }
-    log.info("Password reset token generated for user: {}", user.getEmail());
+    emailService.sendPasswordResetEmail(user.getEmail(), token, user.getUsername());
   }
 
   public void resetPassword(ResetPasswordRequest request) {

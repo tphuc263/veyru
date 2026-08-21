@@ -75,8 +75,7 @@ public class EngagementAnalysisResponse {
       if (!other.canEqual((Object) this)) return false;
       if (this.getLikeCount() != other.getLikeCount()) return false;
       if (this.getCommentCount() != other.getCommentCount()) return false;
-      if (Double.compare(this.getEngagementScore(), other.getEngagementScore()) != 0)
-        return false;
+      if (Double.compare(this.getEngagementScore(), other.getEngagementScore()) != 0) return false;
       final Object this$photoId = this.getPhotoId();
       final Object other$photoId = other.getPhotoId();
       if (this$photoId == null ? other$photoId != null : !this$photoId.equals(other$photoId))
@@ -204,12 +203,9 @@ public class EngagementAnalysisResponse {
     if (!(o instanceof EngagementAnalysisResponse)) return false;
     final EngagementAnalysisResponse other = (EngagementAnalysisResponse) o;
     if (!other.canEqual((Object) this)) return false;
-    if (Double.compare(this.getAverageLikes(), other.getAverageLikes()) != 0)
-      return false;
-    if (Double.compare(this.getAverageComments(), other.getAverageComments()) != 0)
-      return false;
-    if (Double.compare(this.getEngagementRate(), other.getEngagementRate()) != 0)
-      return false;
+    if (Double.compare(this.getAverageLikes(), other.getAverageLikes()) != 0) return false;
+    if (Double.compare(this.getAverageComments(), other.getAverageComments()) != 0) return false;
+    if (Double.compare(this.getEngagementRate(), other.getEngagementRate()) != 0) return false;
     final Object this$trend = this.getTrend();
     final Object other$trend = other.getTrend();
     if (this$trend == null ? other$trend != null : !this$trend.equals(other$trend)) return false;

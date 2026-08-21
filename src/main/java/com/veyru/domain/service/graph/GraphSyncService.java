@@ -1,12 +1,12 @@
 package com.veyru.domain.service.graph;
 
-import com.veyru.domain.model.Follow;
-import com.veyru.domain.model.Like;
-import com.veyru.domain.model.User;
 import com.veyru.application.port.out.FollowRepository;
 import com.veyru.application.port.out.LikeRepository;
 import com.veyru.application.port.out.PhotoRepository;
 import com.veyru.application.port.out.UserRepository;
+import com.veyru.domain.model.Follow;
+import com.veyru.domain.model.Like;
+import com.veyru.domain.model.User;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
@@ -52,17 +52,14 @@ public class GraphSyncService {
     log.info("Starting full user sync to Neo4j");
     List<User> allUsers = userRepository.findAll();
     for (User user : allUsers) {
-      try {
-        neo4jGraphService.upsertUser(
-            user.getId(),
-            user.getUsername(),
-            user.getImageUrl(),
-            user.getFollowerCount(),
-            user.getPhotoCount(),
-            user.getBio());
-      } catch (Exception e) {
-        log.error("Failed to sync user {}: {}", user.getId(), e.getMessage());
-      }
+
+      neo4jGraphService.upsertUser(
+          user.getId(),
+          user.getUsername(),
+          user.getImageUrl(),
+          user.getFollowerCount(),
+          user.getPhotoCount(),
+          user.getBio());
     }
     log.info("Completed syncing {} users to Neo4j", allUsers.size());
   }
@@ -98,21 +95,17 @@ public class GraphSyncService {
         .findAll()
         .forEach(
             photo -> {
-              try {
-                neo4jGraphService.upsertPhoto(
-                    photo.getId(),
-                    photo.getUser().getUserId(),
-                    photo.getUser().getUsername(),
-                    photo.getImageUrl(),
-                    photo.getCaption(),
-                    photo.getTags(),
-                    photo.getLikeCount(),
-                    photo.getCommentCount(),
-                    photo.getShareCount(),
-                    photo.getCreatedAt());
-              } catch (Exception e) {
-                log.error("Failed to sync photo {}: {}", photo.getId(), e.getMessage());
-              }
+              neo4jGraphService.upsertPhoto(
+                  photo.getId(),
+                  photo.getUser().getUserId(),
+                  photo.getUser().getUsername(),
+                  photo.getImageUrl(),
+                  photo.getCaption(),
+                  photo.getTags(),
+                  photo.getLikeCount(),
+                  photo.getCommentCount(),
+                  photo.getShareCount(),
+                  photo.getCreatedAt());
             });
     log.info("Completed syncing photos to Neo4j");
   }
@@ -139,15 +132,8 @@ public class GraphSyncService {
     log.info("Starting full follow sync to Neo4j");
     List<Follow> allFollows = followRepository.findAll();
     for (Follow follow : allFollows) {
-      try {
-        createFollow(follow.getFollowerId(), follow.getFollowingId());
-      } catch (Exception e) {
-        log.error(
-            "Failed to sync follow {} -> {}: {}",
-            follow.getFollowerId(),
-            follow.getFollowingId(),
-            e.getMessage());
-      }
+
+      createFollow(follow.getFollowerId(), follow.getFollowingId());
     }
     log.info("Completed syncing {} follows to Neo4j", allFollows.size());
   }
@@ -170,15 +156,8 @@ public class GraphSyncService {
     log.info("Starting full like sync to Neo4j");
     List<Like> allLikes = likeRepository.findAll();
     for (Like like : allLikes) {
-      try {
-        neo4jGraphService.createLikeRelationship(like.getUserId(), like.getPhotoId());
-      } catch (Exception e) {
-        log.error(
-            "Failed to sync like {} -> {}: {}",
-            like.getUserId(),
-            like.getPhotoId(),
-            e.getMessage());
-      }
+
+      neo4jGraphService.createLikeRelationship(like.getUserId(), like.getPhotoId());
     }
     log.info("Completed syncing {} likes to Neo4j", allLikes.size());
   }

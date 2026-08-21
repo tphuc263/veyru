@@ -1,12 +1,12 @@
 package com.veyru.adapter.in.websocket;
 
+import com.veyru.adapter.in.dto.SendMessageRequest;
 import com.veyru.adapter.in.dto.websocket.WsError;
 import com.veyru.adapter.in.dto.websocket.WsEventEnvelope;
-import com.veyru.domain.exception.ErrorCode;
-import com.veyru.adapter.in.dto.SendMessageRequest;
 import com.veyru.application.messaging.MessagingException;
 import com.veyru.application.messaging.SendMessageCommand;
 import com.veyru.application.messaging.SendMessageUseCase;
+import com.veyru.domain.exception.ErrorCode;
 import java.security.Principal;
 import java.time.Clock;
 import org.slf4j.Logger;
@@ -59,7 +59,7 @@ public class WebSocketMessageController {
               ? ErrorCode.ACCESS_DENIED
               : ErrorCode.RESOURCE_NOT_FOUND;
       sendError(senderId, envelope.getClientMessageId(), code, code.detail());
-    } catch (Exception exception) {
+    } catch (RuntimeException exception) {
       log.error("Error processing websocket message from {}", senderId, exception);
       sendError(
           senderId,

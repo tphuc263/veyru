@@ -1,12 +1,12 @@
 package com.veyru.domain.service.photo;
 
-import com.veyru.application.port.out.*;
 import com.veyru.adapter.in.dto.request.photo.CreatePhotoRequest;
 import com.veyru.adapter.in.dto.response.comment.CommentResponse;
 import com.veyru.adapter.in.dto.response.like.LikeResponse;
 import com.veyru.adapter.in.dto.response.photo.PhotoDetailResponse;
 import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
 import com.veyru.application.event.PhotoCreatedEvent;
+import com.veyru.application.port.out.*;
 import com.veyru.domain.exception.ApiException;
 import com.veyru.domain.exception.ErrorCode;
 import com.veyru.domain.model.Comment;
@@ -72,22 +72,20 @@ public class PhotoService {
     }
     Photo savedPhoto = photoRepository.save(photo);
     // Sync to Neo4j graph - create photo node
-    try {
-      neo4jGraphService.upsertPhoto(
-          savedPhoto.getId(),
-          currentUser.getId(),
-          currentUser.getUsername(),
-          savedPhoto.getImageUrl(),
-          savedPhoto.getCaption(),
-          savedPhoto.getTags(),
-          0,
-          0,
-          0,
-          savedPhoto.getCreatedAt());
-      log.debug("Synced photo to Neo4j: {}", savedPhoto.getId());
-    } catch (Exception e) {
-      log.warn("Failed to sync photo to Neo4j: {}", e.getMessage());
-    }
+
+    neo4jGraphService.upsertPhoto(
+        savedPhoto.getId(),
+        currentUser.getId(),
+        currentUser.getUsername(),
+        savedPhoto.getImageUrl(),
+        savedPhoto.getCaption(),
+        savedPhoto.getTags(),
+        0,
+        0,
+        0,
+        savedPhoto.getCreatedAt());
+    log.debug("Synced photo to Neo4j: {}", savedPhoto.getId());
+
     Query query = new Query(Criteria.where("_id").is(currentUser.getId()));
     Update update = new Update().inc("photoCount", 1);
     mongoTemplate.updateFirst(query, update, User.class);
@@ -103,10 +101,9 @@ public class PhotoService {
     Pageable pageable = PageRequest.of(page, size);
     Page<Photo> photos = photoRepository.findAllByOrderByCreatedAtDesc(pageable);
     User currentUser = null;
-    try {
-      currentUser = userService.getCurrentUser();
-    } catch (Exception e) {
-    }
+
+    currentUser = userService.getCurrentUser();
+
     final User finalCurrentUser = currentUser;
     return photos.map(
         photo -> photoConversionService.convertToPhotoResponse(photo, finalCurrentUser));
@@ -117,10 +114,9 @@ public class PhotoService {
     Pageable pageable = PageRequest.of(page, size);
     Page<Photo> photos = photoRepository.findByUserUserIdOrderByCreatedAtDesc(userId, pageable);
     User currentUser = null;
-    try {
-      currentUser = userService.getCurrentUser();
-    } catch (Exception e) {
-    }
+
+    currentUser = userService.getCurrentUser();
+
     final User finalCurrentUser = currentUser;
     return photos.map(
         photo -> photoConversionService.convertToPhotoResponse(photo, finalCurrentUser));
@@ -155,29 +151,23 @@ public class PhotoService {
         && !currentUser.getRole().name().equals("ROLE_ADMIN")) {
       throw new ApiException(ErrorCode.ACCESS_DENIED);
     }
-    try {
-      // Delete image from Cloudinary
-      String publicId = cloudinaryService.extractPublicIdFromUrl(photo.getImageUrl());
-      if (publicId != null) {
-        cloudinaryService.deleteImage(publicId);
-        log.info("Image deleted from Cloudinary for photo ID: {}", photoId);
-      }
-      likeRepository.deleteAllByPhotoId(photoId);
-      commentRepository.deleteAllByPhotoId(photoId);
-      favoriteRepository.deleteAllByPhotoId(photoId);
-      shareRepository.deleteAllByPhotoId(photoId);
-      log.info("Deleted all likes, comments, favorites and shares for photo ID: {}", photoId);
-      photoRepository.deleteById(photoId);
-      Query query = new Query(Criteria.where("_id").is(photo.getUser().getUserId()));
-      Update update = new Update().inc("photoCount", -1);
-      mongoTemplate.updateFirst(query, update, User.class);
-      log.info("Photo deleted successfully with ID: {}", photoId);
-    } catch (ApiException e) {
-      throw e;
-    } catch (Exception e) {
-      log.error("Failed to delete photo with ID: {}", photoId, e);
-      throw new ApiException(ErrorCode.EXTERNAL_SERVICE_FAILURE, e);
+
+    // Delete image from Cloudinary
+    String publicId = cloudinaryService.extractPublicIdFromUrl(photo.getImageUrl());
+    if (publicId != null) {
+      cloudinaryService.deleteImage(publicId);
+      log.info("Image deleted from Cloudinary for photo ID: {}", photoId);
     }
+    likeRepository.deleteAllByPhotoId(photoId);
+    commentRepository.deleteAllByPhotoId(photoId);
+    favoriteRepository.deleteAllByPhotoId(photoId);
+    shareRepository.deleteAllByPhotoId(photoId);
+    log.info("Deleted all likes, comments, favorites and shares for photo ID: {}", photoId);
+    photoRepository.deleteById(photoId);
+    Query query = new Query(Criteria.where("_id").is(photo.getUser().getUserId()));
+    Update update = new Update().inc("photoCount", -1);
+    mongoTemplate.updateFirst(query, update, User.class);
+    log.info("Photo deleted successfully with ID: {}", photoId);
   }
 
   // Keep these methods for PhotoDetailResponse (specific to this service)
@@ -196,16 +186,13 @@ public class PhotoService {
     response.setLikeCount((int) photo.getLikeCount());
     response.setCommentCount((int) photo.getCommentCount());
     response.setShareCount((int) photo.getShareCount());
-    try {
-      User currentUser = userService.getCurrentUser();
-      response.setLikedByCurrentUser(
-          likeRepository.existsByPhotoIdAndUserId(photo.getId(), currentUser.getId()));
-      response.setSavedByCurrentUser(
-          favoriteRepository.existsByUserIdAndPhotoId(currentUser.getId(), photo.getId()));
-    } catch (Exception e) {
-      response.setLikedByCurrentUser(false);
-      response.setSavedByCurrentUser(false);
-    }
+
+    User currentUser = userService.getCurrentUser();
+    response.setLikedByCurrentUser(
+        likeRepository.existsByPhotoIdAndUserId(photo.getId(), currentUser.getId()));
+    response.setSavedByCurrentUser(
+        favoriteRepository.existsByUserIdAndPhotoId(currentUser.getId(), photo.getId()));
+
     return response;
   }
 

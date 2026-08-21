@@ -1,8 +1,8 @@
 package com.veyru.adapter.in.security.oauth2;
 
+import com.veyru.application.port.out.UserRepository;
 import com.veyru.domain.enums.UserRole;
 import com.veyru.domain.model.User;
-import com.veyru.application.port.out.UserRepository;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;

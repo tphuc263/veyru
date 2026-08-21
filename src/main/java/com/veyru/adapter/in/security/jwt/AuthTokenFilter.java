@@ -35,12 +35,8 @@ public class AuthTokenFilter extends OncePerRequestFilter {
       if (StringUtils.hasText(jwt) && jwtUtils.validateToken(jwt)) {
         authenticateUser(jwt);
       }
-    } catch (Exception e) {
-      log.error(
-          "Cannot set user authentication for request: {} {}",
-          request.getMethod(),
-          request.getRequestURI(),
-          e);
+    } catch (RuntimeException e) {
+      log.debug("Invalid token for {} {}", request.getMethod(), request.getRequestURI());
       authEntryPoint.commence(request, response, new BadCredentialsException("Invalid token", e));
       return;
     }
@@ -48,16 +44,11 @@ public class AuthTokenFilter extends OncePerRequestFilter {
   }
 
   private void authenticateUser(String jwt) {
-    try {
-      String username = jwtUtils.getEmailFromToken(jwt);
-      UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-      var authentication =
-          new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-      SecurityContextHolder.getContext().setAuthentication(authentication);
-    } catch (Exception e) {
-      log.error("Failed to authenticate user from JWT token", e);
-      throw e;
-    }
+    String username = jwtUtils.getEmailFromToken(jwt);
+    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+    var authentication =
+        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+    SecurityContextHolder.getContext().setAuthentication(authentication);
   }
 
   public String parseJwt(HttpServletRequest request) {

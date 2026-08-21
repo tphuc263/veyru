@@ -1,6 +1,8 @@
 package com.veyru.domain.service.photo;
 
 import com.cloudinary.Cloudinary;
+import com.veyru.domain.exception.ApiException;
+import com.veyru.domain.exception.ErrorCode;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,9 +36,7 @@ public class CloudinaryService {
           result.get(SECURE_URL_KEY));
       return result;
     } catch (IOException e) {
-      log.error(
-          "Failed to upload image to Cloudinary - filename: {}", file.getOriginalFilename(), e);
-      throw new RuntimeException("Failed to upload image to Cloudinary", e);
+      throw new ApiException(ErrorCode.EXTERNAL_SERVICE_FAILURE, e);
     }
   }
 
@@ -52,47 +52,42 @@ public class CloudinaryService {
       log.info("Image deleted successfully - publicId: {}", publicId);
       return result;
     } catch (IOException e) {
-      log.error("Failed to delete image from Cloudinary - publicId: {}", publicId, e);
-      throw new RuntimeException("Failed to delete image from Cloudinary", e);
+      throw new ApiException(ErrorCode.EXTERNAL_SERVICE_FAILURE, e);
     }
   }
 
   public String extractPublicIdFromUrl(String imageUrl) {
-    try {
-      if (imageUrl == null || !imageUrl.contains("/upload/")) {
-        return null;
-      }
-      String[] parts = imageUrl.split("/upload/");
-      if (parts.length < 2) {
-        return null;
-      }
-      String afterUpload = parts[1];
-      // Remove query parameters if present
-      if (afterUpload.contains("?")) {
-        afterUpload = afterUpload.substring(0, afterUpload.indexOf("?"));
-      }
-      // Remove file extension (.jpg, .png, etc.)
-      int lastDotIndex = afterUpload.lastIndexOf('.');
-      if (lastDotIndex > 0) {
-        afterUpload = afterUpload.substring(0, lastDotIndex);
-      }
-      // Cloudinary URLs typically have format: /v1234567890/folder/filename
-      // Need to remove version number if present
-      if (afterUpload.startsWith("/")) {
-        afterUpload = afterUpload.substring(1);
-      }
-      String[] segments = afterUpload.split("/");
-      if (segments.length > 0
-          && segments[0].startsWith("v")
-          && segments[0].substring(1).matches("\\d+")) {
-        // Remove version part
-        afterUpload = afterUpload.substring(afterUpload.indexOf("/") + 1);
-      }
-      return afterUpload;
-    } catch (Exception e) {
-      log.error("Error extracting publicId from URL: {}", imageUrl, e);
+
+    if (imageUrl == null || !imageUrl.contains("/upload/")) {
       return null;
     }
+    String[] parts = imageUrl.split("/upload/");
+    if (parts.length < 2) {
+      return null;
+    }
+    String afterUpload = parts[1];
+    // Remove query parameters if present
+    if (afterUpload.contains("?")) {
+      afterUpload = afterUpload.substring(0, afterUpload.indexOf("?"));
+    }
+    // Remove file extension (.jpg, .png, etc.)
+    int lastDotIndex = afterUpload.lastIndexOf('.');
+    if (lastDotIndex > 0) {
+      afterUpload = afterUpload.substring(0, lastDotIndex);
+    }
+    // Cloudinary URLs typically have format: /v1234567890/folder/filename
+    // Need to remove version number if present
+    if (afterUpload.startsWith("/")) {
+      afterUpload = afterUpload.substring(1);
+    }
+    String[] segments = afterUpload.split("/");
+    if (segments.length > 0
+        && segments[0].startsWith("v")
+        && segments[0].substring(1).matches("\\d+")) {
+      // Remove version part
+      afterUpload = afterUpload.substring(afterUpload.indexOf("/") + 1);
+    }
+    return afterUpload;
   }
 
   // helper methods

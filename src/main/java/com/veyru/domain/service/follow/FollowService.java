@@ -1,13 +1,13 @@
 package com.veyru.domain.service.follow;
 
 import com.veyru.adapter.in.dto.response.follow.FollowResponse;
+import com.veyru.adapter.in.security.userdetails.AppUserDetails;
+import com.veyru.application.port.out.FollowRepository;
+import com.veyru.application.port.out.UserRepository;
 import com.veyru.domain.exception.ApiException;
 import com.veyru.domain.exception.ErrorCode;
 import com.veyru.domain.model.Follow;
 import com.veyru.domain.model.User;
-import com.veyru.application.port.out.FollowRepository;
-import com.veyru.application.port.out.UserRepository;
-import com.veyru.adapter.in.security.userdetails.AppUserDetails;
 import com.veyru.domain.service.graph.Neo4jGraphService;
 import com.veyru.domain.service.notification.NotificationService;
 import com.veyru.domain.service.user.UserAvatarCacheService;
@@ -51,29 +51,27 @@ public class FollowService {
     followRepository.save(follow);
     log.info("User {} followed user {}", currentUser.getId(), targetUserId);
     // Sync to Neo4j graph
-    try {
+
+    neo4jGraphService.upsertUser(
+        currentUser.getId(),
+        currentUser.getUsername(),
+        currentUser.getImageUrl(),
+        currentUser.getFollowingCount(),
+        currentUser.getPhotoCount(),
+        currentUser.getBio());
+    User targetUser = userRepository.findById(targetUserId).orElse(null);
+    if (targetUser != null) {
       neo4jGraphService.upsertUser(
-          currentUser.getId(),
-          currentUser.getUsername(),
-          currentUser.getImageUrl(),
-          currentUser.getFollowingCount(),
-          currentUser.getPhotoCount(),
-          currentUser.getBio());
-      User targetUser = userRepository.findById(targetUserId).orElse(null);
-      if (targetUser != null) {
-        neo4jGraphService.upsertUser(
-            targetUser.getId(),
-            targetUser.getUsername(),
-            targetUser.getImageUrl(),
-            targetUser.getFollowingCount(),
-            targetUser.getPhotoCount(),
-            targetUser.getBio());
-      }
-      neo4jGraphService.createFollowRelationship(currentUser.getId(), targetUserId);
-      log.debug("Synced follow relationship to Neo4j: {} -> {}", currentUser.getId(), targetUserId);
-    } catch (Exception e) {
-      log.warn("Failed to sync follow to Neo4j: {}", e.getMessage());
+          targetUser.getId(),
+          targetUser.getUsername(),
+          targetUser.getImageUrl(),
+          targetUser.getFollowingCount(),
+          targetUser.getPhotoCount(),
+          targetUser.getBio());
     }
+    neo4jGraphService.createFollowRelationship(currentUser.getId(), targetUserId);
+    log.debug("Synced follow relationship to Neo4j: {} -> {}", currentUser.getId(), targetUserId);
+
     // increase following count of person click follow
     Query followerQuery = new Query(Criteria.where("_id").is(currentUser.getId()));
     Update followerUpdate = new Update().inc("followingCount", 1);
@@ -85,13 +83,11 @@ public class FollowService {
     // Send notification to the user being followed
     notificationService.sendNewFollowerNotification(targetUserId, currentUser);
     log.info("User {} followed user {}", currentUser.getId(), targetUserId);
-    // try {
+    //
     // newsfeedService.generateNewsfeedCache(currentUser.getId());
     // log.info("Regenerated newsfeed cache after follow for user: {}",
     // currentUser.getId());
-    // } catch (Exception e) {
-    // log.error("Error regenerating newsfeed cache after follow", e);
-    // }
+    //
   }
 
   public void unfollow(String targetUserId) {
@@ -106,13 +102,11 @@ public class FollowService {
     Query followingQuery = new Query(Criteria.where("_id").is(targetUserId));
     Update followingUpdate = new Update().inc("followerCount", -1);
     mongoTemplate.updateFirst(followingQuery, followingUpdate, User.class);
-    // try {
+    //
     // newsfeedService.generateNewsfeedCache(currentUser.getId());
     // log.info("Regenerated newsfeed cache after unfollow for user: {}",
     // currentUser.getId());
-    // } catch (Exception e) {
-    // log.error("Error regenerating newsfeed cache after unfollow", e);
-    // }
+    //
   }
 
   public List<FollowResponse> getFollowers(String userId, int page, int size) {
@@ -175,14 +169,11 @@ public class FollowService {
   }
 
   private Set<String> getCurrentUserFollowing() {
-    try {
-      User currentUser = getCurrentUser();
-      return followRepository.findByFollowerId(currentUser.getId()).stream()
-          .map(Follow::getFollowingId)
-          .collect(Collectors.toSet());
-    } catch (Exception e) {
-      return Set.of();
-    }
+
+    User currentUser = getCurrentUser();
+    return followRepository.findByFollowerId(currentUser.getId()).stream()
+        .map(Follow::getFollowingId)
+        .collect(Collectors.toSet());
   }
 
   private Follow checkBeforeFollow(String targetUserId, User currentUser) {

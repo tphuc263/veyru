@@ -1,10 +1,10 @@
 package com.veyru.domain.service.photo;
 
 import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
-import com.veyru.domain.model.Photo;
-import com.veyru.domain.model.User;
 import com.veyru.application.port.out.FavoriteRepository;
 import com.veyru.application.port.out.LikeRepository;
+import com.veyru.domain.model.Photo;
+import com.veyru.domain.model.User;
 import com.veyru.domain.service.user.UserAvatarCacheService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -22,22 +22,18 @@ public class EmbeddingService {
       return null;
     }
     String truncated = text.length() > 2000 ? text.substring(0, 2000) : text;
-    try {
-      float[] embedding = new float[EMBEDDING_DIMENSION];
-      String[] tokens = truncated.toLowerCase().replaceAll("[^a-z0-9\\s]", " ").split("\\s+");
-      for (String token : tokens) {
-        if (token.isBlank()) continue;
-        for (int i = 0; i < EMBEDDING_DIMENSION; i++) {
-          int combinedHash = hashString(token + "_" + i);
-          float value = ((combinedHash & 4294967295L) / (float) 4294967295L) - 0.5F;
-          embedding[i] += value;
-        }
+
+    float[] embedding = new float[EMBEDDING_DIMENSION];
+    String[] tokens = truncated.toLowerCase().replaceAll("[^a-z0-9\\s]", " ").split("\\s+");
+    for (String token : tokens) {
+      if (token.isBlank()) continue;
+      for (int i = 0; i < EMBEDDING_DIMENSION; i++) {
+        int combinedHash = hashString(token + "_" + i);
+        float value = ((combinedHash & 4294967295L) / (float) 4294967295L) - 0.5F;
+        embedding[i] += value;
       }
-      return normalize(embedding);
-    } catch (Exception e) {
-      log.error("Failed to generate embedding: {}", e.getMessage());
-      return null;
     }
+    return normalize(embedding);
   }
 
   public float[] generateEmbeddingFromTexts(List<String> texts) {
@@ -120,16 +116,13 @@ public class EmbeddingService {
   }
 
   private int hashString(String input) {
-    try {
-      MessageDigest md = MessageDigest.getInstance("SHA-256");
-      byte[] hash = md.digest(input.getBytes(StandardCharsets.UTF_8));
-      return ((hash[0] & 255) << 24)
-          | ((hash[1] & 255) << 16)
-          | ((hash[2] & 255) << 8)
-          | (hash[3] & 255);
-    } catch (Exception e) {
-      return input.hashCode();
-    }
+
+    MessageDigest md = MessageDigest.getInstance("SHA-256");
+    byte[] hash = md.digest(input.getBytes(StandardCharsets.UTF_8));
+    return ((hash[0] & 255) << 24)
+        | ((hash[1] & 255) << 16)
+        | ((hash[2] & 255) << 8)
+        | (hash[3] & 255);
   }
 
   private float[] normalize(float[] vector) {

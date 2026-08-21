@@ -1,9 +1,9 @@
 package com.veyru.domain.service.graph;
 
 import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
+import com.veyru.application.port.out.PhotoRepository;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
-import com.veyru.application.port.out.PhotoRepository;
 import com.veyru.domain.service.photo.PhotoConversionService;
 import com.veyru.domain.service.user.UserService;
 import java.time.Duration;
@@ -34,44 +34,39 @@ public class GraphFeedService {
    */
   public List<PhotoResponse> getGraphBasedFeed(String userId, int limit) {
     log.info("Getting graph-based feed for user: {} with limit: {}", userId, limit);
-    try {
-      // Get feed from Neo4j using Dijkstra-like algorithm
-      List<Neo4jGraphService.FeedNode> feedNodes =
-          neo4jGraphService.getFeedWithDijkstra(userId, limit);
-      if (feedNodes.isEmpty()) {
-        log.info("No graph-based feed found, returning empty list");
-        return List.of();
-      }
-      // Fetch full Photo entities from MongoDB
-      List<String> photoIds =
-          feedNodes.stream().map(Neo4jGraphService.FeedNode::getPhotoId).toList();
-      List<Photo> photos = photoRepository.findAllById(photoIds);
-      // Sort by relevance score from Neo4j
-      photos.sort(
-          (a, b) -> {
-            double scoreA =
-                feedNodes.stream()
-                    .filter(n -> n.getPhotoId().equals(a.getId()))
-                    .findFirst()
-                    .map(Neo4jGraphService.FeedNode::getRelevanceScore)
-                    .orElse(0.0);
-            double scoreB =
-                feedNodes.stream()
-                    .filter(n -> n.getPhotoId().equals(b.getId()))
-                    .findFirst()
-                    .map(Neo4jGraphService.FeedNode::getRelevanceScore)
-                    .orElse(0.0);
-            return Double.compare(scoreB, scoreA);
-          });
-      // Convert to response
-      User currentUser = userService.findUserById(userId);
-      return photos.stream()
-          .map(photo -> photoConversionService.convertToPhotoResponse(photo, currentUser))
-          .toList();
-    } catch (Exception e) {
-      log.error("Error getting graph-based feed: {}", e.getMessage(), e);
+
+    // Get feed from Neo4j using Dijkstra-like algorithm
+    List<Neo4jGraphService.FeedNode> feedNodes =
+        neo4jGraphService.getFeedWithDijkstra(userId, limit);
+    if (feedNodes.isEmpty()) {
+      log.info("No graph-based feed found, returning empty list");
       return List.of();
     }
+    // Fetch full Photo entities from MongoDB
+    List<String> photoIds = feedNodes.stream().map(Neo4jGraphService.FeedNode::getPhotoId).toList();
+    List<Photo> photos = photoRepository.findAllById(photoIds);
+    // Sort by relevance score from Neo4j
+    photos.sort(
+        (a, b) -> {
+          double scoreA =
+              feedNodes.stream()
+                  .filter(n -> n.getPhotoId().equals(a.getId()))
+                  .findFirst()
+                  .map(Neo4jGraphService.FeedNode::getRelevanceScore)
+                  .orElse(0.0);
+          double scoreB =
+              feedNodes.stream()
+                  .filter(n -> n.getPhotoId().equals(b.getId()))
+                  .findFirst()
+                  .map(Neo4jGraphService.FeedNode::getRelevanceScore)
+                  .orElse(0.0);
+          return Double.compare(scoreB, scoreA);
+        });
+    // Convert to response
+    User currentUser = userService.findUserById(userId);
+    return photos.stream()
+        .map(photo -> photoConversionService.convertToPhotoResponse(photo, currentUser))
+        .toList();
   }
 
   /**
@@ -81,41 +76,36 @@ public class GraphFeedService {
    */
   public List<PhotoResponse> getWeightedPathFeed(String userId, int limit, int daysBack) {
     log.info("Getting weighted path feed for user: {}", userId);
-    try {
-      List<Neo4jGraphService.FeedNode> feedNodes =
-          neo4jGraphService.getWeightedPathFeed(userId, limit, daysBack);
-      if (feedNodes.isEmpty()) {
-        return List.of();
-      }
-      // Fetch and convert photos
-      List<String> photoIds =
-          feedNodes.stream().map(Neo4jGraphService.FeedNode::getPhotoId).toList();
-      List<Photo> photos = photoRepository.findAllById(photoIds);
-      // Sort by relevance
-      photos.sort(
-          (a, b) -> {
-            double scoreA =
-                feedNodes.stream()
-                    .filter(n -> n.getPhotoId().equals(a.getId()))
-                    .findFirst()
-                    .map(Neo4jGraphService.FeedNode::getRelevanceScore)
-                    .orElse(0.0);
-            double scoreB =
-                feedNodes.stream()
-                    .filter(n -> n.getPhotoId().equals(b.getId()))
-                    .findFirst()
-                    .map(Neo4jGraphService.FeedNode::getRelevanceScore)
-                    .orElse(0.0);
-            return Double.compare(scoreB, scoreA);
-          });
-      User currentUser = userService.findUserById(userId);
-      return photos.stream()
-          .map(photo -> photoConversionService.convertToPhotoResponse(photo, currentUser))
-          .toList();
-    } catch (Exception e) {
-      log.error("Error getting weighted path feed: {}", e.getMessage(), e);
+
+    List<Neo4jGraphService.FeedNode> feedNodes =
+        neo4jGraphService.getWeightedPathFeed(userId, limit, daysBack);
+    if (feedNodes.isEmpty()) {
       return List.of();
     }
+    // Fetch and convert photos
+    List<String> photoIds = feedNodes.stream().map(Neo4jGraphService.FeedNode::getPhotoId).toList();
+    List<Photo> photos = photoRepository.findAllById(photoIds);
+    // Sort by relevance
+    photos.sort(
+        (a, b) -> {
+          double scoreA =
+              feedNodes.stream()
+                  .filter(n -> n.getPhotoId().equals(a.getId()))
+                  .findFirst()
+                  .map(Neo4jGraphService.FeedNode::getRelevanceScore)
+                  .orElse(0.0);
+          double scoreB =
+              feedNodes.stream()
+                  .filter(n -> n.getPhotoId().equals(b.getId()))
+                  .findFirst()
+                  .map(Neo4jGraphService.FeedNode::getRelevanceScore)
+                  .orElse(0.0);
+          return Double.compare(scoreB, scoreA);
+        });
+    User currentUser = userService.findUserById(userId);
+    return photos.stream()
+        .map(photo -> photoConversionService.convertToPhotoResponse(photo, currentUser))
+        .toList();
   }
 
   /**

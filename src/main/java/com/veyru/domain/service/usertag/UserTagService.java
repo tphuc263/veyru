@@ -2,12 +2,12 @@ package com.veyru.domain.service.usertag;
 
 import com.veyru.adapter.in.dto.request.usertag.CreateUserTagRequest;
 import com.veyru.adapter.in.dto.response.usertag.UserTagResponse;
+import com.veyru.application.port.out.PhotoRepository;
+import com.veyru.application.port.out.UserRepository;
 import com.veyru.domain.exception.ApiException;
 import com.veyru.domain.exception.ErrorCode;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
-import com.veyru.application.port.out.PhotoRepository;
-import com.veyru.application.port.out.UserRepository;
 import com.veyru.domain.service.notification.NotificationService;
 import com.veyru.domain.service.user.UserAvatarCacheService;
 import com.veyru.domain.service.user.UserService;

@@ -4,10 +4,10 @@ import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
 import com.veyru.adapter.in.dto.response.search.UserSearchResponse;
 import com.veyru.adapter.in.dto.response.search.UserSearchResponseSimple;
 import com.veyru.adapter.in.dto.response.user.UserProfileResponse;
-import com.veyru.domain.model.Photo;
-import com.veyru.domain.model.User;
 import com.veyru.application.port.out.PhotoRepository;
 import com.veyru.application.port.out.UserRepository;
+import com.veyru.domain.model.Photo;
+import com.veyru.domain.model.User;
 import com.veyru.domain.service.follow.FollowService;
 import com.veyru.domain.service.photo.PhotoConversionService;
 import com.veyru.domain.service.user.UserService;
@@ -52,23 +52,19 @@ public class SearchService {
     Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
     // Try text search first
     User currentUser = null;
-    try {
-      currentUser = userService.getCurrentUser();
-    } catch (Exception e) {
-      log.trace("No authenticated user found for photo search.");
-    }
+
+    currentUser = userService.getCurrentUser();
+
     final User finalCurrentUser = currentUser;
     // Try text search first
-    try {
-      Page<Photo> photos = photoRepository.findByTextSearch(sanitizedQuery, pageable);
-      if (!photos.isEmpty()) {
-        // FIX: Pass the current user to the conversion method.
-        return photos.map(
-            photo -> photoConversionService.convertToPhotoResponse(photo, finalCurrentUser));
-      }
-    } catch (Exception e) {
-      log.warn("Photo text search failed, falling back to regex search: {}", e.getMessage());
+
+    Page<Photo> photos = photoRepository.findByTextSearch(sanitizedQuery, pageable);
+    if (!photos.isEmpty()) {
+      // FIX: Pass the current user to the conversion method.
+      return photos.map(
+          photo -> photoConversionService.convertToPhotoResponse(photo, finalCurrentUser));
     }
+
     // Fallback to caption search
     Page<Photo> photos =
         photoRepository.findByCaptionContainingIgnoreCase(sanitizedQuery, pageable);
@@ -91,11 +87,9 @@ public class SearchService {
     // 2. Find Photos that contain these tags directly
     Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
     User currentUser = null;
-    try {
-      currentUser = userService.getCurrentUser();
-    } catch (Exception e) {
-      log.trace("No authenticated user found for photo search by tags.");
-    }
+
+    currentUser = userService.getCurrentUser();
+
     final User finalCurrentUser = currentUser;
     Page<Photo> photos = photoRepository.findByTagsIn(tagNames, pageable);
     return photos.map(
@@ -110,16 +104,14 @@ public class SearchService {
     }
     Set<String> suggestions = new java.util.HashSet<>();
     // Get user suggestions
-    try {
-      List<User> users =
-          userRepository.findByNameFields(sanitizedQuery, PageRequest.of(0, limit)).getContent();
-      users.forEach(
-          user -> {
-            suggestions.add(user.getUsername());
-          });
-    } catch (Exception e) {
-      log.warn("Error getting user suggestions: {}", e.getMessage());
-    }
+
+    List<User> users =
+        userRepository.findByNameFields(sanitizedQuery, PageRequest.of(0, limit)).getContent();
+    users.forEach(
+        user -> {
+          suggestions.add(user.getUsername());
+        });
+
     return suggestions.stream().limit(limit).sorted().toList();
   }
 
@@ -140,13 +132,10 @@ public class SearchService {
     // Add follower count
     response.setFollowersCount(user.getFollowerCount());
     // Check if current user follows this user
-    try {
-      User currentUser = userService.getCurrentUser();
-      response.setFollowedByCurrentUser(
-          followService.isFollowing(currentUser.getId(), user.getId()));
-    } catch (Exception e) {
-      response.setFollowedByCurrentUser(false);
-    }
+
+    User currentUser = userService.getCurrentUser();
+    response.setFollowedByCurrentUser(followService.isFollowing(currentUser.getId(), user.getId()));
+
     return response;
   }
 

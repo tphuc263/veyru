@@ -5,6 +5,7 @@ import com.veyru.adapter.in.dto.request.ai.ImageAnalysisRequest;
 import com.veyru.adapter.in.dto.response.ai.EngagementAnalysisResponse;
 import com.veyru.adapter.in.dto.response.ai.ImageAnalysisResponse;
 import com.veyru.adapter.in.dto.response.ai.PostTimingSuggestionResponse;
+import com.veyru.domain.exception.ApiException;
 import com.veyru.domain.model.User;
 import com.veyru.domain.service.ai.AIService;
 import com.veyru.domain.service.user.UserService;
@@ -47,7 +48,7 @@ public class AIController {
       User currentUser = userService.getCurrentUser();
       personalizedRequest =
           new ImageAnalysisRequest(request.imageBase64(), request.mimeType(), currentUser.getId());
-    } catch (Exception e) {
+    } catch (ApiException e) {
       log.debug("No authenticated user for image analysis");
     }
     ImageAnalysisResponse response = aiService.analyzeImage(personalizedRequest);

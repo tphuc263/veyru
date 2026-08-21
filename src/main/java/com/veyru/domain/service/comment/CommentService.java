@@ -3,14 +3,16 @@ package com.veyru.domain.service.comment;
 import com.veyru.adapter.in.dto.request.comment.CreateCommentRequest;
 import com.veyru.adapter.in.dto.request.comment.UpdateCommentRequest;
 import com.veyru.adapter.in.dto.response.comment.CommentResponse;
-import com.veyru.domain.model.Comment;
-import com.veyru.domain.model.CommentLike;
-import com.veyru.domain.model.Photo;
-import com.veyru.domain.model.User;
 import com.veyru.application.port.out.CommentLikeRepository;
 import com.veyru.application.port.out.CommentRepository;
 import com.veyru.application.port.out.PhotoRepository;
 import com.veyru.application.port.out.UserRepository;
+import com.veyru.domain.exception.ApiException;
+import com.veyru.domain.exception.ErrorCode;
+import com.veyru.domain.model.Comment;
+import com.veyru.domain.model.CommentLike;
+import com.veyru.domain.model.Photo;
+import com.veyru.domain.model.User;
 import com.veyru.domain.service.graph.Neo4jGraphService;
 import com.veyru.domain.service.notification.NotificationService;
 import com.veyru.domain.service.user.UserAvatarCacheService;
@@ -50,7 +52,7 @@ public class CommentService {
     Photo photo =
         photoRepository
             .findById(photoId)
-            .orElseThrow(() -> new RuntimeException("Photo not found with ID: " + photoId));
+            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
     User currentUser = userService.getCurrentUser();
     Comment.EmbeddedUser embeddedUser = new Comment.EmbeddedUser();
     embeddedUser.setUserId(currentUser.getId());
@@ -71,9 +73,7 @@ public class CommentService {
       parentComment =
           commentRepository
               .findById(parentCommentId)
-              .orElseThrow(
-                  () ->
-                      new RuntimeException("Parent comment not found with ID: " + parentCommentId));
+              .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
       comment.setParentCommentId(parentCommentId);
     }
     // Extract mentioned users from text
@@ -114,11 +114,9 @@ public class CommentService {
           mentionedUserId, currentUser, photoId, savedComment.getId(), photo.getImageUrl());
     }
     // Sync to Neo4j graph - create comment relationship
-    try {
-      neo4jGraphService.createCommentRelationship(currentUser.getId(), photoId);
-    } catch (Exception e) {
-      log.warn("Failed to sync comment to Neo4j: {}", e.getMessage());
-    }
+
+    neo4jGraphService.createCommentRelationship(currentUser.getId(), photoId);
+
     log.info("Comment created successfully by user {} on photo {}", currentUser.getId(), photoId);
     return convertToCommentResponse(savedComment, currentUser.getId());
   }
@@ -127,11 +125,11 @@ public class CommentService {
     Comment comment =
         commentRepository
             .findById(commentId)
-            .orElseThrow(() -> new RuntimeException("Comment not found with ID: " + commentId));
+            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
     User currentUser = userService.getCurrentUser();
     // Check if current user is the owner of the comment
     if (!comment.getUserId().equals(currentUser.getId())) {
-      throw new RuntimeException("You can only update your own comments");
+      throw new ApiException(ErrorCode.ACCESS_DENIED);
     }
     comment.setText(request.getText());
     // Update mentioned users
@@ -146,11 +144,11 @@ public class CommentService {
     Comment comment =
         commentRepository
             .findById(commentId)
-            .orElseThrow(() -> new RuntimeException("Comment not found with ID: " + commentId));
+            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
     User currentUser = userService.getCurrentUser();
     // Check if current user is the owner of the comment
     if (!comment.getUserId().equals(currentUser.getId())) {
-      throw new RuntimeException("You can only delete your own comments");
+      throw new ApiException(ErrorCode.ACCESS_DENIED);
     }
     // Delete all replies if this is a parent comment
     if (comment.getParentCommentId() == null) {
@@ -178,11 +176,11 @@ public class CommentService {
     // Validate photo exists
     photoRepository
         .findById(photoId)
-        .orElseThrow(() -> new RuntimeException("Photo not found with ID: " + photoId));
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
     User currentUser = null;
     try {
       currentUser = userService.getCurrentUser();
-    } catch (Exception e) {
+    } catch (ApiException e) {
     }
     // User not authenticated, continue without user context
     String currentUserId = currentUser != null ? currentUser.getId() : null;
@@ -222,11 +220,11 @@ public class CommentService {
     Comment parentComment =
         commentRepository
             .findById(commentId)
-            .orElseThrow(() -> new RuntimeException("Comment not found with ID: " + commentId));
+            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
     User currentUser = null;
     try {
       currentUser = userService.getCurrentUser();
-    } catch (Exception e) {
+    } catch (ApiException e) {
     }
     // User not authenticated
     String currentUserId = currentUser != null ? currentUser.getId() : null;
@@ -242,11 +240,11 @@ public class CommentService {
     Comment comment =
         commentRepository
             .findById(commentId)
-            .orElseThrow(() -> new RuntimeException("Comment not found with ID: " + commentId));
+            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
     User currentUser = null;
     try {
       currentUser = userService.getCurrentUser();
-    } catch (Exception e) {
+    } catch (ApiException e) {
     }
     // User not authenticated
     String currentUserId = currentUser != null ? currentUser.getId() : null;
@@ -258,7 +256,7 @@ public class CommentService {
     Comment comment =
         commentRepository
             .findById(commentId)
-            .orElseThrow(() -> new RuntimeException("Comment not found with ID: " + commentId));
+            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
     User currentUser = userService.getCurrentUser();
     boolean alreadyLiked =
         commentLikeRepository.existsByCommentIdAndUserId(commentId, currentUser.getId());
@@ -267,7 +265,7 @@ public class CommentService {
       CommentLike like =
           commentLikeRepository
               .findByCommentIdAndUserId(commentId, currentUser.getId())
-              .orElseThrow(() -> new RuntimeException("Like not found"));
+              .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
       commentLikeRepository.delete(like);
       Query query = new Query(Criteria.where("_id").is(commentId));
       Update update = new Update().inc("likeCount", -1);
@@ -347,7 +345,7 @@ public class CommentService {
     User currentUser = null;
     try {
       currentUser = userService.getCurrentUser();
-    } catch (Exception e) {
+    } catch (ApiException e) {
     }
     // User not authenticated
     String currentUserId = currentUser != null ? currentUser.getId() : null;

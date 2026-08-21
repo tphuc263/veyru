@@ -78,11 +78,8 @@ public class MongoIndexConfig {
 
   /** Helper method to safely create indexes */
   private void ensureIndex(String collection, IndexDefinition indexDefinition) {
-    try {
-      mongoTemplate.indexOps(collection).createIndex(indexDefinition);
-    } catch (Exception e) {
-      log.warn("Index creation failed for collection {}: {}", collection, e.getMessage());
-    }
+
+    mongoTemplate.indexOps(collection).createIndex(indexDefinition);
   }
 
   public MongoIndexConfig(final MongoTemplate mongoTemplate) {
