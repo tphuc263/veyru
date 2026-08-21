@@ -2,6 +2,8 @@ server:
   forward-headers-strategy: framework
 
 spring:
+  config:
+    import: optional:file:.env[.properties]
   application:
     name: veyru-backend
   mongodb:
@@ -103,6 +105,9 @@ management:
       probes:
         enabled: true
       show-details: when-authorized
+  health:
+    mongodb:
+      enabled: false
 
 open:
   api:

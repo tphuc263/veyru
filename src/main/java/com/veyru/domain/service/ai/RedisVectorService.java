@@ -1,10 +1,12 @@
 package com.veyru.domain.service.ai;
 
+import io.lettuce.core.RedisCommandExecutionException;
 import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.RedisSystemException;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -37,18 +39,20 @@ public class RedisVectorService {
 
   /** Create a vector search index if it doesn't exist. */
   private void createIndexIfNotExists(String indexName, String prefix, String[] extraFields) {
-
-    // Check if index exists
-    redisTemplate.execute(
-        (RedisConnection connection) -> {
-          try {
-            connection.execute("FT.INFO", indexName.getBytes(StandardCharsets.UTF_8));
-            log.info("Index \'{}\' already exists", indexName);
-          } catch (RuntimeException e) {
+    try {
+      redisTemplate.execute(
+          (RedisConnection connection) -> {
+            createVectorIndex(connection, indexName, prefix, extraFields);
+            return null;
+          });
+    } catch (RedisSystemException e) {
+      if (e.getCause() instanceof RedisCommandExecutionException cause
+          && "Index already exists".equals(cause.getMessage())) {
+        log.info("Index '{}' already exists", indexName);
+        return;
+      }
       throw e;
     }
-          return null;
-        });
   }
 
   private void createVectorIndex(

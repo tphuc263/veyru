@@ -2,6 +2,7 @@ package com.veyru.domain.service.ai;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,9 +117,13 @@ public class EmbeddingService {
   }
 
   private int hashString(String input) {
-
-    MessageDigest md = MessageDigest.getInstance("SHA-256");
-    byte[] hash = md.digest(input.getBytes(StandardCharsets.UTF_8));
+    byte[] hash;
+    try {
+      hash =
+          MessageDigest.getInstance("SHA-256").digest(input.getBytes(StandardCharsets.UTF_8));
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException("SHA-256 is required by the Java platform", e);
+    }
     return ((hash[0] & 255) << 24)
         | ((hash[1] & 255) << 16)
         | ((hash[2] & 255) << 8)
