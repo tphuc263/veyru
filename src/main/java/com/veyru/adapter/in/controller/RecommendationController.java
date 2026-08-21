@@ -6,7 +6,6 @@ import com.veyru.domain.model.User;
 import com.veyru.domain.service.ai.RecommendationService;
 import com.veyru.domain.service.user.UserService;
 import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -50,20 +49,6 @@ public class RecommendationController {
     List<RecommendedUserResponse> suggestions =
         recommendationService.getSuggestedUsers(userId, limit);
     return ResponseEntity.ok(suggestions);
-  }
-
-  /**
-   * Admin endpoint: batch index all photos and users (for initial setup). POST
-   * /api/v1/recommendations/admin/index-all
-   */
-  @PostMapping("/admin/index-all")
-  public ResponseEntity<Map<String, Integer>> batchIndexAll() {
-    log.info("Starting batch indexing of all photos and users");
-    int photosIndexed = recommendationService.batchIndexAllPhotos();
-    int usersIndexed = recommendationService.batchIndexAllUsers();
-    Map<String, Integer> result =
-        Map.of("photosIndexed", photosIndexed, "usersIndexed", usersIndexed);
-    return ResponseEntity.ok(result);
   }
 
   public RecommendationController(

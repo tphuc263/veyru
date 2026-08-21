@@ -9,31 +9,31 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("${api.prefix}/user-tags")
+@RequestMapping("${api.prefix}")
 public class UserTagController {
   private final UserTagService userTagService;
 
-  @PostMapping("/photo/{photoId}")
+  @PostMapping("/photos/{photoId}/user-tags")
   public ResponseEntity<UserTagResponse> tagUserInPhoto(
       @PathVariable String photoId, @Valid @RequestBody CreateUserTagRequest request) {
     UserTagResponse response = userTagService.tagUserInPhoto(photoId, request);
     return ResponseEntity.status(201).body(response);
   }
 
-  @DeleteMapping("/photo/{photoId}/user/{taggedUserId}")
+  @DeleteMapping("/photos/{photoId}/user-tags/{taggedUserId}")
   public ResponseEntity<Void> removeUserTag(
       @PathVariable String photoId, @PathVariable String taggedUserId) {
     userTagService.removeUserTag(photoId, taggedUserId);
     return ResponseEntity.noContent().build();
   }
 
-  @GetMapping("/photo/{photoId}")
+  @GetMapping("/photos/{photoId}/user-tags")
   public ResponseEntity<List<UserTagResponse>> getPhotoUserTags(@PathVariable String photoId) {
     List<UserTagResponse> tags = userTagService.getPhotoUserTags(photoId);
     return ResponseEntity.ok(tags);
   }
 
-  @GetMapping("/user/{userId}/tagged-photos")
+  @GetMapping("/users/{userId}/photo-tags")
   public ResponseEntity<List<UserTagResponse>> getPhotosWhereUserIsTagged(
       @PathVariable String userId) {
     List<UserTagResponse> tags = userTagService.getPhotosWhereUserIsTagged(userId);

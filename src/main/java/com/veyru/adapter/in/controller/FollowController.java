@@ -7,26 +7,26 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("${api.prefix}/follows")
+@RequestMapping("${api.prefix}")
 public class FollowController {
   private final FollowService followService;
 
   // Follow
-  @PostMapping("/follow/{targetUserId}")
+  @PutMapping("/users/me/following/{targetUserId}")
   public ResponseEntity<Void> follow(@PathVariable String targetUserId) {
     followService.follow(targetUserId);
-    return ResponseEntity.status(201).build();
+    return ResponseEntity.noContent().build();
   }
 
   // unfollow
-  @PostMapping("/unfollow/{targetUserId}")
+  @DeleteMapping("/users/me/following/{targetUserId}")
   public ResponseEntity<Void> unfollow(@PathVariable String targetUserId) {
     followService.unfollow(targetUserId);
     return ResponseEntity.noContent().build();
   }
 
   // Get followers of a user
-  @GetMapping("/{userId}/followers")
+  @GetMapping("/users/{userId}/followers")
   public ResponseEntity<List<FollowResponse>> getFollowers(
       @PathVariable String userId,
       @RequestParam(defaultValue = "0") int page,
@@ -36,7 +36,7 @@ public class FollowController {
   }
 
   // Get users that a user is following
-  @GetMapping("/{userId}/following")
+  @GetMapping("/users/{userId}/following")
   public ResponseEntity<List<FollowResponse>> getFollowing(
       @PathVariable String userId,
       @RequestParam(defaultValue = "0") int page,
@@ -46,10 +46,9 @@ public class FollowController {
   }
 
   // Check if user A follows user B
-  @GetMapping("/check/{followerId}/{followingId}")
-  public ResponseEntity<Boolean> checkFollowStatus(
-      @PathVariable String followerId, @PathVariable String followingId) {
-    boolean isFollowing = followService.isFollowing(followerId, followingId);
+  @GetMapping("/users/me/following/{followingId}")
+  public ResponseEntity<Boolean> checkFollowStatus(@PathVariable String followingId) {
+    boolean isFollowing = followService.isFollowing(null, followingId);
     return ResponseEntity.ok(isFollowing);
   }
 

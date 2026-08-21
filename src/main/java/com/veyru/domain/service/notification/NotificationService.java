@@ -3,6 +3,8 @@ package com.veyru.domain.service.notification;
 import com.veyru.adapter.in.dto.response.notification.NotificationResponse;
 import com.veyru.adapter.in.dto.websocket.WsEventEnvelope;
 import com.veyru.domain.enums.NotificationType;
+import com.veyru.domain.exception.ApiException;
+import com.veyru.domain.exception.ErrorCode;
 import com.veyru.application.event.NotificationEvent;
 import com.veyru.domain.model.Notification;
 import com.veyru.domain.model.User;
@@ -158,13 +160,17 @@ public class NotificationService {
     return notificationRepository.countByRecipientIdAndReadFalse(userId);
   }
 
-  public void markAsRead(String notificationId) {
+  public void markAsRead(String notificationId, String recipientId) {
     notificationRepository
         .findById(notificationId)
-        .ifPresent(
+        .filter(notification -> notification.getRecipientId().equals(recipientId))
+        .ifPresentOrElse(
             notification -> {
               notification.setRead(true);
               notificationRepository.save(notification);
+            },
+            () -> {
+              throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND);
             });
   }
 

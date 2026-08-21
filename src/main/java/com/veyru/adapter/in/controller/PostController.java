@@ -13,9 +13,9 @@ public class PostController {
   private final UnifiedPostService unifiedPostService;
 
   /** Get unified posts (photos + shares) for a user profile */
-  @GetMapping("/user/{userId}")
+  @GetMapping
   public ResponseEntity<PageResponse<UnifiedPostResponse>> getUserPosts(
-      @PathVariable String userId,
+      @RequestParam String userId,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size) {
     Page<UnifiedPostResponse> posts = unifiedPostService.getUserPosts(userId, page, size);

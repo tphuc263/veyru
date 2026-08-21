@@ -8,6 +8,7 @@ import com.veyru.adapter.in.dto.response.ai.PostTimingSuggestionResponse;
 import com.veyru.domain.model.User;
 import com.veyru.domain.service.ai.AIService;
 import com.veyru.domain.service.user.UserService;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -20,9 +21,9 @@ public class AIController {
   private final AIService aiService;
   private final UserService userService;
 
-  @PostMapping("/analyze-engagement")
+  @PostMapping("/engagement-analyses")
   public ResponseEntity<EngagementAnalysisResponse> analyzeEngagement(
-      @RequestBody(required = false) EngagementAnalysisRequest request) {
+      @Valid @RequestBody(required = false) EngagementAnalysisRequest request) {
     User currentUser = userService.getCurrentUser();
     int postCount =
         request != null && request.getRecentPostCount() > 0 ? request.getRecentPostCount() : 20;
@@ -31,16 +32,16 @@ public class AIController {
     return ResponseEntity.ok(response);
   }
 
-  @GetMapping("/suggest-timing")
+  @GetMapping("/post-timing-suggestions")
   public ResponseEntity<PostTimingSuggestionResponse> suggestPostTiming() {
     User currentUser = userService.getCurrentUser();
     PostTimingSuggestionResponse response = aiService.suggestPostTiming(currentUser.getId());
     return ResponseEntity.ok(response);
   }
 
-  @PostMapping("/analyze-image")
+  @PostMapping("/image-analyses")
   public ResponseEntity<ImageAnalysisResponse> analyzeImage(
-      @RequestBody ImageAnalysisRequest request) {
+      @Valid @RequestBody ImageAnalysisRequest request) {
     ImageAnalysisRequest personalizedRequest = request;
     try {
       User currentUser = userService.getCurrentUser();

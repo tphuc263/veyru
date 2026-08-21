@@ -6,6 +6,8 @@ import com.veyru.adapter.in.dto.response.share.ShareWithPhotoResponse;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.Share;
 import com.veyru.domain.model.User;
+import com.veyru.domain.exception.ApiException;
+import com.veyru.domain.exception.ErrorCode;
 import com.veyru.application.port.out.PhotoRepository;
 import com.veyru.application.port.out.ShareRepository;
 import com.veyru.application.port.out.UserRepository;
@@ -43,7 +45,7 @@ public class ShareService {
     Photo photo =
         photoRepository
             .findById(photoId)
-            .orElseThrow(() -> new RuntimeException("Photo not found with ID: " + photoId));
+            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
     // Create share record
     Share share = new Share();
     share.setPhotoId(photoId);

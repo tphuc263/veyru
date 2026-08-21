@@ -1,25 +1,31 @@
 package com.veyru.adapter.in.controller;
 
-import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
 import com.veyru.domain.service.favorite.FavoriteService;
+import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("${api.prefix}/favorites")
+@RequestMapping("${api.prefix}")
 public class FavoriteController {
   private final FavoriteService favoriteService;
 
   // Toggle save/unsave a photo
-  @PostMapping("/toggle/{photoId}")
-  public ResponseEntity<PhotoResponse> toggleFavorite(@PathVariable String photoId) {
-    PhotoResponse photo = favoriteService.toggleFavorite(photoId);
-    return ResponseEntity.ok(photo);
+  @PutMapping("/users/me/favorites/{photoId}")
+  public ResponseEntity<Void> favorite(@PathVariable String photoId) {
+    favoriteService.favorite(photoId);
+    return ResponseEntity.noContent().build();
+  }
+
+  @DeleteMapping("/users/me/favorites/{photoId}")
+  public ResponseEntity<Void> unfavorite(@PathVariable String photoId) {
+    favoriteService.unfavorite(photoId);
+    return ResponseEntity.noContent().build();
   }
 
   // Get current user's saved photos
-  @GetMapping("/me")
+  @GetMapping("/users/me/favorites")
   public ResponseEntity<List<PhotoResponse>> getFavorites(
       @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
     List<PhotoResponse> favorites = favoriteService.getFavorites(page, size);
@@ -27,7 +33,7 @@ public class FavoriteController {
   }
 
   // Check if a photo is saved by the current user
-  @GetMapping("/check/{photoId}")
+  @GetMapping("/users/me/favorites/{photoId}")
   public ResponseEntity<Boolean> checkFavorite(@PathVariable String photoId) {
     boolean isFavorited = favoriteService.isFavorited(photoId);
     return ResponseEntity.ok(isFavorited);

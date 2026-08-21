@@ -43,9 +43,7 @@ public class FollowService {
   public void follow(String targetUserId) {
     User currentUser = getCurrentUser();
     Follow existingFollow = checkBeforeFollow(targetUserId, currentUser);
-    if (existingFollow != null) {
-      throw new ApiException(ErrorCode.RESOURCE_CONFLICT);
-    }
+    if (existingFollow != null) return;
     Follow follow = new Follow();
     follow.setFollowerId(currentUser.getId());
     follow.setFollowingId(targetUserId);
@@ -99,9 +97,7 @@ public class FollowService {
   public void unfollow(String targetUserId) {
     User currentUser = getCurrentUser();
     Follow existingFollow = checkBeforeFollow(targetUserId, currentUser);
-    if (existingFollow == null) {
-      throw new ApiException(ErrorCode.RESOURCE_CONFLICT);
-    }
+    if (existingFollow == null) return;
     followRepository.delete(existingFollow);
     log.info("User {} unfollowed user {}", currentUser.getId(), targetUserId);
     Query followerQuery = new Query(Criteria.where("_id").is(currentUser.getId()));
@@ -142,6 +138,7 @@ public class FollowService {
   }
 
   public boolean isFollowing(String followerId, String followingId) {
+    if (followerId == null) followerId = getCurrentUser().getId();
     return followRepository.existsByFollowerIdAndFollowingId(followerId, followingId);
   }
 

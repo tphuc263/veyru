@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("${api.prefix}/newsfeed")
+@RequestMapping("${api.prefix}/feed")
 public class NewsfeedController {
   private static final Logger log = LoggerFactory.getLogger(NewsfeedController.class);
   private final NewsfeedService newsfeedService;
@@ -34,13 +34,6 @@ public class NewsfeedController {
       log.error("Error fetching newsfeed: ", e);
       throw e;
     }
-  }
-
-  @PostMapping("/refresh")
-  public ResponseEntity<Void> refreshNewsfeed() {
-    String userId = userService.getCurrentUser().getId();
-    newsfeedService.generateNewsfeedCache(userId);
-    return ResponseEntity.noContent().build();
   }
 
   @GetMapping("/realtime")

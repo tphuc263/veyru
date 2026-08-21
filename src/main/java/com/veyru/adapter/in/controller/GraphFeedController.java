@@ -2,23 +2,18 @@ package com.veyru.adapter.in.controller;
 
 import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
 import com.veyru.domain.service.graph.GraphFeedService;
-import com.veyru.domain.service.graph.GraphSyncService;
-import com.veyru.domain.service.photo.NewsfeedService;
 import com.veyru.domain.service.user.UserService;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/feed")
+@RequestMapping("${api.prefix}/feed")
 public class GraphFeedController {
   private static final Logger log = LoggerFactory.getLogger(GraphFeedController.class);
   private final GraphFeedService graphFeedService;
-  private final GraphSyncService graphSyncService;
-  private final NewsfeedService newsfeedService;
   private final UserService userService;
 
   @GetMapping("/graph")
@@ -56,54 +51,6 @@ public class GraphFeedController {
     String userId = userService.getCurrentUser().getId();
     List<String> suggestions = graphFeedService.getSuggestedUsers(userId, limit);
     return ResponseEntity.ok(suggestions);
-  }
-
-  @PostMapping("/sync")
-  public ResponseEntity<String> triggerFullSync() {
-    log.info("Full sync to Neo4j triggered");
-    try {
-      String result = graphSyncService.performFullSync();
-      return ResponseEntity.ok(result);
-    } catch (Exception e) {
-      log.error("Full sync failed: {}", e.getMessage(), e);
-      return ResponseEntity.internalServerError().body("Sync failed: " + e.getMessage());
-    }
-  }
-
-  @GetMapping("/stats")
-  public ResponseEntity<String> getGraphStats() {
-    String stats = graphFeedService.getGraphStats();
-    return ResponseEntity.ok(stats);
-  }
-
-  @GetMapping("/compare")
-  public ResponseEntity<FeedComparisonResponse> compareFeeds(
-      @RequestParam(defaultValue = "10") int limit) {
-    String userId = userService.getCurrentUser().getId();
-    log.info("Feed comparison requested by user: {}", userId);
-    List<PhotoResponse> graphFeed = graphFeedService.getGraphBasedFeed(userId, limit);
-    List<PhotoResponse> weightedFeed = graphFeedService.getWeightedPathFeed(userId, limit, 7);
-    List<PhotoResponse> hybridFeed = graphFeedService.getHybridFeed(userId, limit, 0.5);
-    Page<PhotoResponse> traditionalFeed = newsfeedService.getNewsfeed(userId, 0, limit);
-    FeedComparisonResponse response = new FeedComparisonResponse();
-    response.setGraphFeed(graphFeed);
-    response.setWeightedFeed(weightedFeed);
-    response.setHybridFeed(hybridFeed);
-    response.setTraditionalFeed(traditionalFeed.getContent());
-    response.setGraphWeightedOverlap(calculateOverlap(graphFeed, weightedFeed));
-    response.setGraphHybridOverlap(calculateOverlap(graphFeed, hybridFeed));
-    response.setGraphTraditionalOverlap(calculateOverlap(graphFeed, traditionalFeed.getContent()));
-    return ResponseEntity.ok(response);
-  }
-
-  private double calculateOverlap(List<PhotoResponse> feed1, List<PhotoResponse> feed2) {
-    if (feed1.isEmpty() || feed2.isEmpty()) {
-      return 0.0;
-    }
-    List<String> ids1 = feed1.stream().map(PhotoResponse::getId).toList();
-    List<String> ids2 = feed2.stream().map(PhotoResponse::getId).toList();
-    long overlap = ids1.stream().filter(ids2::contains).count();
-    return (double) overlap / Math.min(ids1.size(), ids2.size()) * 100;
   }
 
   public static class FeedComparisonResponse {
@@ -260,12 +207,8 @@ public class GraphFeedController {
 
   public GraphFeedController(
       final GraphFeedService graphFeedService,
-      final GraphSyncService graphSyncService,
-      final NewsfeedService newsfeedService,
       final UserService userService) {
     this.graphFeedService = graphFeedService;
-    this.graphSyncService = graphSyncService;
-    this.newsfeedService = newsfeedService;
     this.userService = userService;
   }
 }

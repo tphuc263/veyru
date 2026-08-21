@@ -16,24 +16,16 @@ public class TagController {
   private static final Logger log = LoggerFactory.getLogger(TagController.class);
   private final TagService tagService;
 
-  /** Get trending hashtags Returns the most popular hashtags from the last 7 days */
-  @GetMapping("/trending")
-  public ResponseEntity<List<String>> getTrendingHashtags(
+  @GetMapping
+  public ResponseEntity<List<String>> getHashtags(
+      @RequestParam(defaultValue = "trending") String sort,
       @RequestParam(defaultValue = "10") int limit) {
-    log.info("GET /api/v1/tags/trending?limit={}", limit);
-    List<String> hashtags = tagService.getTrendingHashtags(limit);
-    // Add # prefix for frontend display
-    List<String> formattedHashtags = hashtags.stream().map(tag -> "#" + tag).toList();
-    return ResponseEntity.ok(formattedHashtags);
-  }
-
-  /** Get popular hashtags (alias for trending) */
-  @GetMapping("/popular")
-  public ResponseEntity<List<String>> getPopularHashtags(
-      @RequestParam(defaultValue = "10") int limit) {
-    log.info("GET /api/v1/tags/popular?limit={}", limit);
-    List<String> hashtags = tagService.getPopularHashtags(limit);
-    // Add # prefix for frontend display
+    List<String> hashtags =
+        switch (sort) {
+          case "trending" -> tagService.getTrendingHashtags(limit);
+          case "popular" -> tagService.getPopularHashtags(limit);
+          default -> throw new IllegalArgumentException("Unsupported tag sort");
+        };
     List<String> formattedHashtags = hashtags.stream().map(tag -> "#" + tag).toList();
     return ResponseEntity.ok(formattedHashtags);
   }

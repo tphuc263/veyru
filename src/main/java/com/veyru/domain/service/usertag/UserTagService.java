@@ -106,7 +106,7 @@ public class UserTagService {
     Photo photo =
         photoRepository
             .findById(photoId)
-            .orElseThrow(() -> new RuntimeException("Photo not found with ID: " + photoId));
+            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
     if (photo.getUserTags() == null || photo.getUserTags().isEmpty()) {
       return Collections.emptyList();
     }
@@ -116,7 +116,7 @@ public class UserTagService {
   public List<UserTagResponse> getPhotosWhereUserIsTagged(String userId) {
     userRepository
         .findById(userId)
-        .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
     // Query photos where userTags array contains an element with matching taggedUserId
     Query query = new Query(Criteria.where("userTags.taggedUserId").is(userId));
     List<Photo> photos = mongoTemplate.find(query, Photo.class);

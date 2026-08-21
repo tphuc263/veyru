@@ -6,7 +6,6 @@ import com.veyru.adapter.in.security.jwt.JwtEntryPoint;
 import com.veyru.adapter.in.security.oauth2.OAuth2FailureHandler;
 import com.veyru.adapter.in.security.oauth2.OAuth2SuccessHandler;
 import com.veyru.adapter.in.security.userdetails.AppUserDetailsService;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -55,18 +54,6 @@ public class SecurityConfig {
 
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    List<String> securedUrls =
-        List.of(
-            API + "/user/**",
-            API + "/photos/create",
-            API + "/photos/*/delete",
-            API + "/likes/**",
-            API + "/comments/**",
-            API + "/follows/**",
-            API + "/favorites/**",
-            API + "/ai/**",
-            API + "/messages/**",
-            API + "/newsfeed/**");
     http.csrf(AbstractHttpConfigurer::disable)
         .exceptionHandling(
             exception ->
@@ -79,14 +66,30 @@ public class SecurityConfig {
             auth ->
                 auth.requestMatchers(HttpMethod.OPTIONS)
                     .permitAll()
-                    .requestMatchers(API + "/admin/**")
-                    .hasAuthority("ROLE_ADMIN")
-                    .requestMatchers(securedUrls.toArray(String[]::new))
+                    .requestMatchers(
+                        API + "/sessions",
+                        API + "/password-reset-requests",
+                        API + "/password-resets",
+                        "/login/**",
+                        "/oauth2/**",
+                        "/v3/api-docs/**",
+                        "/swagger-ui/**",
+                        "/actuator/health")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.POST, API + "/users")
+                    .permitAll()
+                    .requestMatchers(API + "/users/me/**")
                     .authenticated()
-                    .requestMatchers(API + "/auth/**")
+                    .requestMatchers(
+                        HttpMethod.GET,
+                        API + "/photos/**",
+                        API + "/users/**",
+                        API + "/tags/**",
+                        API + "/search-suggestions/**",
+                        API + "/recommendations/photos/**")
                     .permitAll()
                     .anyRequest()
-                    .permitAll())
+                    .authenticated())
         .authenticationProvider(authenticationProvider())
         .oauth2Login(
             oauth2 ->

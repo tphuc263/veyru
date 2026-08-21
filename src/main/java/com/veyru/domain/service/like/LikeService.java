@@ -5,6 +5,8 @@ import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
 import com.veyru.domain.model.Like;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
+import com.veyru.domain.exception.ApiException;
+import com.veyru.domain.exception.ErrorCode;
 import com.veyru.application.port.out.LikeRepository;
 import com.veyru.application.port.out.PhotoRepository;
 import com.veyru.application.port.out.UserRepository;
@@ -43,14 +45,14 @@ public class LikeService {
     Photo photo =
         photoRepository
             .findById(photoId)
-            .orElseThrow(() -> new RuntimeException("Photo not found with ID: " + photoId));
+            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
     boolean alreadyLiked = likeRepository.existsByPhotoIdAndUserId(photoId, currentUser.getId());
     if (alreadyLiked) {
       // Unlike
       Like like =
           likeRepository
               .findByPhotoIdAndUserId(photoId, currentUser.getId())
-              .orElseThrow(() -> new RuntimeException("Like not found"));
+              .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
       likeRepository.delete(like);
       Query query = new Query(Criteria.where("_id").is(photoId));
       Update update = new Update().inc("likeCount", -1);
@@ -96,11 +98,9 @@ public class LikeService {
     Photo photo =
         photoRepository
             .findById(photoId)
-            .orElseThrow(() -> new RuntimeException("Photo not found with ID: " + photoId));
+            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
     boolean alreadyLiked = likeRepository.existsByPhotoIdAndUserId(photoId, currentUser.getId());
     if (alreadyLiked) {
-      // Auto-unlike if already liked (toggle behavior)
-      unlike(photoId);
       return;
     }
     Like like = new Like();
@@ -127,10 +127,8 @@ public class LikeService {
 
   public void unlike(String photoId) {
     User currentUser = userService.getCurrentUser();
-    Like like =
-        likeRepository
-            .findByPhotoIdAndUserId(photoId, currentUser.getId())
-            .orElseThrow(() -> new RuntimeException("You have not liked this photo"));
+    Like like = likeRepository.findByPhotoIdAndUserId(photoId, currentUser.getId()).orElse(null);
+    if (like == null) return;
     likeRepository.delete(like);
     Query query = new Query(Criteria.where("_id").is(photoId));
     Update update = new Update().inc("likeCount", -1);
@@ -148,7 +146,7 @@ public class LikeService {
     // Validate photo exists
     photoRepository
         .findById(photoId)
-        .orElseThrow(() -> new RuntimeException("Photo not found with ID: " + photoId));
+        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
     List<Like> likes = likeRepository.findByPhotoIdOrderByCreatedAtDesc(photoId);
     return convertToLikeResponses(likes);
   }

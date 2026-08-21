@@ -10,12 +10,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("${api.prefix}/comments")
+@RequestMapping("${api.prefix}")
 public class CommentController {
   private final CommentService commentService;
 
   // Create a comment on a photo (supports nested comments via parentCommentId in request body)
-  @PostMapping("/photo/{photoId}")
+  @PostMapping("/photos/{photoId}/comments")
   public ResponseEntity<CommentResponse> createComment(
       @PathVariable String photoId, @Valid @RequestBody CreateCommentRequest request) {
     CommentResponse comment = commentService.createComment(photoId, request);
@@ -23,7 +23,7 @@ public class CommentController {
   }
 
   // Update a comment
-  @PutMapping("/{commentId}")
+  @PatchMapping("/comments/{commentId}")
   public ResponseEntity<CommentResponse> updateComment(
       @PathVariable String commentId, @Valid @RequestBody UpdateCommentRequest request) {
     CommentResponse comment = commentService.updateComment(commentId, request);
@@ -31,21 +31,21 @@ public class CommentController {
   }
 
   // Delete a comment
-  @DeleteMapping("/{commentId}")
+  @DeleteMapping("/comments/{commentId}")
   public ResponseEntity<Void> deleteComment(@PathVariable String commentId) {
     commentService.deleteComment(commentId);
     return ResponseEntity.noContent().build();
   }
 
   // Get all comments for a photo (top-level comments with nested replies)
-  @GetMapping("/photo/{photoId}")
+  @GetMapping("/photos/{photoId}/comments")
   public ResponseEntity<List<CommentResponse>> getPhotoComments(@PathVariable String photoId) {
     List<CommentResponse> comments = commentService.getPhotoComments(photoId);
     return ResponseEntity.ok(comments);
   }
 
   // Get replies for a specific comment
-  @GetMapping("/{commentId}/replies")
+  @GetMapping("/comments/{commentId}/replies")
   public ResponseEntity<List<CommentResponse>> getCommentReplies(
       @PathVariable String commentId,
       @RequestParam(defaultValue = "0") int page,
@@ -55,21 +55,21 @@ public class CommentController {
   }
 
   // Get comments count for a photo
-  @GetMapping("/photo/{photoId}/count")
+  @GetMapping("/photos/{photoId}/comments/count")
   public ResponseEntity<Long> getPhotoCommentsCount(@PathVariable String photoId) {
     long count = commentService.getPhotoCommentsCount(photoId);
     return ResponseEntity.ok(count);
   }
 
   // Get a specific comment
-  @GetMapping("/{commentId}")
+  @GetMapping("/comments/{commentId}")
   public ResponseEntity<CommentResponse> getComment(@PathVariable String commentId) {
     CommentResponse comment = commentService.getComment(commentId);
     return ResponseEntity.ok(comment);
   }
 
   // Toggle like on a comment
-  @PostMapping("/{commentId}/like")
+  @PutMapping("/comments/{commentId}/likes/me")
   public ResponseEntity<CommentResponse> toggleCommentLike(@PathVariable String commentId) {
     CommentResponse comment = commentService.toggleCommentLike(commentId);
     return ResponseEntity.ok(comment);
