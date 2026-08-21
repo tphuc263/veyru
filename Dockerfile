@@ -5,7 +5,7 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
 COPY src ./src
-RUN mvn clean package -DskipTests
+RUN mvn package -DskipTests -B
 
 # Runtime stage - Using Alpine for smaller image size
 FROM eclipse-temurin:25-jre-alpine
@@ -17,8 +17,7 @@ RUN apk add --no-cache wget
 # Create non-root user
 RUN addgroup -S spring && adduser -S spring -G spring
 
-COPY --from=build /app/target/*.jar app.jar
-RUN mkdir -p /app/logs && chown -R spring:spring /app
+COPY --from=build --chown=spring:spring /app/target/*.jar app.jar
 
 USER spring
 EXPOSE 8080
@@ -27,13 +26,6 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health/liveness || exit 1
 
-# JVM Memory Optimization Flags for Low RAM VPS:
 ENTRYPOINT ["java", \
-    "-XX:+UseContainerSupport", \
     "-XX:MaxRAMPercentage=75.0", \
-    "-XX:+UseG1GC", \
-    "-XX:+UseStringDeduplication", \
-    "-Xss256k", \
-    "-Djava.security.egd=file:/dev/./urandom", \
     "-jar", "/app/app.jar"]
- #   "-Dspring.profiles.active=production", \

@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Neo4j](https://img.shields.io/badge/Neo4j-5.19-008CC1?style=for-the-badge&logo=neo4j&logoColor=white)
+![Neo4j](https://img.shields.io/badge/Neo4j-5.26_LTS-008CC1?style=for-the-badge&logo=neo4j&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white)
 ![Java](https://img.shields.io/badge/Java-25-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
@@ -103,7 +103,9 @@ MONGODB_URI=mongodb+srv://username:URL_ENCODED_PASSWORD@cluster.mongodb.net/veyr
 # Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
-REDIS_PASSWORD=your-password
+
+# Neo4j
+NEO4J_PASSWORD=your-local-password
 
 # JWT
 JWT_SECRET=your-secret-key
@@ -528,7 +530,7 @@ src/main/java/com/veyru/
 | **Framework** | Spring Boot 4.1 |
 | **Language** | Java 25 |
 | **Database** | MongoDB 7.0 |
-| **Graph Database** | Neo4j 5.19 (Cypher queries, Dijkstra algorithm) |
+| **Graph Database** | Neo4j 5.26 LTS (Cypher queries, Dijkstra algorithm) |
 | **Cache** | Redis 7.x |
 | **Authentication** | Spring Security + JWT + OAuth2 (Google) |
 | **File Storage** | Cloudinary |
