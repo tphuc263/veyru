@@ -15,10 +15,10 @@ public enum ErrorCode {
       HttpStatus.METHOD_NOT_ALLOWED, "The HTTP method is not supported for this resource."),
   NOT_ACCEPTABLE(HttpStatus.NOT_ACCEPTABLE, "The requested response format is not available."),
   RESOURCE_CONFLICT(HttpStatus.CONFLICT, "The request conflicts with the current resource state."),
-  PAYLOAD_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "The request payload is too large."),
+  PAYLOAD_TOO_LARGE(HttpStatus.CONTENT_TOO_LARGE, "The request payload is too large."),
   UNSUPPORTED_MEDIA_TYPE(
       HttpStatus.UNSUPPORTED_MEDIA_TYPE, "The request media type is not supported."),
-  VALIDATION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "One or more fields are invalid."),
+  VALIDATION_FAILED(HttpStatus.UNPROCESSABLE_CONTENT, "One or more fields are invalid."),
   EXTERNAL_SERVICE_FAILURE(HttpStatus.BAD_GATEWAY, "A required external service failed."),
   SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "The service is temporarily unavailable."),
   GATEWAY_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "A required service timed out."),

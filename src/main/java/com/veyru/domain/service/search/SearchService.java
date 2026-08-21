@@ -50,26 +50,18 @@ public class SearchService {
       return Page.empty();
     }
     Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-    // Try text search first
-    User currentUser = null;
-
-    currentUser = userService.getCurrentUser();
-
-    final User finalCurrentUser = currentUser;
+    User currentUser = userService.getCurrentUser();
     // Try text search first
 
     Page<Photo> photos = photoRepository.findByTextSearch(sanitizedQuery, pageable);
     if (!photos.isEmpty()) {
-      // FIX: Pass the current user to the conversion method.
-      return photos.map(
-          photo -> photoConversionService.convertToPhotoResponse(photo, finalCurrentUser));
+      return photos.map(photo -> photoConversionService.convertToPhotoResponse(photo, currentUser));
     }
 
     // Fallback to caption search
-    Page<Photo> photos =
-        photoRepository.findByCaptionContainingIgnoreCase(sanitizedQuery, pageable);
-    return photos.map(
-        photo -> photoConversionService.convertToPhotoResponse(photo, finalCurrentUser));
+    return photoRepository
+        .findByCaptionContainingIgnoreCase(sanitizedQuery, pageable)
+        .map(photo -> photoConversionService.convertToPhotoResponse(photo, currentUser));
   }
 
   public Page<PhotoResponse> searchPhotosByTags(String query, int page, int size) {

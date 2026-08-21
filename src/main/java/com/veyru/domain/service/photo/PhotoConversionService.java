@@ -6,9 +6,9 @@ import com.veyru.application.port.out.LikeRepository;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
 import com.veyru.domain.service.user.UserAvatarCacheService;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 @Service

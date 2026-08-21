@@ -1,7 +1,7 @@
 package com.veyru.adapter.out.redis;
 
 import com.veyru.application.port.out.MessageIdempotency;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +19,6 @@ public class RedisMessageIdempotency implements MessageIdempotency {
     return Boolean.TRUE.equals(
         redisTemplate
             .opsForValue()
-            .setIfAbsent("msg_idempotency:" + clientMessageId, "1", TTL_HOURS, TimeUnit.HOURS));
+            .setIfAbsent("msg_idempotency:" + clientMessageId, "1", Duration.ofHours(TTL_HOURS)));
   }
 }
