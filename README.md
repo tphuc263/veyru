@@ -65,19 +65,20 @@ cd veyru-backend
 cp .env.example .env
 # Edit .env with your configurations
 
-# Load it for a local Maven run; Docker Compose reads .env itself.
-set -a; source .env; set +a
-./mvnw spring-boot:run
+# Start only locally hosted dependencies. MongoDB remains the server configured in .env.
+task infra
+
+# Configure the same values from .env in IntelliJ's Run Configuration, then run the app.
 ```
 
-#### Option 2: Docker Compose (Recommended)
+#### Option 2: Local infrastructure with Docker Compose
 
 ```bash
-# Start local infrastructure; run the Spring application from Maven with the local profile
-docker compose --profile local -f compose.yml up -d mongodb redis neo4j
+# Start local infrastructure; run the Spring application from IntelliJ
+task infra
 
-# View logs
-docker compose logs -f veyru-backend
+# View infrastructure logs
+docker compose logs -f redis neo4j
 ```
 
 #### Option 3: Production Docker Compose
