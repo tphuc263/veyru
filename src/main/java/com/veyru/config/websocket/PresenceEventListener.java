@@ -1,6 +1,6 @@
 package com.veyru.config.websocket;
 
-import com.veyru.dto.websocket.WsEventEnvelope;
+import com.veyru.adapter.in.dto.websocket.WsEventEnvelope;
 import java.time.Instant;
 import java.util.UUID;
 import org.slf4j.Logger;

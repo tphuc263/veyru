@@ -1,11 +1,11 @@
 package com.veyru.config;
 
-import com.veyru.security.jwt.AuthTokenFilter;
-import com.veyru.security.jwt.JwtAccessDeniedHandler;
-import com.veyru.security.jwt.JwtEntryPoint;
-import com.veyru.security.oauth2.OAuth2FailureHandler;
-import com.veyru.security.oauth2.OAuth2SuccessHandler;
-import com.veyru.security.userdetails.AppUserDetailsService;
+import com.veyru.adapter.in.security.jwt.AuthTokenFilter;
+import com.veyru.adapter.in.security.jwt.JwtAccessDeniedHandler;
+import com.veyru.adapter.in.security.jwt.JwtEntryPoint;
+import com.veyru.adapter.in.security.oauth2.OAuth2FailureHandler;
+import com.veyru.adapter.in.security.oauth2.OAuth2SuccessHandler;
+import com.veyru.adapter.in.security.userdetails.AppUserDetailsService;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
