@@ -1,5 +1,6 @@
 package com.veyru.adapter.in;
 
+import com.veyru.application.identity.IdentityException;
 import com.veyru.application.messaging.MessagingException;
 import com.veyru.domain.exception.ApiException;
 import com.veyru.domain.exception.ErrorCode;
@@ -49,6 +50,15 @@ public class GlobalExceptionHandler {
         ex.reason() == MessagingException.Reason.ACCESS_DENIED
             ? ErrorCode.ACCESS_DENIED
             : ErrorCode.RESOURCE_NOT_FOUND;
+    return problem(code, null, request);
+  }
+
+  @ExceptionHandler(IdentityException.class)
+  public ProblemDetail handleIdentityException(IdentityException ex, WebRequest request) {
+    ErrorCode code =
+        ex.reason() == IdentityException.Reason.CONFLICT
+            ? ErrorCode.RESOURCE_CONFLICT
+            : ErrorCode.VALIDATION_FAILED;
     return problem(code, null, request);
   }
 

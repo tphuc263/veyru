@@ -5,44 +5,54 @@ import com.veyru.adapter.in.dto.request.auth.LoginRequest;
 import com.veyru.adapter.in.dto.request.auth.RegisterRequest;
 import com.veyru.adapter.in.dto.request.auth.ResetPasswordRequest;
 import com.veyru.adapter.in.dto.response.auth.LoginResponse;
-import com.veyru.domain.service.auth.AuthService;
+import com.veyru.application.identity.AuthenticationService;
+import com.veyru.application.identity.LoginCommand;
+import com.veyru.application.identity.LoginResult;
+import com.veyru.application.identity.RegisterUserCommand;
+import com.veyru.application.identity.ResetPasswordCommand;
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("${api.prefix}")
 public class AuthController {
-  private static final Logger log = LoggerFactory.getLogger(AuthController.class);
-  private final AuthService authService;
+  private final AuthenticationService authentication;
 
   @PostMapping("/sessions")
   public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-    LoginResponse loginResponse = authService.login(request);
-    return ResponseEntity.ok(loginResponse);
+    LoginResult result =
+        authentication.login(new LoginCommand(request.identifier(), request.password()));
+    return ResponseEntity.ok(
+        new LoginResponse(
+            result.token(), result.id(), result.username(), result.email(), result.role()));
   }
 
   @PostMapping("/users")
   public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest request) {
-    authService.register(request);
+    authentication.register(
+        new RegisterUserCommand(request.username(), request.email(), request.password()));
     return ResponseEntity.status(201).build();
   }
 
   @PostMapping("/password-reset-requests")
   public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-    authService.forgotPassword(request);
+    authentication.forgotPassword(request.email());
     return ResponseEntity.accepted().build();
   }
 
   @PostMapping("/password-resets")
   public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-    authService.resetPassword(request);
+    authentication.resetPassword(
+        new ResetPasswordCommand(
+            request.token(), request.newPassword(), request.confirmPassword()));
     return ResponseEntity.noContent().build();
   }
 
-  public AuthController(final AuthService authService) {
-    this.authService = authService;
+  public AuthController(final AuthenticationService authentication) {
+    this.authentication = authentication;
   }
 }

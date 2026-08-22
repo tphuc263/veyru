@@ -1,19 +1,17 @@
-package com.veyru.domain.service.email;
+package com.veyru.adapter.out.mail;
 
+import com.veyru.application.port.out.MailSender;
 import com.veyru.domain.exception.ApiException;
 import com.veyru.domain.exception.ErrorCode;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 @Service
-public class EmailService {
-  private static final Logger log = LoggerFactory.getLogger(EmailService.class);
+public class SmtpMailSender implements MailSender {
   private final JavaMailSender mailSender;
 
   @Value("${spring.mail.username:noreply@veyru.com}")
@@ -36,6 +34,11 @@ public class EmailService {
     } catch (MessagingException e) {
       throw new ApiException(ErrorCode.EXTERNAL_SERVICE_FAILURE, e);
     }
+  }
+
+  @Override
+  public void sendPasswordReset(String email, String token, String username) {
+    sendPasswordResetEmail(email, token, username);
   }
 
   private String buildPasswordResetEmail(String username, String resetLink) {
@@ -79,7 +82,7 @@ public class EmailService {
         .formatted(username, resetLink);
   }
 
-  public EmailService(final JavaMailSender mailSender) {
+  public SmtpMailSender(final JavaMailSender mailSender) {
     this.mailSender = mailSender;
   }
 }
