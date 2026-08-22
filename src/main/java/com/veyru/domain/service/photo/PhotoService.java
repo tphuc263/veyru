@@ -14,7 +14,6 @@ import com.veyru.domain.model.Like;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.Photo.EmbeddedUser;
 import com.veyru.domain.model.User;
-import com.veyru.domain.service.graph.Neo4jGraphService;
 import com.veyru.domain.service.user.UserAvatarCacheService;
 import com.veyru.domain.service.user.UserService;
 import java.time.Instant;
@@ -47,7 +46,6 @@ public class PhotoService {
   private final ApplicationEventPublisher eventPublisher;
   private final MongoTemplate mongoTemplate;
   private final UserAvatarCacheService userAvatarCacheService;
-  private final Neo4jGraphService neo4jGraphService;
 
   public PhotoResponse createPhoto(CreatePhotoRequest request) {
     log.info("Creating new photo with caption: {}", request.getCaption());
@@ -71,21 +69,6 @@ public class PhotoService {
       photo.setTags(tagNames);
     }
     Photo savedPhoto = photoRepository.save(photo);
-    // Sync to Neo4j graph - create photo node
-
-    neo4jGraphService.upsertPhoto(
-        savedPhoto.getId(),
-        currentUser.getId(),
-        currentUser.getUsername(),
-        savedPhoto.getImageUrl(),
-        savedPhoto.getCaption(),
-        savedPhoto.getTags(),
-        0,
-        0,
-        0,
-        savedPhoto.getCreatedAt());
-    log.debug("Synced photo to Neo4j: {}", savedPhoto.getId());
-
     Query query = new Query(Criteria.where("_id").is(currentUser.getId()));
     Update update = new Update().inc("photoCount", 1);
     mongoTemplate.updateFirst(query, update, User.class);
@@ -252,8 +235,7 @@ public class PhotoService {
       final PhotoConversionService photoConversionService,
       final ApplicationEventPublisher eventPublisher,
       final MongoTemplate mongoTemplate,
-      final UserAvatarCacheService userAvatarCacheService,
-      final Neo4jGraphService neo4jGraphService) {
+      final UserAvatarCacheService userAvatarCacheService) {
     this.cloudinaryService = cloudinaryService;
     this.photoRepository = photoRepository;
     this.userService = userService;
@@ -265,6 +247,5 @@ public class PhotoService {
     this.eventPublisher = eventPublisher;
     this.mongoTemplate = mongoTemplate;
     this.userAvatarCacheService = userAvatarCacheService;
-    this.neo4jGraphService = neo4jGraphService;
   }
 }

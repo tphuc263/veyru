@@ -1,6 +1,7 @@
 package com.veyru.application.event;
 
 import com.veyru.domain.service.ai.RecommendationService;
+import com.veyru.domain.service.graph.GraphSyncService;
 import com.veyru.domain.service.photo.NewsfeedService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,7 @@ public class PhotoEventListener {
   private static final Logger log = LoggerFactory.getLogger(PhotoEventListener.class);
   private final NewsfeedService newsfeedService;
   private final RecommendationService recommendationService;
+  private final GraphSyncService graphSyncService;
 
   /**
    * Handle photo creation event by updating followers' newsfeeds Runs asynchronously to avoid
@@ -30,6 +32,7 @@ public class PhotoEventListener {
         event.getPhotoId(),
         event.getAuthorId());
 
+    graphSyncService.syncPhoto(event.getPhotoId());
     newsfeedService.updateFollowersFeeds(event.getPhotoId(), event.getAuthorId());
     log.info("Successfully updated followers\' feeds for photo: {}", event.getPhotoId());
 
@@ -40,8 +43,11 @@ public class PhotoEventListener {
   }
 
   public PhotoEventListener(
-      final NewsfeedService newsfeedService, final RecommendationService recommendationService) {
+      final NewsfeedService newsfeedService,
+      final RecommendationService recommendationService,
+      final GraphSyncService graphSyncService) {
     this.newsfeedService = newsfeedService;
     this.recommendationService = recommendationService;
+    this.graphSyncService = graphSyncService;
   }
 }

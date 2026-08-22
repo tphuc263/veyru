@@ -69,22 +69,26 @@ public class GraphSyncService {
   @Async
   public CompletableFuture<Void> syncPhoto(String photoId) {
     log.info("Syncing photo to Neo4j: {}", photoId);
-    photoRepository
-        .findById(photoId)
-        .ifPresent(
-            photo -> {
-              neo4jGraphService.upsertPhoto(
-                  photo.getId(),
-                  photo.getUser().getUserId(),
-                  photo.getUser().getUsername(),
-                  photo.getImageUrl(),
-                  photo.getCaption(),
-                  photo.getTags(),
-                  photo.getLikeCount(),
-                  photo.getCommentCount(),
-                  photo.getShareCount(),
-                  photo.getCreatedAt());
-            });
+    try {
+      photoRepository
+          .findById(photoId)
+          .ifPresent(
+              photo ->
+                  neo4jGraphService.upsertPhoto(
+                      photo.getId(),
+                      photo.getUser().getUserId(),
+                      photo.getUser().getUsername(),
+                      photo.getImageUrl(),
+                      photo.getCaption(),
+                      photo.getTags(),
+                      photo.getLikeCount(),
+                      photo.getCommentCount(),
+                      photo.getShareCount(),
+                      photo.getCreatedAt()));
+    } catch (RuntimeException ex) {
+      // ponytail: in-process projection is best-effort; use an outbox when guaranteed delivery matters.
+      log.error("Failed to sync photo {} to Neo4j; photo remains available in MongoDB", photoId, ex);
+    }
     return CompletableFuture.completedFuture(null);
   }
 
