@@ -1,9 +1,7 @@
 package com.veyru.adapter.in.controller;
 
-import com.veyru.domain.service.TagService;
+import com.veyru.application.tag.TagQueryService;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,8 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("${api.prefix}/tags")
 public class TagController {
-  private static final Logger log = LoggerFactory.getLogger(TagController.class);
-  private final TagService tagService;
+  private final TagQueryService tagService;
 
   @GetMapping
   public ResponseEntity<List<String>> getHashtags(
@@ -30,7 +27,7 @@ public class TagController {
     return ResponseEntity.ok(formattedHashtags);
   }
 
-  public TagController(final TagService tagService) {
+  public TagController(final TagQueryService tagService) {
     this.tagService = tagService;
   }
 }
