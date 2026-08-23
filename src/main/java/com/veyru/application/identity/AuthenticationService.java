@@ -1,5 +1,7 @@
 package com.veyru.application.identity;
 
+import com.veyru.application.common.error.UseCaseError;
+import com.veyru.application.common.error.UseCaseException;
 import com.veyru.application.port.out.AuthenticationGateway;
 import com.veyru.application.port.out.IdentityUserStore;
 import com.veyru.application.port.out.MailSender;
@@ -40,7 +42,7 @@ public final class AuthenticationService {
 
   public void register(RegisterUserCommand command) {
     if (users.existsByEmail(command.email())) {
-      throw new IdentityException(IdentityException.Reason.CONFLICT);
+      throw new UseCaseException(UseCaseError.RESOURCE_CONFLICT);
     }
     users.save(
         User.registered(
@@ -66,13 +68,13 @@ public final class AuthenticationService {
 
   public void resetPassword(ResetPasswordCommand command) {
     if (!command.newPassword().equals(command.confirmPassword())) {
-      throw new IdentityException(IdentityException.Reason.VALIDATION_FAILED);
+      throw new UseCaseException(UseCaseError.VALIDATION_FAILED);
     }
     User user =
         users
             .findByResetToken(command.token())
             .filter(account -> account.hasValidResetToken(clock.instant()))
-            .orElseThrow(() -> new IdentityException(IdentityException.Reason.VALIDATION_FAILED));
+            .orElseThrow(() -> new UseCaseException(UseCaseError.VALIDATION_FAILED));
     users.save(user.resetPassword(passwords.hash(command.newPassword())));
   }
 

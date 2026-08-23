@@ -3,8 +3,6 @@ package com.veyru.adapter.in;
 import com.veyru.adapter.in.error.ErrorCode;
 import com.veyru.adapter.in.error.ValidationError;
 import com.veyru.application.common.error.UseCaseException;
-import com.veyru.application.identity.IdentityException;
-import com.veyru.application.messaging.MessagingException;
 import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
 import java.util.List;
@@ -42,24 +40,6 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(UseCaseException.class)
   public ProblemDetail handleUseCaseException(UseCaseException ex, WebRequest request) {
     return problem(ErrorCode.valueOf(ex.code().name()), ex.getMessage(), request);
-  }
-
-  @ExceptionHandler(MessagingException.class)
-  public ProblemDetail handleMessagingException(MessagingException ex, WebRequest request) {
-    ErrorCode code =
-        ex.reason() == MessagingException.Reason.ACCESS_DENIED
-            ? ErrorCode.ACCESS_DENIED
-            : ErrorCode.RESOURCE_NOT_FOUND;
-    return problem(code, null, request);
-  }
-
-  @ExceptionHandler(IdentityException.class)
-  public ProblemDetail handleIdentityException(IdentityException ex, WebRequest request) {
-    ErrorCode code =
-        ex.reason() == IdentityException.Reason.CONFLICT
-            ? ErrorCode.RESOURCE_CONFLICT
-            : ErrorCode.VALIDATION_FAILED;
-    return problem(code, null, request);
   }
 
   @ExceptionHandler({NoHandlerFoundException.class, NoResourceFoundException.class})

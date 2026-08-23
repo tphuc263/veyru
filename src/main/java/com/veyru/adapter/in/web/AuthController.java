@@ -7,7 +7,6 @@ import com.veyru.adapter.in.dto.request.auth.ResetPasswordRequest;
 import com.veyru.adapter.in.dto.response.auth.LoginResponse;
 import com.veyru.application.identity.AuthenticationService;
 import com.veyru.application.identity.LoginCommand;
-import com.veyru.application.identity.LoginResult;
 import com.veyru.application.identity.RegisterUserCommand;
 import com.veyru.application.identity.ResetPasswordCommand;
 import jakarta.validation.Valid;
@@ -24,7 +23,7 @@ public class AuthController {
 
   @PostMapping("/sessions")
   public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-    LoginResult result =
+    var result =
         authentication.login(new LoginCommand(request.identifier(), request.password()));
     return ResponseEntity.ok(LoginResponse.from(result));
   }
