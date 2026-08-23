@@ -71,8 +71,7 @@ public final class AuthenticationService {
         users
             .findByResetToken(command.token())
             .filter(account -> account.hasValidResetToken(clock.instant()))
-            .orElseThrow(
-                () -> new IdentityException(IdentityException.Reason.VALIDATION_FAILED));
+            .orElseThrow(() -> new IdentityException(IdentityException.Reason.VALIDATION_FAILED));
     users.save(user.resetPassword(passwords.hash(command.newPassword())));
   }
 

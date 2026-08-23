@@ -1,6 +1,6 @@
 package com.veyru.adapter.in.security.oauth2;
 
-import com.veyru.application.port.out.UserRepository;
+import com.veyru.application.port.out.UserStore;
 import com.veyru.domain.enums.UserRole;
 import com.veyru.domain.model.User;
 import java.time.Instant;
@@ -23,7 +23,7 @@ import org.springframework.util.StringUtils;
 @Transactional
 public class OAuth2UserService extends DefaultOAuth2UserService {
   private static final Logger log = LoggerFactory.getLogger(OAuth2UserService.class);
-  private final UserRepository userRepository;
+  private final UserStore userStore;
   private final PasswordEncoder passwordEncoder;
 
   @Override
@@ -39,7 +39,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
     if (!StringUtils.hasText(email)) {
       throw new OAuth2AuthenticationException("Can\'t take email from provider: " + provider);
     }
-    User user = userRepository.findByEmail(email).orElse(null);
+    User user = userStore.findByEmail(email).orElse(null);
     if (user == null) {
       user = createUser(attributes, email, provider);
       log.info("Created new OAuth2 user from {}: {}", provider, email);
@@ -84,12 +84,11 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
     user.setPhotoCount(0);
     user.setFollowerCount(0);
     user.setFollowingCount(0);
-    return userRepository.save(user);
+    return userStore.save(user);
   }
 
-  public OAuth2UserService(
-      final UserRepository userRepository, final PasswordEncoder passwordEncoder) {
-    this.userRepository = userRepository;
+  public OAuth2UserService(final UserStore userStore, final PasswordEncoder passwordEncoder) {
+    this.userStore = userStore;
     this.passwordEncoder = passwordEncoder;
   }
 }

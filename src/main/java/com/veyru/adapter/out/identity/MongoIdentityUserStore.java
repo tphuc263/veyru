@@ -2,16 +2,16 @@ package com.veyru.adapter.out.identity;
 
 import com.veyru.application.identity.UserAccount;
 import com.veyru.application.port.out.IdentityUserStore;
-import com.veyru.application.port.out.UserRepository;
+import com.veyru.application.port.out.UserStore;
 import com.veyru.domain.model.User;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 @Component
 public class MongoIdentityUserStore implements IdentityUserStore {
-  private final UserRepository repository;
+  private final UserStore repository;
 
-  public MongoIdentityUserStore(UserRepository repository) {
+  public MongoIdentityUserStore(UserStore repository) {
     this.repository = repository;
   }
 

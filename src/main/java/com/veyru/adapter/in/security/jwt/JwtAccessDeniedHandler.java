@@ -1,5 +1,6 @@
 package com.veyru.adapter.in.security.jwt;
 
+import com.veyru.adapter.in.HttpErrorMapper;
 import com.veyru.domain.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -22,8 +23,8 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
       throws IOException {
     ProblemDetail problem =
         ProblemDetail.forStatusAndDetail(
-            ErrorCode.ACCESS_DENIED.status(), ErrorCode.ACCESS_DENIED.detail());
-    problem.setTitle(ErrorCode.ACCESS_DENIED.status().getReasonPhrase());
+            HttpErrorMapper.status(ErrorCode.ACCESS_DENIED), ErrorCode.ACCESS_DENIED.detail());
+    problem.setTitle(HttpErrorMapper.status(ErrorCode.ACCESS_DENIED).getReasonPhrase());
     problem.setInstance(URI.create(request.getRequestURI()));
     problem.setProperty("code", ErrorCode.ACCESS_DENIED.name());
     response.setStatus(problem.getStatus());

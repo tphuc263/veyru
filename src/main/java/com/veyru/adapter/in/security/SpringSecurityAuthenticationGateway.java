@@ -34,9 +34,6 @@ public class SpringSecurityAuthenticationGateway implements AuthenticationGatewa
         user.getId(),
         user.getUsername(),
         user.getEmail(),
-        user.getAuthorities().stream()
-            .map(GrantedAuthority::getAuthority)
-            .findFirst()
-            .orElse(""));
+        user.getAuthorities().stream().map(GrantedAuthority::getAuthority).findFirst().orElse(""));
   }
 }
