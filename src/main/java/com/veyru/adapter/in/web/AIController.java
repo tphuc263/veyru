@@ -1,4 +1,4 @@
-package com.veyru.adapter.in.controller;
+package com.veyru.adapter.in.web;
 
 import com.veyru.adapter.in.dto.request.ai.EngagementAnalysisRequest;
 import com.veyru.adapter.in.dto.request.ai.ImageAnalysisRequest;
@@ -8,7 +8,7 @@ import com.veyru.application.intelligence.ImageAnalysisCommand;
 import com.veyru.application.result.ai.EngagementAnalysisResponse;
 import com.veyru.application.result.ai.ImageAnalysisResponse;
 import com.veyru.application.result.ai.PostTimingSuggestionResponse;
-import com.veyru.domain.exception.ApiException;
+import com.veyru.application.error.ApiException;
 import com.veyru.domain.model.User;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;

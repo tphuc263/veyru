@@ -1,4 +1,4 @@
-package com.veyru.adapter.in.controller;
+package com.veyru.adapter.in.web;
 
 import com.veyru.application.result.photo.PhotoResponse;
 import com.veyru.application.social.FavoriteService;

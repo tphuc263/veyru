@@ -1,4 +1,4 @@
-package com.veyru.adapter.in.controller;
+package com.veyru.adapter.in.web;
 
 import com.veyru.adapter.in.dto.request.user.UpdateProfileRequest;
 import com.veyru.adapter.in.dto.response.PageResponse;

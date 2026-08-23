@@ -1,13 +1,13 @@
-package com.veyru.adapter.in.controller;
+package com.veyru.adapter.in.web;
 
 import com.veyru.adapter.in.dto.request.photo.CreatePhotoRequest;
 import com.veyru.adapter.in.dto.response.PageResponse;
+import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
 import com.veyru.application.common.ImageFile;
 import com.veyru.application.common.PageResult;
 import com.veyru.application.media.CreatePhotoCommand;
 import com.veyru.application.media.PhotoService;
 import com.veyru.application.result.photo.PhotoDetailResponse;
-import com.veyru.application.result.photo.PhotoResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -29,7 +29,7 @@ public class PhotoController {
   public ResponseEntity<PhotoResponse> createPhoto(
       @Valid @ModelAttribute CreatePhotoRequest request) throws IOException {
     var file = request.image();
-    PhotoResponse photo =
+    com.veyru.application.result.photo.PhotoResponse photo =
         photoService.createPhoto(
             new CreatePhotoCommand(
                 new ImageFile(file.getBytes(), file.getOriginalFilename(), file.getContentType()),
@@ -40,7 +40,7 @@ public class PhotoController {
                 .path("/{id}")
                 .buildAndExpand(photo.getId())
                 .toUri())
-        .body(photo);
+        .body(PhotoResponse.from(photo));
   }
 
   // get all photo
@@ -49,11 +49,11 @@ public class PhotoController {
       @RequestParam(required = false) String userId,
       @RequestParam(defaultValue = "0") @Min(0) int page,
       @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
-    PageResult<PhotoResponse> photos =
+    PageResult<com.veyru.application.result.photo.PhotoResponse> photos =
         userId == null
             ? photoService.getAllPhotos(page, size)
             : photoService.getPhotosByUserId(userId, page, size);
-    return ResponseEntity.ok(PageResponse.from(photos));
+    return ResponseEntity.ok(PageResponse.from(photos, PhotoResponse::from));
   }
 
   // get photo detail by id

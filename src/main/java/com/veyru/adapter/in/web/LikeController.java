@@ -1,4 +1,4 @@
-package com.veyru.adapter.in.controller;
+package com.veyru.adapter.in.web;
 
 import com.veyru.application.result.like.LikeResponse;
 import com.veyru.application.social.LikeService;

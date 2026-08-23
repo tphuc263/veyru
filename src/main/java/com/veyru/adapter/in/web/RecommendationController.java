@@ -1,10 +1,10 @@
-package com.veyru.adapter.in.controller;
+package com.veyru.adapter.in.web;
 
 import com.veyru.application.discovery.RecommendationService;
 import com.veyru.application.identity.UserProfileService;
 import com.veyru.application.result.photo.PhotoResponse;
 import com.veyru.application.result.recommendation.RecommendedUserResponse;
-import com.veyru.domain.exception.ApiException;
+import com.veyru.application.error.ApiException;
 import com.veyru.domain.model.User;
 import java.util.List;
 import org.slf4j.Logger;
