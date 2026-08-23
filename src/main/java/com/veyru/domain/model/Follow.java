@@ -1,12 +1,9 @@
 package com.veyru.domain.model;
 
 import java.time.Instant;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "follows")
 public class Follow {
-  @Id private String id;
+  private String id;
   private String followerId;
   private String followingId;
   private Instant createdAt;
@@ -25,22 +22,6 @@ public class Follow {
 
   public Instant getCreatedAt() {
     return this.createdAt;
-  }
-
-  public void setId(final String id) {
-    this.id = id;
-  }
-
-  public void setFollowerId(final String followerId) {
-    this.followerId = followerId;
-  }
-
-  public void setFollowingId(final String followingId) {
-    this.followingId = followingId;
-  }
-
-  public void setCreatedAt(final Instant createdAt) {
-    this.createdAt = createdAt;
   }
 
   @Override
@@ -109,5 +90,22 @@ public class Follow {
     this.followerId = followerId;
     this.followingId = followingId;
     this.createdAt = createdAt;
+  }
+
+  public static Follow create(String followerId, String followingId, Instant createdAt) {
+    if (followerId == null
+        || followerId.isBlank()
+        || followingId == null
+        || followingId.isBlank()) {
+      throw new IllegalArgumentException("Follow participants are required");
+    }
+    if (followerId.equals(followingId)) {
+      throw new IllegalArgumentException("A user cannot follow themselves");
+    }
+    Follow follow = new Follow();
+    follow.followerId = followerId;
+    follow.followingId = followingId;
+    follow.createdAt = createdAt;
+    return follow;
   }
 }

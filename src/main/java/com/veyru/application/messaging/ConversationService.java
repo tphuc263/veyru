@@ -1,6 +1,8 @@
 package com.veyru.application.messaging;
 
-import com.veyru.application.messaging.MessagingException.Reason;
+import com.veyru.application.common.PageResult;
+import com.veyru.application.common.error.UseCaseError;
+import com.veyru.application.common.error.UseCaseException;
 import com.veyru.application.port.out.ConversationStore;
 import com.veyru.application.port.out.MessageNotifier;
 import com.veyru.application.port.out.MessageStore;
@@ -59,9 +61,9 @@ public final class ConversationService {
     Conversation conversation =
         conversationStore
             .findById(conversationId)
-            .orElseThrow(() -> new MessagingException(Reason.RESOURCE_NOT_FOUND));
+            .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     if (!conversation.hasParticipant(userId)) {
-      throw new MessagingException(Reason.ACCESS_DENIED);
+      throw new UseCaseException(UseCaseError.ACCESS_DENIED);
     }
     PageResult<Message> messages = messageStore.findByConversationId(conversationId, page, size);
     return new PageResult<>(

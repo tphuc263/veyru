@@ -1,6 +1,7 @@
 package com.veyru.application.messaging;
 
-import com.veyru.application.messaging.MessagingException.Reason;
+import com.veyru.application.common.error.UseCaseError;
+import com.veyru.application.common.error.UseCaseException;
 import com.veyru.application.port.out.ConversationStore;
 import com.veyru.application.port.out.MessageIdempotency;
 import com.veyru.application.port.out.MessageNotifier;
@@ -63,7 +64,7 @@ public final class SendMessageUseCase {
 
   private void requireUser(String userId) {
     if (userLookup.findById(userId).isEmpty()) {
-      throw new MessagingException(Reason.RESOURCE_NOT_FOUND);
+      throw new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND);
     }
   }
 

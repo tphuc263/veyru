@@ -1,7 +1,7 @@
 package com.veyru.config.websocket;
 
 import com.veyru.adapter.in.dto.websocket.WsEventEnvelope;
-import java.time.Instant;
+import java.time.Clock;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +16,7 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 public class PresenceEventListener {
   private static final Logger log = LoggerFactory.getLogger(PresenceEventListener.class);
   private final SimpMessagingTemplate messagingTemplate;
+  private final Clock clock;
 
   @EventListener
   public void handleWebSocketConnectListener(SessionConnectedEvent event) {
@@ -27,7 +28,7 @@ public class PresenceEventListener {
           WsEventEnvelope.<String>builder()
               .type("USER_ONLINE")
               .clientMessageId(UUID.randomUUID().toString())
-              .timestamp(Instant.now())
+              .timestamp(clock.instant())
               .payload(userId)
               .build();
       messagingTemplate.convertAndSend("/topic/presence", envelope);
@@ -44,14 +45,15 @@ public class PresenceEventListener {
           WsEventEnvelope.<String>builder()
               .type("USER_OFFLINE")
               .clientMessageId(UUID.randomUUID().toString())
-              .timestamp(Instant.now())
+              .timestamp(clock.instant())
               .payload(userId)
               .build();
       messagingTemplate.convertAndSend("/topic/presence", envelope);
     }
   }
 
-  public PresenceEventListener(final SimpMessagingTemplate messagingTemplate) {
+  public PresenceEventListener(final SimpMessagingTemplate messagingTemplate, final Clock clock) {
     this.messagingTemplate = messagingTemplate;
+    this.clock = clock;
   }
 }

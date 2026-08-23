@@ -1,9 +1,8 @@
 package com.veyru.adapter.in;
 
-import com.veyru.application.messaging.MessagingException;
-import com.veyru.domain.exception.ApiException;
-import com.veyru.domain.exception.ErrorCode;
-import com.veyru.domain.exception.ValidationError;
+import com.veyru.adapter.in.error.ErrorCode;
+import com.veyru.adapter.in.error.ValidationError;
+import com.veyru.application.common.error.UseCaseException;
 import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
 import java.util.List;
@@ -38,18 +37,9 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 public class GlobalExceptionHandler {
   private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-  @ExceptionHandler(ApiException.class)
-  public ProblemDetail handleApiException(ApiException ex, WebRequest request) {
-    return problem(ex.code(), ex.getMessage(), request);
-  }
-
-  @ExceptionHandler(MessagingException.class)
-  public ProblemDetail handleMessagingException(MessagingException ex, WebRequest request) {
-    ErrorCode code =
-        ex.reason() == MessagingException.Reason.ACCESS_DENIED
-            ? ErrorCode.ACCESS_DENIED
-            : ErrorCode.RESOURCE_NOT_FOUND;
-    return problem(code, null, request);
+  @ExceptionHandler(UseCaseException.class)
+  public ProblemDetail handleUseCaseException(UseCaseException ex, WebRequest request) {
+    return problem(ErrorCode.valueOf(ex.code().name()), ex.getMessage(), request);
   }
 
   @ExceptionHandler({NoHandlerFoundException.class, NoResourceFoundException.class})
@@ -186,9 +176,10 @@ public class GlobalExceptionHandler {
   private ProblemDetail problem(ErrorCode code, String detail, WebRequest request) {
     String description = request.getDescription(false);
     URI instance = description.startsWith("uri=") ? URI.create(description.substring(4)) : null;
+    var status = HttpErrorMapper.status(code);
     ProblemDetail problem =
-        ProblemDetail.forStatusAndDetail(code.status(), detail == null ? code.detail() : detail);
-    problem.setTitle(code.status().getReasonPhrase());
+        ProblemDetail.forStatusAndDetail(status, detail == null ? code.detail() : detail);
+    problem.setTitle(status.getReasonPhrase());
     problem.setInstance(instance);
     problem.setProperty("code", code.name());
     return problem;

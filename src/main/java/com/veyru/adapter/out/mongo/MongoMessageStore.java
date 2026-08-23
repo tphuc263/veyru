@@ -1,6 +1,6 @@
 package com.veyru.adapter.out.mongo;
 
-import com.veyru.application.messaging.PageResult;
+import com.veyru.application.common.PageResult;
 import com.veyru.application.port.out.MessageStore;
 import com.veyru.domain.model.Message;
 import org.springframework.data.domain.Page;

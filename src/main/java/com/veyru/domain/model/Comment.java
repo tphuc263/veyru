@@ -3,24 +3,70 @@ package com.veyru.domain.model;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "comments")
 public class Comment {
-  @Id private String id;
-  @Indexed private String photoId;
+  private String id;
+  private String photoId;
   private String userId;
   private String text;
   private Instant createdAt;
   private EmbeddedUser user;
   // Nested comments support
-  @Indexed private String parentCommentId; // null for top-level comments
+  private String parentCommentId; // null for top-level comments
   private long likeCount = 0;
   private long replyCount = 0;
   // Mentioned users in comment (when user types @username)
   private List<String> mentionedUserIds = new ArrayList<>();
+
+  public static Comment create(
+      String photoId,
+      String userId,
+      String username,
+      String text,
+      List<String> mentionedUserIds,
+      Instant createdAt) {
+    requireText(text);
+    if (photoId == null || photoId.isBlank() || userId == null || userId.isBlank()) {
+      throw new IllegalArgumentException("Comment photo and author are required");
+    }
+    return new Comment(
+        null,
+        photoId,
+        userId,
+        text.trim(),
+        createdAt,
+        new EmbeddedUser(userId, username),
+        null,
+        0,
+        0,
+        mentionedUserIds == null ? List.of() : List.copyOf(mentionedUserIds));
+  }
+
+  public Comment replyTo(Comment parent) {
+    if (parent == null || parent.id == null || !photoId.equals(parent.photoId)) {
+      throw new IllegalArgumentException("Reply parent must belong to the same photo");
+    }
+    parentCommentId = parent.id;
+    return this;
+  }
+
+  public Comment edit(String actorId, String text, List<String> mentionedUserIds) {
+    if (!userId.equals(actorId)) throw new IllegalArgumentException("Only the author can edit");
+    requireText(text);
+    this.text = text.trim();
+    this.mentionedUserIds = mentionedUserIds == null ? List.of() : List.copyOf(mentionedUserIds);
+    return this;
+  }
+
+  public Comment recordLike() {
+    likeCount++;
+    return this;
+  }
+
+  private static void requireText(String text) {
+    if (text == null || text.isBlank())
+      throw new IllegalArgumentException("Comment text is required");
+  }
 
   public static class EmbeddedUser {
     private String userId;
@@ -32,14 +78,6 @@ public class Comment {
 
     public String getUsername() {
       return this.username;
-    }
-
-    public void setUserId(final String userId) {
-      this.userId = userId;
-    }
-
-    public void setUsername(final String username) {
-      this.username = username;
     }
 
     @Override
@@ -129,46 +167,6 @@ public class Comment {
 
   public List<String> getMentionedUserIds() {
     return this.mentionedUserIds;
-  }
-
-  public void setId(final String id) {
-    this.id = id;
-  }
-
-  public void setPhotoId(final String photoId) {
-    this.photoId = photoId;
-  }
-
-  public void setUserId(final String userId) {
-    this.userId = userId;
-  }
-
-  public void setText(final String text) {
-    this.text = text;
-  }
-
-  public void setCreatedAt(final Instant createdAt) {
-    this.createdAt = createdAt;
-  }
-
-  public void setUser(final EmbeddedUser user) {
-    this.user = user;
-  }
-
-  public void setParentCommentId(final String parentCommentId) {
-    this.parentCommentId = parentCommentId;
-  }
-
-  public void setLikeCount(final long likeCount) {
-    this.likeCount = likeCount;
-  }
-
-  public void setReplyCount(final long replyCount) {
-    this.replyCount = replyCount;
-  }
-
-  public void setMentionedUserIds(final List<String> mentionedUserIds) {
-    this.mentionedUserIds = mentionedUserIds;
   }
 
   @Override
@@ -291,6 +289,6 @@ public class Comment {
     this.parentCommentId = parentCommentId;
     this.likeCount = likeCount;
     this.replyCount = replyCount;
-    this.mentionedUserIds = mentionedUserIds;
+    this.mentionedUserIds = mentionedUserIds == null ? List.of() : List.copyOf(mentionedUserIds);
   }
 }

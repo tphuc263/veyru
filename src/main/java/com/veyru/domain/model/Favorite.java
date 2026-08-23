@@ -1,14 +1,9 @@
 package com.veyru.domain.model;
 
 import java.time.Instant;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "favorites")
-@CompoundIndex(name = "user_photo_unique", def = "{\'userId\': 1, \'photoId\': 1}", unique = true)
 public class Favorite {
-  @Id private String id;
+  private String id;
   private String userId;
   private String photoId;
   private Instant createdAt;

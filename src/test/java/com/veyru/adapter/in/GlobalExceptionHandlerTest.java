@@ -2,8 +2,9 @@ package com.veyru.adapter.in;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.veyru.domain.exception.ApiException;
-import com.veyru.domain.exception.ErrorCode;
+import com.veyru.adapter.in.error.ErrorCode;
+import com.veyru.application.common.error.UseCaseError;
+import com.veyru.application.common.error.UseCaseException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -18,19 +19,22 @@ class GlobalExceptionHandlerTest {
   @Test
   void mapsSemanticErrorsToTheirHttpContract() {
     assertProblem(
-        handler.handleApiException(new ApiException(ErrorCode.RESOURCE_NOT_FOUND), request),
+        handler.handleUseCaseException(
+            new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND), request),
         HttpStatus.NOT_FOUND,
         "RESOURCE_NOT_FOUND");
     assertProblem(
-        handler.handleApiException(new ApiException(ErrorCode.ACCESS_DENIED), request),
+        handler.handleUseCaseException(new UseCaseException(UseCaseError.ACCESS_DENIED), request),
         HttpStatus.FORBIDDEN,
         "ACCESS_DENIED");
     assertProblem(
-        handler.handleApiException(new ApiException(ErrorCode.RESOURCE_CONFLICT), request),
+        handler.handleUseCaseException(
+            new UseCaseException(UseCaseError.RESOURCE_CONFLICT), request),
         HttpStatus.CONFLICT,
         "RESOURCE_CONFLICT");
     assertProblem(
-        handler.handleApiException(new ApiException(ErrorCode.EXTERNAL_SERVICE_FAILURE), request),
+        handler.handleUseCaseException(
+            new UseCaseException(UseCaseError.EXTERNAL_SERVICE_FAILURE), request),
         HttpStatus.BAD_GATEWAY,
         "EXTERNAL_SERVICE_FAILURE");
   }

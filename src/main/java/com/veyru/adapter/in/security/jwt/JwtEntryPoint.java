@@ -1,6 +1,7 @@
 package com.veyru.adapter.in.security.jwt;
 
-import com.veyru.domain.exception.ErrorCode;
+import com.veyru.adapter.in.HttpErrorMapper;
+import com.veyru.adapter.in.error.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -23,8 +24,9 @@ public class JwtEntryPoint implements AuthenticationEntryPoint {
       throws IOException {
     boolean invalidToken = exception instanceof BadCredentialsException;
     ErrorCode code = invalidToken ? ErrorCode.INVALID_TOKEN : ErrorCode.AUTHENTICATION_REQUIRED;
-    ProblemDetail problem = ProblemDetail.forStatusAndDetail(code.status(), code.detail());
-    problem.setTitle(code.status().getReasonPhrase());
+    var status = HttpErrorMapper.status(code);
+    ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, code.detail());
+    problem.setTitle(status.getReasonPhrase());
     problem.setInstance(URI.create(request.getRequestURI()));
     problem.setProperty("code", code.name());
     response.setStatus(problem.getStatus());

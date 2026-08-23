@@ -2,14 +2,10 @@ package com.veyru.domain.model;
 
 import com.veyru.domain.enums.NotificationType;
 import java.time.Instant;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "notifications")
 public class Notification {
-  @Id private String id;
-  @Indexed private String recipientId; // User who receives the notification
+  private String id;
+  private String recipientId; // User who receives the notification
   private String actorId; // User who triggered the notification
   private NotificationType type;
   // Reference IDs based on notification type
@@ -22,6 +18,39 @@ public class Notification {
   private EmbeddedActor actor;
   // Thumbnail for the related content (photo thumbnail, etc.)
   private String thumbnailUrl;
+
+  public static Notification create(
+      String recipientId,
+      String actorId,
+      String actorUsername,
+      NotificationType type,
+      String photoId,
+      String commentId,
+      String message,
+      String thumbnailUrl,
+      Instant createdAt) {
+    if (recipientId == null || actorId == null || type == null || createdAt == null) {
+      throw new IllegalArgumentException(
+          "Notification recipient, actor, type and time are required");
+    }
+    return new Notification(
+        null,
+        recipientId,
+        actorId,
+        type,
+        photoId,
+        commentId,
+        message,
+        false,
+        createdAt,
+        new EmbeddedActor(actorUsername),
+        thumbnailUrl);
+  }
+
+  public Notification markRead() {
+    read = true;
+    return this;
+  }
 
   public static class EmbeddedActor {
     private String username;
@@ -55,10 +84,6 @@ public class Notification {
 
     public String getUsername() {
       return this.username;
-    }
-
-    public void setUsername(final String username) {
-      this.username = username;
     }
 
     @Override
@@ -291,50 +316,6 @@ public class Notification {
 
   public String getThumbnailUrl() {
     return this.thumbnailUrl;
-  }
-
-  public void setId(final String id) {
-    this.id = id;
-  }
-
-  public void setRecipientId(final String recipientId) {
-    this.recipientId = recipientId;
-  }
-
-  public void setActorId(final String actorId) {
-    this.actorId = actorId;
-  }
-
-  public void setType(final NotificationType type) {
-    this.type = type;
-  }
-
-  public void setPhotoId(final String photoId) {
-    this.photoId = photoId;
-  }
-
-  public void setCommentId(final String commentId) {
-    this.commentId = commentId;
-  }
-
-  public void setMessage(final String message) {
-    this.message = message;
-  }
-
-  public void setRead(final boolean read) {
-    this.read = read;
-  }
-
-  public void setCreatedAt(final Instant createdAt) {
-    this.createdAt = createdAt;
-  }
-
-  public void setActor(final EmbeddedActor actor) {
-    this.actor = actor;
-  }
-
-  public void setThumbnailUrl(final String thumbnailUrl) {
-    this.thumbnailUrl = thumbnailUrl;
   }
 
   @Override

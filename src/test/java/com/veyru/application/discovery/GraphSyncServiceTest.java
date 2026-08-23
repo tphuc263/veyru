@@ -1,0 +1,53 @@
+package com.veyru.application.discovery;
+
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import com.veyru.application.port.out.FollowStore;
+import com.veyru.application.port.out.GraphProjection;
+import com.veyru.application.port.out.LikeStore;
+import com.veyru.application.port.out.PhotoStore;
+import com.veyru.application.port.out.UserStore;
+import com.veyru.domain.model.Photo;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+
+class GraphSyncServiceTest {
+  @Test
+  void neo4jFailureDoesNotFailThePrimaryPhotoWrite() {
+    GraphProjection graph = mock(GraphProjection.class);
+    PhotoStore photos = mock(PhotoStore.class);
+    Photo photo =
+        new Photo(
+            "photo-1",
+            null,
+            null,
+            null,
+            java.util.List.of(),
+            new Photo.EmbeddedUser("user-1", "user"),
+            0,
+            0,
+            0,
+            java.util.List.of());
+    when(photos.findById("photo-1")).thenReturn(Optional.of(photo));
+    org.mockito.Mockito.doThrow(new RuntimeException("neo4j unavailable"))
+        .when(graph)
+        .upsertPhoto(
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.anyLong(),
+            org.mockito.ArgumentMatchers.anyLong(),
+            org.mockito.ArgumentMatchers.anyLong(),
+            org.mockito.ArgumentMatchers.any());
+    GraphSyncService service =
+        new GraphSyncService(
+            graph, mock(UserStore.class), photos, mock(FollowStore.class), mock(LikeStore.class));
+
+    assertThatCode(() -> service.syncPhoto("photo-1").join()).doesNotThrowAnyException();
+  }
+}

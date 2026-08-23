@@ -12,16 +12,4 @@ public record RegisterRequest(
         String email,
     @NotBlank(message = "Password must not be blank")
         @Size(min = 6, message = "Password must be at least 6 characters long")
-        String password) {
-  public String getUsername() {
-    return username;
-  }
-
-  public String getEmail() {
-    return email;
-  }
-
-  public String getPassword() {
-    return password;
-  }
-}
+        String password) {}
