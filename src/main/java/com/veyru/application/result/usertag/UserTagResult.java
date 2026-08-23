@@ -2,16 +2,16 @@ package com.veyru.application.result.usertag;
 
 import java.time.Instant;
 
-public class UserTagResult {
-  private String id;
-  private String photoId;
-  private String taggedUserId;
-  private String taggedByUserId;
-  private String username;
-  private String userImageUrl;
-  private Double positionX;
-  private Double positionY;
-  private Instant createdAt;
+public final class UserTagResult {
+  private final String id;
+  private final String photoId;
+  private final String taggedUserId;
+  private final String taggedByUserId;
+  private final String username;
+  private final String userImageUrl;
+  private final Double positionX;
+  private final Double positionY;
+  private final Instant createdAt;
 
   public static class UserTagResponseBuilder {
     private String id;
@@ -175,42 +175,6 @@ public class UserTagResult {
     return this.createdAt;
   }
 
-  public void setId(final String id) {
-    this.id = id;
-  }
-
-  public void setPhotoId(final String photoId) {
-    this.photoId = photoId;
-  }
-
-  public void setTaggedUserId(final String taggedUserId) {
-    this.taggedUserId = taggedUserId;
-  }
-
-  public void setTaggedByUserId(final String taggedByUserId) {
-    this.taggedByUserId = taggedByUserId;
-  }
-
-  public void setUsername(final String username) {
-    this.username = username;
-  }
-
-  public void setUserImageUrl(final String userImageUrl) {
-    this.userImageUrl = userImageUrl;
-  }
-
-  public void setPositionX(final Double positionX) {
-    this.positionX = positionX;
-  }
-
-  public void setPositionY(final Double positionY) {
-    this.positionY = positionY;
-  }
-
-  public void setCreatedAt(final Instant createdAt) {
-    this.createdAt = createdAt;
-  }
-
   @Override
   public boolean equals(final Object o) {
     if (o == this) return true;
@@ -309,8 +273,6 @@ public class UserTagResult {
         + this.getCreatedAt()
         + ")";
   }
-
-  public UserTagResult() {}
 
   public UserTagResult(
       final String id,

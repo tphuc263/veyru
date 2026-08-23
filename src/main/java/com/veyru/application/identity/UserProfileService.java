@@ -29,27 +29,27 @@ public class UserProfileService {
 
   public UserProfileResult getUserProfileById(String targetUserId) {
     User targetUser = findUserById(targetUserId);
-    UserProfileResult response = mapToUserProfileResponse(targetUser);
-    findCurrentUser()
-        .filter(currentUser -> followService.isFollowing(currentUser.getId(), targetUserId))
-        .ifPresent(currentUser -> response.setFollowingByCurrentUser(true));
     HashMap<String, Long> stats = new HashMap<>();
     stats.put("posts", targetUser.getPhotoCount());
     stats.put("followers", targetUser.getFollowerCount());
     stats.put("following", targetUser.getFollowingCount());
-    response.setStats(stats);
-    return response;
+    boolean following =
+        findCurrentUser()
+            .map(currentUser -> followService.isFollowing(currentUser.getId(), targetUserId))
+            .orElse(false);
+    return new UserProfileResult(
+        targetUser.getId(), targetUser.getUsername(), targetUser.getImageUrl(), stats,
+        targetUser.getBio(), following);
   }
 
   public UserProfileResult getCurrentUserProfile() {
     User user = requireCurrentUser();
-    UserProfileResult response = mapToUserProfileResponse(user);
     HashMap<String, Long> stats = new HashMap<>();
     stats.put("posts", user.getPhotoCount());
     stats.put("followers", user.getFollowerCount());
     stats.put("following", user.getFollowingCount());
-    response.setStats(stats);
-    return response;
+    return new UserProfileResult(
+        user.getId(), user.getUsername(), user.getImageUrl(), stats, user.getBio(), false);
   }
 
   public UserProfileResult updateProfile(UpdateProfileCommand request) {
@@ -118,12 +118,8 @@ public class UserProfileService {
   }
 
   private UserProfileResult mapToUserProfileResponse(User user) {
-    UserProfileResult response = new UserProfileResult();
-    response.setId(user.getId());
-    response.setUsername(user.getUsername());
-    response.setImageUrl(user.getImageUrl());
-    response.setBio(user.getBio());
-    return response;
+    return new UserProfileResult(
+        user.getId(), user.getUsername(), user.getImageUrl(), null, user.getBio(), false);
   }
 
   public Map<String, User> findUsersByIds(List<String> userIds) {

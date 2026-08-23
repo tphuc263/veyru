@@ -153,16 +153,11 @@ public class PhotoService {
     return likes.stream()
         .map(
             like -> {
-              LikeResult res = new LikeResult();
-              res.setId(like.getId());
-              res.setUserId(like.getUserId());
-              res.setCreatedAt(like.getCreatedAt());
               User user = usersMap.get(like.getUserId());
-              if (user != null) {
-                res.setUsername(user.getUsername());
-                res.setUserImageUrl(userAvatarCacheService.getAvatar(user.getId()));
-              }
-              return res;
+              return new LikeResult(
+                  like.getId(), like.getUserId(), user == null ? null : user.getUsername(),
+                  user == null ? null : userAvatarCacheService.getAvatar(user.getId()),
+                  like.getCreatedAt());
             })
         .toList();
   }

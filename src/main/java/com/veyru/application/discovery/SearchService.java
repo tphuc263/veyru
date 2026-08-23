@@ -104,39 +104,23 @@ public class SearchService {
   }
 
   private UserSearchResult convertToUserSearchResponse(User user) {
-    UserSearchResult response = new UserSearchResult();
-    response.setId(user.getId());
-    response.setUsername(user.getUsername());
-    response.setImageUrl(user.getImageUrl());
-    response.setBio(user.getBio());
-    // Add follower count
-    response.setFollowersCount(user.getFollowerCount());
-    // Check if current user follows this user
-
-    response.setFollowedByCurrentUser(
-        userService
-            .findCurrentUser()
+    return new UserSearchResult(
+        user.getId(), user.getUsername(), null, null, user.getImageUrl(), user.getBio(),
+        user.getFollowerCount(),
+        userService.findCurrentUser()
             .map(currentUser -> followService.isFollowing(currentUser.getId(), user.getId()))
-            .orElse(false));
-
-    return response;
+            .orElse(false),
+        0.0);
   }
 
   private UserProfileResult convertToUserProfileResponse(UserSearchResult userSearchResponse) {
-    UserProfileResult response = new UserProfileResult();
-    response.setId(userSearchResponse.getId());
-    response.setUsername(userSearchResponse.getUsername());
-    response.setImageUrl(userSearchResponse.getImageUrl());
-    response.setBio(userSearchResponse.getBio());
-    return response;
+    return new UserProfileResult(
+        userSearchResponse.getId(), userSearchResponse.getUsername(),
+        userSearchResponse.getImageUrl(), null, userSearchResponse.getBio(), false);
   }
 
   private UserSearchSimpleResult toSimpleResponse(User user) {
-    UserSearchSimpleResult response = new UserSearchSimpleResult();
-    response.setId(user.getId());
-    response.setUsername(user.getUsername());
-    response.setImageUrl(user.getImageUrl());
-    return response;
+    return new UserSearchSimpleResult(user.getId(), user.getUsername(), user.getImageUrl());
   }
 
   public SearchService(

@@ -3,21 +3,21 @@ package com.veyru.application.result.notification;
 import com.veyru.domain.enums.NotificationType;
 import java.time.Instant;
 
-public class NotificationResult {
-  private String id;
-  private NotificationType type;
-  private String message;
-  private boolean read;
-  private Instant createdAt;
+public final class NotificationResult {
+  private final String id;
+  private final NotificationType type;
+  private final String message;
+  private final boolean read;
+  private final Instant createdAt;
   // Actor information
-  private String actorId;
-  private String actorUsername;
-  private String actorImageUrl;
+  private final String actorId;
+  private final String actorUsername;
+  private final String actorImageUrl;
   // Reference IDs
-  private String photoId;
-  private String commentId;
+  private final String photoId;
+  private final String commentId;
   // Thumbnail
-  private String thumbnailUrl;
+  private final String thumbnailUrl;
 
   public static class NotificationResponseBuilder {
     private String id;
@@ -216,50 +216,6 @@ public class NotificationResult {
     return this.thumbnailUrl;
   }
 
-  public void setId(final String id) {
-    this.id = id;
-  }
-
-  public void setType(final NotificationType type) {
-    this.type = type;
-  }
-
-  public void setMessage(final String message) {
-    this.message = message;
-  }
-
-  public void setRead(final boolean read) {
-    this.read = read;
-  }
-
-  public void setCreatedAt(final Instant createdAt) {
-    this.createdAt = createdAt;
-  }
-
-  public void setActorId(final String actorId) {
-    this.actorId = actorId;
-  }
-
-  public void setActorUsername(final String actorUsername) {
-    this.actorUsername = actorUsername;
-  }
-
-  public void setActorImageUrl(final String actorImageUrl) {
-    this.actorImageUrl = actorImageUrl;
-  }
-
-  public void setPhotoId(final String photoId) {
-    this.photoId = photoId;
-  }
-
-  public void setCommentId(final String commentId) {
-    this.commentId = commentId;
-  }
-
-  public void setThumbnailUrl(final String thumbnailUrl) {
-    this.thumbnailUrl = thumbnailUrl;
-  }
-
   @Override
   public boolean equals(final Object o) {
     if (o == this) return true;
@@ -369,8 +325,6 @@ public class NotificationResult {
         + this.getThumbnailUrl()
         + ")";
   }
-
-  public NotificationResult() {}
 
   public NotificationResult(
       final String id,

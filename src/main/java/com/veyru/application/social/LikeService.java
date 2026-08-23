@@ -96,16 +96,11 @@ public class LikeService {
     return likes.stream()
         .map(
             like -> {
-              LikeResult response = new LikeResult();
-              response.setId(like.getId());
-              response.setUserId(like.getUserId());
-              response.setCreatedAt(like.getCreatedAt());
               User user = usersMap.get(like.getUserId());
-              if (user != null) {
-                response.setUsername(user.getUsername());
-                response.setUserImageUrl(userAvatarCacheService.getAvatar(user.getId()));
-              }
-              return response;
+              return new LikeResult(
+                  like.getId(), like.getUserId(), user == null ? null : user.getUsername(),
+                  user == null ? null : userAvatarCacheService.getAvatar(user.getId()),
+                  like.getCreatedAt());
             })
         .toList();
   }

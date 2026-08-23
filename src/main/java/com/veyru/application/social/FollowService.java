@@ -125,14 +125,10 @@ public class FollowService {
             userId -> {
               User user = usersMap.get(userId);
               if (user != null) {
-                FollowResult response = new FollowResult();
-                response.setId(user.getId());
-                response.setUsername(user.getUsername());
-                response.setBio(user.getBio());
-                response.setUserId(user.getId());
-                response.setUserImageUrl(userAvatarCacheService.getAvatar(user.getId()));
-                response.setFollowedByCurrentUser(currentUserFollowing.contains(userId));
-                return response;
+                return new FollowResult(
+                    user.getId(), user.getId(), user.getUsername(),
+                    userAvatarCacheService.getAvatar(user.getId()), null, null, user.getBio(),
+                    currentUserFollowing.contains(userId));
               }
               return null;
             })

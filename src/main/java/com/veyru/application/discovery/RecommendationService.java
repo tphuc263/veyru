@@ -148,16 +148,11 @@ public class RecommendationService {
           if (candidate == null) continue;
           double score =
               result.containsKey("score") ? ((Number) result.get("score")).doubleValue() : 0.0;
-          RecommendedUserResult resp = new RecommendedUserResult();
-          resp.setId(candidate.getId());
-          resp.setUsername(candidate.getUsername());
-          resp.setImageUrl(candidate.getImageUrl());
-          resp.setBio(candidate.getBio());
-          resp.setFollowerCount(candidate.getFollowerCount());
-          resp.setPhotoCount(candidate.getPhotoCount());
-          resp.setSimilarityScore(1.0 - score); // Convert distance to similarity
-          resp.setReason(generateRecommendationReason(currentUser, candidate));
-          suggestions.add(resp);
+          suggestions.add(
+              new RecommendedUserResult(
+                  candidate.getId(), candidate.getUsername(), candidate.getImageUrl(),
+                  candidate.getBio(), candidate.getFollowerCount(), candidate.getPhotoCount(),
+                  1.0 - score, generateRecommendationReason(currentUser, candidate)));
           if (suggestions.size() >= limit) break;
         }
         log.info("Found {} suggested users via vector search for {}", suggestions.size(), userId);
@@ -181,16 +176,9 @@ public class RecommendationService {
         .limit(limit)
         .map(
             u -> {
-              RecommendedUserResult resp = new RecommendedUserResult();
-              resp.setId(u.getId());
-              resp.setUsername(u.getUsername());
-              resp.setImageUrl(u.getImageUrl());
-              resp.setBio(u.getBio());
-              resp.setFollowerCount(u.getFollowerCount());
-              resp.setPhotoCount(u.getPhotoCount());
-              resp.setSimilarityScore(0.0);
-              resp.setReason("Popular on Veyru");
-              return resp;
+              return new RecommendedUserResult(
+                  u.getId(), u.getUsername(), u.getImageUrl(), u.getBio(),
+                  u.getFollowerCount(), u.getPhotoCount(), 0.0, "Popular on Veyru");
             })
         .toList();
   }

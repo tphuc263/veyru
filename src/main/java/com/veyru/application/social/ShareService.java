@@ -61,18 +61,12 @@ public class ShareService {
     return shares.stream()
         .map(
             share -> {
-              ShareResult response = new ShareResult();
-              response.setId(share.getId());
-              response.setPhotoId(share.getPhotoId());
-              response.setUserId(share.getUserId());
-              response.setCaption(share.getCaption());
-              response.setCreatedAt(share.getCreatedAt());
               User user = userMap.get(share.getUserId());
-              if (user != null) {
-                response.setUsername(user.getUsername());
-                response.setUserImageUrl(userAvatarCacheService.getAvatar(user.getId()));
-              }
-              return response;
+              return new ShareResult(
+                  share.getId(), share.getPhotoId(), share.getUserId(),
+                  user == null ? null : user.getUsername(),
+                  user == null ? null : userAvatarCacheService.getAvatar(user.getId()),
+                  share.getCaption(), share.getCreatedAt());
             })
         .toList();
   }
