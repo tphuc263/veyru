@@ -9,6 +9,7 @@ import com.veyru.application.port.out.AvatarCache;
 import com.veyru.application.port.out.FavoriteStore;
 import com.veyru.application.port.out.LikeStore;
 import com.veyru.domain.model.Photo;
+import com.veyru.domain.model.User;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;

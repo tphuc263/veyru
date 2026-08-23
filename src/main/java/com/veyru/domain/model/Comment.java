@@ -289,6 +289,6 @@ public class Comment {
     this.parentCommentId = parentCommentId;
     this.likeCount = likeCount;
     this.replyCount = replyCount;
-    this.mentionedUserIds = mentionedUserIds;
+    this.mentionedUserIds = mentionedUserIds == null ? List.of() : List.copyOf(mentionedUserIds);
   }
 }

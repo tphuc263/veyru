@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.veyru.domain.enums.NotificationType;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -39,6 +40,17 @@ class AggregateInvariantTest {
 
     Comment parent = Comment.create("other-photo", "other", "bob", "parent", List.of(), NOW);
     assertThatThrownBy(() -> comment.replyTo(parent)).isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void commentKeepsMentionIdsImmutable() {
+    List<String> mentionIds = new ArrayList<>(List.of("mentioned"));
+    Comment comment = Comment.create("photo", "user", "alice", "hello", mentionIds, NOW);
+    mentionIds.add("other");
+
+    assertThat(comment.getMentionedUserIds()).containsExactly("mentioned");
+    assertThatThrownBy(() -> comment.getMentionedUserIds().add("other"))
+        .isInstanceOf(UnsupportedOperationException.class);
   }
 
   @Test

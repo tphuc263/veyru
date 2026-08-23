@@ -15,6 +15,7 @@ import org.bson.Document;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
+import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
 import org.springframework.data.mongodb.core.convert.NoOpDbRefResolver;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 
@@ -23,9 +24,13 @@ class DomainMongoMappingTest {
 
   @BeforeEach
   void setUp() throws Exception {
+    MongoCustomConversions conversions =
+        MongoCustomConversions.create(adapter -> adapter.useNativeDriverJavaTimeCodecs());
     MongoMappingContext context = new MongoMappingContext();
+    context.setSimpleTypeHolder(conversions.getSimpleTypeHolder());
     context.afterPropertiesSet();
     converter = new MappingMongoConverter(NoOpDbRefResolver.INSTANCE, context);
+    converter.setCustomConversions(conversions);
     converter.afterPropertiesSet();
   }
 
