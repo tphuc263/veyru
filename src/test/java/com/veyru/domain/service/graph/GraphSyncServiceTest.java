@@ -1,13 +1,14 @@
-package com.veyru.domain.service.graph;
+package com.veyru.application.discovery;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.veyru.application.port.out.FollowRepository;
-import com.veyru.application.port.out.LikeRepository;
-import com.veyru.application.port.out.PhotoRepository;
-import com.veyru.application.port.out.UserRepository;
+import com.veyru.adapter.out.neo4j.Neo4jGraphAdapter;
+import com.veyru.application.port.out.FollowStore;
+import com.veyru.application.port.out.LikeStore;
+import com.veyru.application.port.out.PhotoStore;
+import com.veyru.application.port.out.UserStore;
 import com.veyru.domain.model.Photo;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -15,8 +16,8 @@ import org.junit.jupiter.api.Test;
 class GraphSyncServiceTest {
   @Test
   void neo4jFailureDoesNotFailThePrimaryPhotoWrite() {
-    Neo4jGraphService graph = mock(Neo4jGraphService.class);
-    PhotoRepository photos = mock(PhotoRepository.class);
+    Neo4jGraphAdapter graph = mock(Neo4jGraphAdapter.class);
+    PhotoStore photos = mock(PhotoStore.class);
     Photo photo = new Photo();
     photo.setId("photo-1");
     photo.setUser(new Photo.EmbeddedUser("user-1", "user"));
@@ -36,11 +37,7 @@ class GraphSyncServiceTest {
             org.mockito.ArgumentMatchers.any());
     GraphSyncService service =
         new GraphSyncService(
-            graph,
-            mock(UserRepository.class),
-            photos,
-            mock(FollowRepository.class),
-            mock(LikeRepository.class));
+            graph, mock(UserStore.class), photos, mock(FollowStore.class), mock(LikeStore.class));
 
     assertThatCode(() -> service.syncPhoto("photo-1").join()).doesNotThrowAnyException();
   }
