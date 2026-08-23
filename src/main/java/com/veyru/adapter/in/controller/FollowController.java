@@ -1,7 +1,7 @@
 package com.veyru.adapter.in.controller;
 
-import com.veyru.adapter.in.dto.response.follow.FollowResponse;
-import com.veyru.domain.service.follow.FollowService;
+import com.veyru.application.result.follow.FollowResponse;
+import com.veyru.application.social.FollowService;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

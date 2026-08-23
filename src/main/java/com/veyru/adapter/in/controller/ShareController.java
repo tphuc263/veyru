@@ -2,12 +2,12 @@ package com.veyru.adapter.in.controller;
 
 import com.veyru.adapter.in.dto.request.share.SharePhotoRequest;
 import com.veyru.adapter.in.dto.response.PageResponse;
-import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
-import com.veyru.adapter.in.dto.response.share.ShareResponse;
-import com.veyru.adapter.in.dto.response.share.ShareWithPhotoResponse;
-import com.veyru.domain.service.share.ShareService;
+import com.veyru.application.common.PageResult;
+import com.veyru.application.result.photo.PhotoResponse;
+import com.veyru.application.result.share.ShareResponse;
+import com.veyru.application.result.share.ShareWithPhotoResponse;
+import com.veyru.application.social.ShareService;
 import java.util.List;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -52,7 +52,7 @@ public class ShareController {
       @PathVariable String userId,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size) {
-    Page<ShareWithPhotoResponse> shares = shareService.getSharesByUserId(userId, page, size);
+    PageResult<ShareWithPhotoResponse> shares = shareService.getSharesByUserId(userId, page, size);
     return ResponseEntity.ok(PageResponse.from(shares));
   }
 

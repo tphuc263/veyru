@@ -196,9 +196,10 @@ public class GlobalExceptionHandler {
   private ProblemDetail problem(ErrorCode code, String detail, WebRequest request) {
     String description = request.getDescription(false);
     URI instance = description.startsWith("uri=") ? URI.create(description.substring(4)) : null;
+    var status = HttpErrorMapper.status(code);
     ProblemDetail problem =
-        ProblemDetail.forStatusAndDetail(code.status(), detail == null ? code.detail() : detail);
-    problem.setTitle(code.status().getReasonPhrase());
+        ProblemDetail.forStatusAndDetail(status, detail == null ? code.detail() : detail);
+    problem.setTitle(status.getReasonPhrase());
     problem.setInstance(instance);
     problem.setProperty("code", code.name());
     return problem;

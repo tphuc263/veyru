@@ -2,13 +2,14 @@ package com.veyru.adapter.in.controller;
 
 import com.veyru.adapter.in.dto.request.ai.EngagementAnalysisRequest;
 import com.veyru.adapter.in.dto.request.ai.ImageAnalysisRequest;
-import com.veyru.adapter.in.dto.response.ai.EngagementAnalysisResponse;
-import com.veyru.adapter.in.dto.response.ai.ImageAnalysisResponse;
-import com.veyru.adapter.in.dto.response.ai.PostTimingSuggestionResponse;
+import com.veyru.application.identity.UserProfileService;
+import com.veyru.application.intelligence.AIService;
+import com.veyru.application.intelligence.ImageAnalysisCommand;
+import com.veyru.application.result.ai.EngagementAnalysisResponse;
+import com.veyru.application.result.ai.ImageAnalysisResponse;
+import com.veyru.application.result.ai.PostTimingSuggestionResponse;
 import com.veyru.domain.exception.ApiException;
 import com.veyru.domain.model.User;
-import com.veyru.domain.service.ai.AIService;
-import com.veyru.domain.service.user.UserService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 public class AIController {
   private static final Logger log = LoggerFactory.getLogger(AIController.class);
   private final AIService aiService;
-  private final UserService userService;
+  private final UserProfileService userService;
 
   @PostMapping("/engagement-analyses")
   public ResponseEntity<EngagementAnalysisResponse> analyzeEngagement(
@@ -43,19 +44,20 @@ public class AIController {
   @PostMapping("/image-analyses")
   public ResponseEntity<ImageAnalysisResponse> analyzeImage(
       @Valid @RequestBody ImageAnalysisRequest request) {
-    ImageAnalysisRequest personalizedRequest = request;
+    String userId = request.userId();
     try {
       User currentUser = userService.getCurrentUser();
-      personalizedRequest =
-          new ImageAnalysisRequest(request.imageBase64(), request.mimeType(), currentUser.getId());
+      userId = currentUser.getId();
     } catch (ApiException e) {
       log.debug("No authenticated user for image analysis");
     }
-    ImageAnalysisResponse response = aiService.analyzeImage(personalizedRequest);
+    ImageAnalysisResponse response =
+        aiService.analyzeImage(
+            new ImageAnalysisCommand(request.imageBase64(), request.mimeType(), userId));
     return ResponseEntity.ok(response);
   }
 
-  public AIController(final AIService aiService, final UserService userService) {
+  public AIController(final AIService aiService, final UserProfileService userService) {
     this.aiService = aiService;
     this.userService = userService;
   }

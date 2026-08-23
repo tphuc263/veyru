@@ -1,8 +1,8 @@
 package com.veyru.adapter.in.controller;
 
-import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
-import com.veyru.domain.service.graph.GraphFeedService;
-import com.veyru.domain.service.user.UserService;
+import com.veyru.application.discovery.GraphFeedService;
+import com.veyru.application.identity.UserProfileService;
+import com.veyru.application.result.photo.PhotoResponse;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 public class GraphFeedController {
   private static final Logger log = LoggerFactory.getLogger(GraphFeedController.class);
   private final GraphFeedService graphFeedService;
-  private final UserService userService;
+  private final UserProfileService userService;
 
   @GetMapping("/graph")
   public ResponseEntity<List<PhotoResponse>> getGraphFeed(
@@ -203,7 +203,7 @@ public class GraphFeedController {
   }
 
   public GraphFeedController(
-      final GraphFeedService graphFeedService, final UserService userService) {
+      final GraphFeedService graphFeedService, final UserProfileService userService) {
     this.graphFeedService = graphFeedService;
     this.userService = userService;
   }

@@ -1,8 +1,8 @@
 package com.veyru.adapter.in.controller;
 
-import com.veyru.adapter.in.dto.response.notification.NotificationResponse;
-import com.veyru.domain.service.notification.NotificationService;
-import com.veyru.domain.service.user.UserService;
+import com.veyru.application.identity.UserProfileService;
+import com.veyru.application.notification.NotificationService;
+import com.veyru.application.result.notification.NotificationResponse;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("${api.prefix}/users/me/notifications")
 public class NotificationController {
   private final NotificationService notificationService;
-  private final UserService userService;
+  private final UserProfileService userService;
 
   @GetMapping
   public ResponseEntity<List<NotificationResponse>> getNotifications(
@@ -36,7 +36,7 @@ public class NotificationController {
   }
 
   public NotificationController(
-      final NotificationService notificationService, final UserService userService) {
+      final NotificationService notificationService, final UserProfileService userService) {
     this.notificationService = notificationService;
     this.userService = userService;
   }

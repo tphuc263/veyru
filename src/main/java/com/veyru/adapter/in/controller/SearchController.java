@@ -1,15 +1,15 @@
 package com.veyru.adapter.in.controller;
 
 import com.veyru.adapter.in.dto.response.PageResponse;
-import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
-import com.veyru.adapter.in.dto.response.search.UserSearchResponseSimple;
-import com.veyru.domain.service.photo.ExploreService;
-import com.veyru.domain.service.search.SearchService;
-import com.veyru.domain.service.user.UserService;
+import com.veyru.application.common.PageResult;
+import com.veyru.application.discovery.ExploreService;
+import com.veyru.application.discovery.SearchService;
+import com.veyru.application.identity.UserProfileService;
+import com.veyru.application.result.photo.PhotoResponse;
+import com.veyru.application.result.search.UserSearchResponseSimple;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,14 +19,14 @@ public class SearchController {
   private static final Logger log = LoggerFactory.getLogger(SearchController.class);
   private final SearchService searchService;
   private final ExploreService exploreService;
-  private final UserService userService;
+  private final UserProfileService userService;
 
   @GetMapping("/users")
   public ResponseEntity<PageResponse<UserSearchResponseSimple>> searchUsers(
       @RequestParam("q") String query,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size) {
-    Page<UserSearchResponseSimple> users = searchService.searchUsers(query, page, size);
+    PageResult<UserSearchResponseSimple> users = searchService.searchUsers(query, page, size);
     return ResponseEntity.ok(PageResponse.from(users));
   }
 
@@ -35,7 +35,7 @@ public class SearchController {
       @RequestParam("q") String query,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size) {
-    Page<PhotoResponse> photos = searchService.searchPhotos(query, page, size);
+    PageResult<PhotoResponse> photos = searchService.searchPhotos(query, page, size);
     return ResponseEntity.ok(PageResponse.from(photos));
   }
 
@@ -44,7 +44,7 @@ public class SearchController {
       @RequestParam("q") String query,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size) {
-    Page<PhotoResponse> photos = searchService.searchPhotosByTags(query, page, size);
+    PageResult<PhotoResponse> photos = searchService.searchPhotosByTags(query, page, size);
     return ResponseEntity.ok(PageResponse.from(photos));
   }
 
@@ -61,7 +61,7 @@ public class SearchController {
       @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
     String userId = userService.getCurrentUser().getId();
     log.info("Fetching explore feed for user: {}", userId);
-    Page<PhotoResponse> exploreFeed = exploreService.getExploreFeed(userId, page, size);
+    PageResult<PhotoResponse> exploreFeed = exploreService.getExploreFeed(userId, page, size);
     return ResponseEntity.ok(PageResponse.from(exploreFeed));
   }
 
@@ -69,7 +69,7 @@ public class SearchController {
   public ResponseEntity<PageResponse<PhotoResponse>> getPopularPhotos(
       @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
     log.info("Fetching popular photos, page: {}, size: {}", page, size);
-    Page<PhotoResponse> popular = exploreService.getPopularPhotos(page, size);
+    PageResult<PhotoResponse> popular = exploreService.getPopularPhotos(page, size);
     return ResponseEntity.ok(PageResponse.from(popular));
   }
 
@@ -79,14 +79,14 @@ public class SearchController {
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size) {
     log.info("Fetching photos for tag: {}", tag);
-    Page<PhotoResponse> photos = exploreService.getPhotosByTag(tag, page, size);
+    PageResult<PhotoResponse> photos = exploreService.getPhotosByTag(tag, page, size);
     return ResponseEntity.ok(PageResponse.from(photos));
   }
 
   public SearchController(
       final SearchService searchService,
       final ExploreService exploreService,
-      final UserService userService) {
+      final UserProfileService userService) {
     this.searchService = searchService;
     this.exploreService = exploreService;
     this.userService = userService;

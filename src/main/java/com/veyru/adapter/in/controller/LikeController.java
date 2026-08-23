@@ -1,7 +1,7 @@
 package com.veyru.adapter.in.controller;
 
-import com.veyru.adapter.in.dto.response.like.LikeResponse;
-import com.veyru.domain.service.like.LikeService;
+import com.veyru.application.result.like.LikeResponse;
+import com.veyru.application.social.LikeService;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
