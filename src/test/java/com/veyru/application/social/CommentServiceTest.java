@@ -5,13 +5,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.veyru.adapter.in.dto.request.comment.UpdateCommentRequest;
-import com.veyru.adapter.out.neo4j.Neo4jGraphAdapter;
-import com.veyru.adapter.out.redis.RedisUserAvatarCache;
 import com.veyru.application.identity.UserProfileService;
 import com.veyru.application.notification.NotificationService;
+import com.veyru.application.port.out.AvatarCache;
 import com.veyru.application.port.out.CommentLikeStore;
 import com.veyru.application.port.out.CommentStore;
+import com.veyru.application.port.out.GraphProjection;
 import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.port.out.UserStore;
 import com.veyru.domain.exception.ApiException;
@@ -20,7 +19,6 @@ import com.veyru.domain.model.Comment;
 import com.veyru.domain.model.User;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.springframework.data.mongodb.core.MongoTemplate;
 
 class CommentServiceTest {
   private final CommentStore commentStore = mock(CommentStore.class);
@@ -32,16 +30,15 @@ class CommentServiceTest {
           mock(PhotoStore.class),
           mock(UserStore.class),
           userService,
-          mock(MongoTemplate.class),
           mock(NotificationService.class),
-          mock(RedisUserAvatarCache.class),
-          mock(Neo4jGraphAdapter.class));
+          mock(AvatarCache.class),
+          mock(GraphProjection.class));
 
   @Test
   void returnsNotFoundWhenUpdatingMissingComment() {
     when(commentStore.findById("missing")).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> service.updateComment("missing", new UpdateCommentRequest("text")))
+    assertThatThrownBy(() -> service.updateComment("missing", new UpdateCommentCommand("text")))
         .isInstanceOfSatisfying(
             ApiException.class,
             exception -> assertThat(exception.code()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND));
@@ -56,7 +53,7 @@ class CommentServiceTest {
     when(commentStore.findById("comment")).thenReturn(Optional.of(comment));
     when(userService.getCurrentUser()).thenReturn(actor);
 
-    assertThatThrownBy(() -> service.updateComment("comment", new UpdateCommentRequest("text")))
+    assertThatThrownBy(() -> service.updateComment("comment", new UpdateCommentCommand("text")))
         .isInstanceOfSatisfying(
             ApiException.class,
             exception -> assertThat(exception.code()).isEqualTo(ErrorCode.ACCESS_DENIED));

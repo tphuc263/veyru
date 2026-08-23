@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.veyru.adapter.out.neo4j.Neo4jGraphAdapter;
 import com.veyru.application.port.out.FollowStore;
+import com.veyru.application.port.out.GraphProjection;
 import com.veyru.application.port.out.LikeStore;
 import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.port.out.UserStore;
@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 class GraphSyncServiceTest {
   @Test
   void neo4jFailureDoesNotFailThePrimaryPhotoWrite() {
-    Neo4jGraphAdapter graph = mock(Neo4jGraphAdapter.class);
+    GraphProjection graph = mock(GraphProjection.class);
     PhotoStore photos = mock(PhotoStore.class);
     Photo photo = new Photo();
     photo.setId("photo-1");
