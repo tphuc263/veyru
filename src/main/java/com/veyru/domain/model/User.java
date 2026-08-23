@@ -20,10 +20,32 @@ public class User {
   private String resetToken;
   private Instant resetTokenExpiry;
 
-  public boolean isResetTokenValid() {
-    return resetToken != null
-        && resetTokenExpiry != null
-        && Instant.now().isBefore(resetTokenExpiry);
+  public static User registered(
+      String username, String email, String encodedPassword, Instant createdAt) {
+    User user = new User();
+    user.username = username;
+    user.email = email;
+    user.password = encodedPassword;
+    user.role = UserRole.ROLE_USER;
+    user.createdAt = createdAt;
+    return user;
+  }
+
+  public User requestPasswordReset(String token, Instant expiry) {
+    this.resetToken = token;
+    this.resetTokenExpiry = expiry;
+    return this;
+  }
+
+  public User resetPassword(String encodedPassword) {
+    this.password = encodedPassword;
+    this.resetToken = null;
+    this.resetTokenExpiry = null;
+    return this;
+  }
+
+  public boolean hasValidResetToken(Instant now) {
+    return resetToken != null && resetTokenExpiry != null && now.isBefore(resetTokenExpiry);
   }
 
   public String getId() {
@@ -230,39 +252,6 @@ public class User {
     final Object $resetTokenExpiry = this.getResetTokenExpiry();
     result = result * PRIME + ($resetTokenExpiry == null ? 43 : $resetTokenExpiry.hashCode());
     return result;
-  }
-
-  @Override
-  public String toString() {
-    return "User(id="
-        + this.getId()
-        + ", username="
-        + this.getUsername()
-        + ", email="
-        + this.getEmail()
-        + ", phoneNumber="
-        + this.getPhoneNumber()
-        + ", password="
-        + this.getPassword()
-        + ", role="
-        + this.getRole()
-        + ", imageUrl="
-        + this.getImageUrl()
-        + ", bio="
-        + this.getBio()
-        + ", createdAt="
-        + this.getCreatedAt()
-        + ", photoCount="
-        + this.getPhotoCount()
-        + ", followerCount="
-        + this.getFollowerCount()
-        + ", followingCount="
-        + this.getFollowingCount()
-        + ", resetToken="
-        + this.getResetToken()
-        + ", resetTokenExpiry="
-        + this.getResetTokenExpiry()
-        + ")";
   }
 
   public User() {}

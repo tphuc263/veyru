@@ -7,7 +7,7 @@ import static org.mockito.Mockito.when;
 import com.veyru.application.port.out.AuthenticationGateway;
 import com.veyru.application.port.out.IdentityUserStore;
 import com.veyru.application.port.out.MailSender;
-import com.veyru.domain.enums.UserRole;
+import com.veyru.domain.model.User;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -20,10 +20,9 @@ class AuthenticationServiceTest {
     Instant now = Instant.parse("2026-08-23T00:00:00Z");
     IdentityUserStore users = mock(IdentityUserStore.class);
     MailSender mail = mock(MailSender.class);
-    UserAccount user =
-        new UserAccount(
-            "user-id", "alice", "alice@example.com", "hash", UserRole.ROLE_USER, now, null, null);
-    when(users.findByEmail(user.email())).thenReturn(Optional.of(user));
+    User user = User.registered("alice", "alice@example.com", "hash", now);
+    user.setId("user-id");
+    when(users.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
     AuthenticationService service =
         new AuthenticationService(
             mock(AuthenticationGateway.class),
@@ -33,10 +32,10 @@ class AuthenticationServiceTest {
             () -> "reset-token",
             Clock.fixed(now, ZoneOffset.UTC));
 
-    service.forgotPassword(user.email());
+    service.forgotPassword(user.getEmail());
 
     verify(users)
         .save(user.requestPasswordReset("reset-token", Instant.parse("2026-08-23T00:30:00Z")));
-    verify(mail).sendPasswordReset(user.email(), "reset-token", user.username());
+    verify(mail).sendPasswordReset(user.getEmail(), "reset-token", user.getUsername());
   }
 }

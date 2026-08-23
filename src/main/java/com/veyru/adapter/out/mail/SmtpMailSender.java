@@ -1,8 +1,8 @@
 package com.veyru.adapter.out.mail;
 
 import com.veyru.application.port.out.MailSender;
-import com.veyru.domain.exception.ApiException;
-import com.veyru.domain.exception.ErrorCode;
+import com.veyru.application.error.ApiException;
+import com.veyru.application.error.ErrorCode;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;

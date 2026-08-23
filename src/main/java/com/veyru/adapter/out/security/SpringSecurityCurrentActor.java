@@ -1,4 +1,4 @@
-package com.veyru.adapter.in.security;
+package com.veyru.adapter.out.security;
 
 import com.veyru.adapter.in.security.userdetails.AppUserDetails;
 import com.veyru.application.port.out.CurrentActor;
@@ -11,8 +11,7 @@ public class SpringSecurityCurrentActor implements CurrentActor {
   @Override
   public Optional<String> id() {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication == null
-        || !authentication.isAuthenticated()
+    if (authentication == null || !authentication.isAuthenticated()
         || !(authentication.getPrincipal() instanceof AppUserDetails user)) {
       return Optional.empty();
     }

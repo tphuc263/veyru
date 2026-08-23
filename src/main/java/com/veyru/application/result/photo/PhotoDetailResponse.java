@@ -1,6 +1,5 @@
 package com.veyru.application.result.photo;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.veyru.application.result.comment.CommentResponse;
 import com.veyru.application.result.like.LikeResponse;
 import java.time.Instant;
@@ -18,10 +17,8 @@ public class PhotoDetailResponse {
   private int commentCount;
   private int shareCount;
 
-  @JsonProperty("isLikedByCurrentUser")
   private boolean isLikedByCurrentUser;
 
-  @JsonProperty("isSavedByCurrentUser")
   private boolean isSavedByCurrentUser;
 
   private List<LikeResponse> likes;
@@ -130,12 +127,10 @@ public class PhotoDetailResponse {
     this.shareCount = shareCount;
   }
 
-  @JsonProperty("isLikedByCurrentUser")
   public void setLikedByCurrentUser(final boolean isLikedByCurrentUser) {
     this.isLikedByCurrentUser = isLikedByCurrentUser;
   }
 
-  @JsonProperty("isSavedByCurrentUser")
   public void setSavedByCurrentUser(final boolean isSavedByCurrentUser) {
     this.isSavedByCurrentUser = isSavedByCurrentUser;
   }

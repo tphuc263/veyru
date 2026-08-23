@@ -80,6 +80,8 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers(API + "/users/me/**")
                     .authenticated()
+                    .requestMatchers(HttpMethod.GET, API + "/photos/*/shares/me")
+                    .authenticated()
                     .requestMatchers(
                         HttpMethod.GET,
                         API + "/photos/**",

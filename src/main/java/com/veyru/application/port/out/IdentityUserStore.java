@@ -1,14 +1,14 @@
 package com.veyru.application.port.out;
 
-import com.veyru.application.identity.UserAccount;
+import com.veyru.domain.model.User;
 import java.util.Optional;
 
 public interface IdentityUserStore {
   boolean existsByEmail(String email);
 
-  Optional<UserAccount> findByEmail(String email);
+  Optional<User> findByEmail(String email);
 
-  Optional<UserAccount> findByResetToken(String token);
+  Optional<User> findByResetToken(String token);
 
-  UserAccount save(UserAccount user);
+  User save(User user);
 }

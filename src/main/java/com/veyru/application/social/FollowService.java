@@ -7,8 +7,8 @@ import com.veyru.application.port.out.FollowStore;
 import com.veyru.application.port.out.GraphProjection;
 import com.veyru.application.port.out.UserStore;
 import com.veyru.application.result.follow.FollowResponse;
-import com.veyru.domain.exception.ApiException;
-import com.veyru.domain.exception.ErrorCode;
+import com.veyru.application.error.ApiException;
+import com.veyru.application.error.ErrorCode;
 import com.veyru.domain.model.Follow;
 import com.veyru.domain.model.User;
 import java.time.Instant;
@@ -33,10 +33,7 @@ public class FollowService {
     User currentUser = getCurrentUser();
     Follow existingFollow = checkBeforeFollow(targetUserId, currentUser);
     if (existingFollow != null) return;
-    Follow follow = new Follow();
-    follow.setFollowerId(currentUser.getId());
-    follow.setFollowingId(targetUserId);
-    follow.setCreatedAt(Instant.now());
+    Follow follow = Follow.create(currentUser.getId(), targetUserId, Instant.now());
     followStore.save(follow);
     log.info("User {} followed user {}", currentUser.getId(), targetUserId);
     // Sync to Neo4j graph
@@ -142,11 +139,14 @@ public class FollowService {
   }
 
   private Set<String> getCurrentUserFollowing() {
-
-    User currentUser = getCurrentUser();
-    return followStore.findByFollowerId(currentUser.getId()).stream()
-        .map(Follow::getFollowingId)
-        .collect(Collectors.toSet());
+    return currentActor
+        .id()
+        .map(
+            actorId ->
+                followStore.findByFollowerId(actorId).stream()
+                    .map(Follow::getFollowingId)
+                    .collect(Collectors.toSet()))
+        .orElseGet(Set::of);
   }
 
   private Follow checkBeforeFollow(String targetUserId, User currentUser) {

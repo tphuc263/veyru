@@ -11,8 +11,8 @@ import com.veyru.application.result.comment.CommentResponse;
 import com.veyru.application.result.like.LikeResponse;
 import com.veyru.application.result.photo.PhotoDetailResponse;
 import com.veyru.application.result.photo.PhotoResponse;
-import com.veyru.domain.exception.ApiException;
-import com.veyru.domain.exception.ErrorCode;
+import com.veyru.application.error.ApiException;
+import com.veyru.application.error.ErrorCode;
 import com.veyru.domain.model.Comment;
 import com.veyru.domain.model.Like;
 import com.veyru.domain.model.Photo;
@@ -21,6 +21,7 @@ import com.veyru.domain.model.User;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +36,7 @@ public class PhotoService {
   private final CommentStore commentStore;
   private final ShareStore shareStore;
   private final PhotoConversionService photoConversionService;
-  private final DomainEventPublisher eventPublisher;
+  private final PhotoCreatedEventPublisher eventPublisher;
   private final AvatarCache userAvatarCacheService;
 
   public PhotoResponse createPhoto(CreatePhotoCommand request) {
@@ -69,25 +70,15 @@ public class PhotoService {
   public PageResult<PhotoResponse> getAllPhotos(int page, int size) {
     log.info("Fetching all photos - page: {}, size: {}", page, size);
     PageResult<Photo> photos = photoStore.findAll(new PageQuery(page, size));
-    User currentUser = null;
-
-    currentUser = userService.getCurrentUser();
-
-    final User finalCurrentUser = currentUser;
-    return photos.map(
-        photo -> photoConversionService.convertToPhotoResponse(photo, finalCurrentUser));
+    Optional<User> currentUser = userService.findCurrentUser();
+    return photos.map(photo -> photoConversionService.convertToPhotoResponse(photo, currentUser));
   }
 
   public PageResult<PhotoResponse> getPhotosByUserId(String userId, int page, int size) {
     log.info("Fetching photos for user ID: {} - page: {}, size: {}", userId, page, size);
     PageResult<Photo> photos = photoStore.findByUser(userId, new PageQuery(page, size));
-    User currentUser = null;
-
-    currentUser = userService.getCurrentUser();
-
-    final User finalCurrentUser = currentUser;
-    return photos.map(
-        photo -> photoConversionService.convertToPhotoResponse(photo, finalCurrentUser));
+    Optional<User> currentUser = userService.findCurrentUser();
+    return photos.map(photo -> photoConversionService.convertToPhotoResponse(photo, currentUser));
   }
 
   public PhotoDetailResponse getPhotoById(String photoId) {
@@ -148,9 +139,13 @@ public class PhotoService {
     response.setCommentCount((int) photo.getCommentCount());
     response.setShareCount((int) photo.getShareCount());
 
-    User currentUser = userService.getCurrentUser();
-    response.setLikedByCurrentUser(likeStore.exists(photo.getId(), currentUser.getId()));
-    response.setSavedByCurrentUser(favoriteStore.exists(currentUser.getId(), photo.getId()));
+    userService
+        .findCurrentUser()
+        .ifPresent(
+            currentUser -> {
+              response.setLikedByCurrentUser(likeStore.exists(photo.getId(), currentUser.getId()));
+              response.setSavedByCurrentUser(favoriteStore.exists(currentUser.getId(), photo.getId()));
+            });
 
     return response;
   }
@@ -210,7 +205,7 @@ public class PhotoService {
       final CommentStore commentStore,
       final ShareStore shareStore,
       final PhotoConversionService photoConversionService,
-      final DomainEventPublisher eventPublisher,
+      final PhotoCreatedEventPublisher eventPublisher,
       final AvatarCache userAvatarCacheService) {
     this.imageStorage = imageStorage;
     this.photoStore = photoStore;

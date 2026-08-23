@@ -8,12 +8,13 @@ import com.veyru.application.port.out.ImageStorage;
 import com.veyru.application.port.out.UserStore;
 import com.veyru.application.result.user.UserProfileResponse;
 import com.veyru.application.social.FollowService;
-import com.veyru.domain.exception.ApiException;
-import com.veyru.domain.exception.ErrorCode;
+import com.veyru.application.error.ApiException;
+import com.veyru.application.error.ErrorCode;
 import com.veyru.domain.model.User;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,12 +28,11 @@ public class UserProfileService {
   private final CurrentActor currentActor;
 
   public UserProfileResponse getUserProfileById(String targetUserId) {
-    User currentUser = getCurrentUser();
     User targetUser = findUserById(targetUserId);
     UserProfileResponse response = mapToUserProfileResponse(targetUser);
-    if (followService.isFollowing(currentUser.getId(), targetUserId)) {
-      response.setFollowingByCurrentUser(true);
-    }
+    findCurrentUser()
+        .filter(currentUser -> followService.isFollowing(currentUser.getId(), targetUserId))
+        .ifPresent(currentUser -> response.setFollowingByCurrentUser(true));
     HashMap<String, Long> stats = new HashMap<>();
     stats.put("posts", targetUser.getPhotoCount());
     stats.put("followers", targetUser.getFollowerCount());
@@ -85,8 +85,16 @@ public class UserProfileService {
 
   // helper methods
   public User getCurrentUser() {
+    return requireCurrentUser();
+  }
+
+  public User requireCurrentUser() {
     return findUserById(
         currentActor.id().orElseThrow(() -> new ApiException(ErrorCode.AUTHENTICATION_REQUIRED)));
+  }
+
+  public Optional<User> findCurrentUser() {
+    return currentActor.id().flatMap(userStore::findById);
   }
 
   public User findUserById(String userId) {

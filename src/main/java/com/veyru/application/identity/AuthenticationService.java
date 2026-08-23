@@ -4,6 +4,7 @@ import com.veyru.application.port.out.AuthenticationGateway;
 import com.veyru.application.port.out.IdentityUserStore;
 import com.veyru.application.port.out.MailSender;
 import com.veyru.application.port.out.PasswordHasher;
+import com.veyru.domain.model.User;
 import java.time.Clock;
 import java.time.temporal.ChronoUnit;
 import java.util.function.Supplier;
@@ -42,7 +43,7 @@ public final class AuthenticationService {
       throw new IdentityException(IdentityException.Reason.CONFLICT);
     }
     users.save(
-        UserAccount.registered(
+        User.registered(
             command.username(),
             command.email(),
             passwords.hash(command.password()),
@@ -55,11 +56,11 @@ public final class AuthenticationService {
         .ifPresent(
             user -> {
               String token = resetTokens.get();
-              UserAccount updated =
+              User updated =
                   user.requestPasswordReset(
                       token, clock.instant().plus(RESET_TOKEN_EXPIRY_MINUTES, ChronoUnit.MINUTES));
               users.save(updated);
-              mail.sendPasswordReset(updated.email(), token, updated.username());
+              mail.sendPasswordReset(updated.getEmail(), token, updated.getUsername());
             });
   }
 
@@ -67,7 +68,7 @@ public final class AuthenticationService {
     if (!command.newPassword().equals(command.confirmPassword())) {
       throw new IdentityException(IdentityException.Reason.VALIDATION_FAILED);
     }
-    UserAccount user =
+    User user =
         users
             .findByResetToken(command.token())
             .filter(account -> account.hasValidResetToken(clock.instant()))

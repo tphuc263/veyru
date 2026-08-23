@@ -107,4 +107,18 @@ public class Follow {
     this.followingId = followingId;
     this.createdAt = createdAt;
   }
+
+  public static Follow create(String followerId, String followingId, Instant createdAt) {
+    if (followerId == null || followerId.isBlank() || followingId == null || followingId.isBlank()) {
+      throw new IllegalArgumentException("Follow participants are required");
+    }
+    if (followerId.equals(followingId)) {
+      throw new IllegalArgumentException("A user cannot follow themselves");
+    }
+    Follow follow = new Follow();
+    follow.followerId = followerId;
+    follow.followingId = followingId;
+    follow.createdAt = createdAt;
+    return follow;
+  }
 }
