@@ -1,12 +1,9 @@
 package com.veyru.domain.model;
 
 import java.time.Instant;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "likes")
 public class Like {
-  @Id private String id;
+  private String id;
   private String photoId;
   private String userId;
   private Instant createdAt;

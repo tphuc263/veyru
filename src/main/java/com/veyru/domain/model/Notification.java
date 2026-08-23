@@ -2,14 +2,10 @@ package com.veyru.domain.model;
 
 import com.veyru.domain.enums.NotificationType;
 import java.time.Instant;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "notifications")
 public class Notification {
-  @Id private String id;
-  @Indexed private String recipientId; // User who receives the notification
+  private String id;
+  private String recipientId; // User who receives the notification
   private String actorId; // User who triggered the notification
   private NotificationType type;
   // Reference IDs based on notification type

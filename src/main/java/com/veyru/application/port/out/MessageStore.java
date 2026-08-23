@@ -1,6 +1,6 @@
 package com.veyru.application.port.out;
 
-import com.veyru.application.messaging.PageResult;
+import com.veyru.application.common.PageResult;
 import com.veyru.domain.model.Message;
 
 public interface MessageStore {

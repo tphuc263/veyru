@@ -3,20 +3,16 @@ package com.veyru.domain.model;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "comments")
 public class Comment {
-  @Id private String id;
-  @Indexed private String photoId;
+  private String id;
+  private String photoId;
   private String userId;
   private String text;
   private Instant createdAt;
   private EmbeddedUser user;
   // Nested comments support
-  @Indexed private String parentCommentId; // null for top-level comments
+  private String parentCommentId; // null for top-level comments
   private long likeCount = 0;
   private long replyCount = 0;
   // Mentioned users in comment (when user types @username)

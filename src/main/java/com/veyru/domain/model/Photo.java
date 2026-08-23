@@ -2,12 +2,9 @@ package com.veyru.domain.model;
 
 import java.time.Instant;
 import java.util.List;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "photos")
 public class Photo {
-  @Id private String id;
+  private String id;
   private String imageUrl;
   private String caption;
   private Instant createdAt;
