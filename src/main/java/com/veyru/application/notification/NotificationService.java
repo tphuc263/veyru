@@ -164,20 +164,12 @@ public class NotificationService {
   }
 
   private NotificationResult convertToResponse(Notification notification) {
-    return NotificationResult.builder()
-        .id(notification.getId())
-        .type(notification.getType())
-        .message(notification.getMessage())
-        .read(notification.isRead())
-        .createdAt(notification.getCreatedAt())
-        .actorId(notification.getActorId())
-        .actorUsername(
-            notification.getActor() != null ? notification.getActor().getUsername() : null)
-        .actorImageUrl(userAvatarCacheService.getAvatar(notification.getActorId()))
-        .photoId(notification.getPhotoId())
-        .commentId(notification.getCommentId())
-        .thumbnailUrl(notification.getThumbnailUrl())
-        .build();
+    return new NotificationResult(
+        notification.getId(), notification.getType(), notification.getMessage(), notification.isRead(),
+        notification.getCreatedAt(), notification.getActorId(),
+        notification.getActor() == null ? null : notification.getActor().getUsername(),
+        userAvatarCacheService.getAvatar(notification.getActorId()), notification.getPhotoId(),
+        notification.getCommentId(), notification.getThumbnailUrl());
   }
 
   public NotificationService(

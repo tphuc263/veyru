@@ -115,16 +115,10 @@ public class UserTagService {
   }
 
   private UserTagResult convertToResponse(Photo.EmbeddedUserTag tag, String photoId) {
-    return UserTagResult.builder()
-        .photoId(photoId)
-        .taggedUserId(tag.getTaggedUserId())
-        .taggedByUserId(tag.getTaggedByUserId())
-        .username(tag.getUsername())
-        .userImageUrl(userAvatarCacheService.getAvatar(tag.getTaggedUserId()))
-        .positionX(tag.getPositionX())
-        .positionY(tag.getPositionY())
-        .createdAt(tag.getCreatedAt())
-        .build();
+    return new UserTagResult(
+        null, photoId, tag.getTaggedUserId(), tag.getTaggedByUserId(), tag.getUsername(),
+        userAvatarCacheService.getAvatar(tag.getTaggedUserId()), tag.getPositionX(),
+        tag.getPositionY(), tag.getCreatedAt());
   }
 
   public UserTagService(

@@ -14,31 +14,16 @@ public class PhotoConversionService {
   private final AvatarCache userAvatarCacheService;
 
   public PhotoResult convertToPhotoResponse(Photo photo, Optional<User> currentUser) {
-    PhotoResult response = new PhotoResult();
-    response.setId(photo.getId());
-    response.setImageUrl(photo.getImageUrl());
-    response.setCaption(photo.getCaption());
-    response.setCreatedAt(photo.getCreatedAt());
-    if (photo.getUser() != null) {
-      response.setUsername(photo.getUser().getUsername());
-      response.setUserId(photo.getUser().getUserId());
-      response.setUserImageUrl(userAvatarCacheService.getAvatar(photo.getUser().getUserId()));
-    }
-    response.setLikeCount((int) photo.getLikeCount());
-    response.setCommentCount((int) photo.getCommentCount());
-    response.setShareCount((int) photo.getShareCount());
-    response.setTags(photo.getTags());
-    if (currentUser.isPresent()) {
-      User actor = currentUser.get();
-      boolean isLiked = likeStore.exists(photo.getId(), actor.getId());
-      response.setLikedByCurrentUser(isLiked);
-      boolean isSaved = favoriteStore.exists(actor.getId(), photo.getId());
-      response.setSavedByCurrentUser(isSaved);
-    } else {
-      response.setLikedByCurrentUser(false);
-      response.setSavedByCurrentUser(false);
-    }
-    return response;
+    var owner = photo.getUser();
+    User actor = currentUser.orElse(null);
+    return new PhotoResult(
+        photo.getId(), owner == null ? null : owner.getUserId(),
+        owner == null ? null : owner.getUsername(),
+        owner == null ? null : userAvatarCacheService.getAvatar(owner.getUserId()),
+        photo.getImageUrl(), photo.getCaption(), photo.getCreatedAt(), (int) photo.getLikeCount(),
+        (int) photo.getCommentCount(), (int) photo.getShareCount(),
+        actor != null && likeStore.exists(photo.getId(), actor.getId()),
+        actor != null && favoriteStore.exists(actor.getId(), photo.getId()), photo.getTags());
   }
 
   public PhotoConversionService(
