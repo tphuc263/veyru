@@ -13,7 +13,12 @@ public record ImageAnalysisResponse(
     List<String> captionSuggestions) {
   public static ImageAnalysisResponse from(ImageAnalysisResult value) {
     return new ImageAnalysisResponse(
-        value.getImageDescription(), value.getSceneType(), value.getMood(), value.getColors(),
-        value.getObjects(), value.getSuggestedTags(), value.getCaptionSuggestions());
+        value.getImageDescription(),
+        value.getSceneType(),
+        value.getMood(),
+        value.getColors(),
+        value.getObjects(),
+        value.getSuggestedTags(),
+        value.getCaptionSuggestions());
   }
 }

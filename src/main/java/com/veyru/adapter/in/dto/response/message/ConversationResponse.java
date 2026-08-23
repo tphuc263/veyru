@@ -14,8 +14,13 @@ public record ConversationResponse(
     long unreadCount) {
   public static ConversationResponse from(ConversationResult value) {
     return new ConversationResponse(
-        value.id(), value.participantId(), value.participantUsername(), value.participantImageUrl(),
-        value.lastMessageText(), value.lastMessageSenderId(), value.lastMessageAt(),
+        value.id(),
+        value.participantId(),
+        value.participantUsername(),
+        value.participantImageUrl(),
+        value.lastMessageText(),
+        value.lastMessageSenderId(),
+        value.lastMessageAt(),
         value.unreadCount());
   }
 }

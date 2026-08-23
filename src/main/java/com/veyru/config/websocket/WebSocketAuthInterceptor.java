@@ -1,7 +1,7 @@
 package com.veyru.config.websocket;
 
-import com.veyru.adapter.security.JwtUtils;
 import com.veyru.adapter.in.security.userdetails.StompPrincipal;
+import com.veyru.adapter.security.JwtUtils;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,6 +1,5 @@
 package com.veyru.adapter.security;
 
-import com.veyru.adapter.security.AppUserDetails;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;

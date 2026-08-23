@@ -124,20 +124,6 @@ public class User {
     return this.resetTokenExpiry;
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   @Override
   public String toString() {
     return "User(id=" + id + ", username=" + username + ", email=" + email + ")";

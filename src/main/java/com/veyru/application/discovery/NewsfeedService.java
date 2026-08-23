@@ -14,9 +14,9 @@ import com.veyru.domain.model.Follow;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.Share;
 import com.veyru.domain.model.User;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -94,7 +94,10 @@ public class NewsfeedService {
     List<Photo> photos = photoStore.findAllById(pagePhotoIds);
     List<PhotoResult> photoResponses =
         photos.stream()
-            .map(photo -> photoConversionService.convertToPhotoResponse(photo, java.util.Optional.of(currentUser)))
+            .map(
+                photo ->
+                    photoConversionService.convertToPhotoResponse(
+                        photo, java.util.Optional.of(currentUser)))
             .toList();
     // Maintain order from cache
     photoResponses.sort(
@@ -348,7 +351,10 @@ public class NewsfeedService {
     List<Photo> pagePhotos = photos.subList(start, end);
     List<PhotoResult> photoResponses =
         pagePhotos.stream()
-            .map(photo -> photoConversionService.convertToPhotoResponse(photo, java.util.Optional.of(currentUser)))
+            .map(
+                photo ->
+                    photoConversionService.convertToPhotoResponse(
+                        photo, java.util.Optional.of(currentUser)))
             .toList();
     return new PageResult<>(
         photoResponses,

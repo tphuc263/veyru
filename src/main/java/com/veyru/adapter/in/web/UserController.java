@@ -4,7 +4,6 @@ import com.veyru.adapter.in.dto.request.user.UpdateProfileRequest;
 import com.veyru.adapter.in.dto.response.PageResponse;
 import com.veyru.adapter.in.dto.response.user.UserProfileResponse;
 import com.veyru.application.common.ImageFile;
-import com.veyru.application.common.PageResult;
 import com.veyru.application.identity.UpdateProfileCommand;
 import com.veyru.application.identity.UserProfileService;
 import jakarta.validation.Valid;

@@ -24,10 +24,6 @@ public class Follow {
     return this.createdAt;
   }
 
-
-
-
-
   @Override
   public boolean equals(final Object o) {
     if (o == this) return true;
@@ -97,7 +93,10 @@ public class Follow {
   }
 
   public static Follow create(String followerId, String followingId, Instant createdAt) {
-    if (followerId == null || followerId.isBlank() || followingId == null || followingId.isBlank()) {
+    if (followerId == null
+        || followerId.isBlank()
+        || followingId == null
+        || followingId.isBlank()) {
       throw new IllegalArgumentException("Follow participants are required");
     }
     if (followerId.equals(followingId)) {

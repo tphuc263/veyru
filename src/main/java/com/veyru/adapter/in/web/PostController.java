@@ -2,7 +2,6 @@ package com.veyru.adapter.in.web;
 
 import com.veyru.adapter.in.dto.response.PageResponse;
 import com.veyru.adapter.in.dto.response.post.UnifiedPostResponse;
-import com.veyru.application.common.PageResult;
 import com.veyru.application.discovery.UnifiedPostService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

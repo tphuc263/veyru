@@ -24,10 +24,20 @@ public record PhotoDetailResponse(
     List<String> tags) {
   public static PhotoDetailResponse from(PhotoDetailResult value) {
     return new PhotoDetailResponse(
-        value.getId(), value.getUserId(), value.getUsername(), value.getUserImageUrl(),
-        value.getImageUrl(), value.getCaption(), value.getCreatedAt(), value.getLikeCount(),
-        value.getCommentCount(), value.getShareCount(), value.isLikedByCurrentUser(),
-        value.isSavedByCurrentUser(), value.getLikes().stream().map(LikeResponse::from).toList(),
-        value.getComments().stream().map(CommentResponse::from).toList(), value.getTags());
+        value.getId(),
+        value.getUserId(),
+        value.getUsername(),
+        value.getUserImageUrl(),
+        value.getImageUrl(),
+        value.getCaption(),
+        value.getCreatedAt(),
+        value.getLikeCount(),
+        value.getCommentCount(),
+        value.getShareCount(),
+        value.isLikedByCurrentUser(),
+        value.isSavedByCurrentUser(),
+        value.getLikes().stream().map(LikeResponse::from).toList(),
+        value.getComments().stream().map(CommentResponse::from).toList(),
+        value.getTags());
   }
 }

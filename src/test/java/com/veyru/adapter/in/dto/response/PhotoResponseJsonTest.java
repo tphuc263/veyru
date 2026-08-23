@@ -13,8 +13,19 @@ class PhotoResponseJsonTest {
   void preservesPersonalizedFlagNames() throws Exception {
     PhotoResponse response =
         new PhotoResponse(
-            "photo", "user", "alice", null, "image", null, Instant.EPOCH,
-            0, 0, 0, false, false, List.of());
+            "photo",
+            "user",
+            "alice",
+            null,
+            "image",
+            null,
+            Instant.EPOCH,
+            0,
+            0,
+            0,
+            false,
+            false,
+            List.of());
 
     String json = new ObjectMapper().findAndRegisterModules().writeValueAsString(response);
 

@@ -13,7 +13,12 @@ public record ShareResponse(
     Instant createdAt) {
   public static ShareResponse from(ShareResult value) {
     return new ShareResponse(
-        value.getId(), value.getPhotoId(), value.getUserId(), value.getUsername(),
-        value.getUserImageUrl(), value.getCaption(), value.getCreatedAt());
+        value.getId(),
+        value.getPhotoId(),
+        value.getUserId(),
+        value.getUsername(),
+        value.getUserImageUrl(),
+        value.getCaption(),
+        value.getCreatedAt());
   }
 }

@@ -2,14 +2,14 @@ package com.veyru.application.identity;
 
 import com.veyru.application.common.PageQuery;
 import com.veyru.application.common.PageResult;
+import com.veyru.application.common.error.UseCaseError;
+import com.veyru.application.common.error.UseCaseException;
 import com.veyru.application.port.out.AvatarCache;
 import com.veyru.application.port.out.CurrentActor;
 import com.veyru.application.port.out.ImageStorage;
 import com.veyru.application.port.out.UserStore;
 import com.veyru.application.result.user.UserProfileResult;
 import com.veyru.application.social.FollowService;
-import com.veyru.application.common.error.UseCaseException;
-import com.veyru.application.common.error.UseCaseError;
 import com.veyru.domain.model.User;
 import java.util.HashMap;
 import java.util.List;
@@ -38,8 +38,12 @@ public class UserProfileService {
             .map(currentUser -> followService.isFollowing(currentUser.getId(), targetUserId))
             .orElse(false);
     return new UserProfileResult(
-        targetUser.getId(), targetUser.getUsername(), targetUser.getImageUrl(), stats,
-        targetUser.getBio(), following);
+        targetUser.getId(),
+        targetUser.getUsername(),
+        targetUser.getImageUrl(),
+        stats,
+        targetUser.getBio(),
+        following);
   }
 
   public UserProfileResult getCurrentUserProfile() {
@@ -86,7 +90,9 @@ public class UserProfileService {
   // helper methods
   public User requireCurrentUser() {
     return findUserById(
-        currentActor.id().orElseThrow(() -> new UseCaseException(UseCaseError.AUTHENTICATION_REQUIRED)));
+        currentActor
+            .id()
+            .orElseThrow(() -> new UseCaseException(UseCaseError.AUTHENTICATION_REQUIRED)));
   }
 
   public Optional<User> findCurrentUser() {

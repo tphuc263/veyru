@@ -26,9 +26,17 @@ public record CommentResponse(
 
   public static CommentResponse from(CommentResult value) {
     return new CommentResponse(
-        value.getId(), value.getPhotoId(), value.getUserId(), value.getUsername(),
-        value.getUserImageUrl(), value.getText(), value.getCreatedAt(), value.getParentCommentId(),
-        value.getLikeCount(), value.getReplyCount(), value.isLikedByCurrentUser(),
+        value.getId(),
+        value.getPhotoId(),
+        value.getUserId(),
+        value.getUsername(),
+        value.getUserImageUrl(),
+        value.getText(),
+        value.getCreatedAt(),
+        value.getParentCommentId(),
+        value.getLikeCount(),
+        value.getReplyCount(),
+        value.isLikedByCurrentUser(),
         value.getReplies().stream().map(CommentResponse::from).toList(),
         value.getMentionedUsers().stream().map(MentionedUser::from).toList());
   }

@@ -34,21 +34,58 @@ class DomainMongoMappingTest {
     Instant now = Instant.parse("2026-08-23T00:00:00Z");
     User user =
         new User(
-            "user", "alice", "alice@example.com", null, "hash", UserRole.ROLE_USER,
-            null, null, now, 0, 0, 0, null, null);
+            "user",
+            "alice",
+            "alice@example.com",
+            null,
+            "hash",
+            UserRole.ROLE_USER,
+            null,
+            null,
+            now,
+            0,
+            0,
+            0,
+            null,
+            null);
     Photo photo =
         new Photo(
-            "photo", "image", "caption", now, List.of("tag"),
-            new Photo.EmbeddedUser("user", "alice"), 0, 0, 0, List.of());
+            "photo",
+            "image",
+            "caption",
+            now,
+            List.of("tag"),
+            new Photo.EmbeddedUser("user", "alice"),
+            0,
+            0,
+            0,
+            List.of());
     Follow follow = new Follow("follow", "user", "other", now);
     Comment comment =
         new Comment(
-            "comment", "photo", "user", "text", now,
-            new Comment.EmbeddedUser("user", "alice"), null, 0, 0, List.of());
+            "comment",
+            "photo",
+            "user",
+            "text",
+            now,
+            new Comment.EmbeddedUser("user", "alice"),
+            null,
+            0,
+            0,
+            List.of());
     Notification notification =
         new Notification(
-            "notification", "user", "other", NotificationType.NEW_FOLLOWER,
-            null, null, "message", false, now, new Notification.EmbeddedActor("bob"), null);
+            "notification",
+            "user",
+            "other",
+            NotificationType.NEW_FOLLOWER,
+            null,
+            null,
+            "message",
+            false,
+            now,
+            new Notification.EmbeddedActor("bob"),
+            null);
 
     assertThat(roundTrip(user, User.class).getUsername()).isEqualTo("alice");
     assertThat(roundTrip(photo, Photo.class).getImageUrl()).isEqualTo("image");

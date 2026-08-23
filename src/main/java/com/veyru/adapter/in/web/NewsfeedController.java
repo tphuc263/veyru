@@ -3,7 +3,6 @@ package com.veyru.adapter.in.web;
 import com.veyru.adapter.in.dto.response.PageResponse;
 import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
 import com.veyru.adapter.in.dto.response.post.UnifiedPostResponse;
-import com.veyru.application.common.PageResult;
 import com.veyru.application.discovery.NewsfeedService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

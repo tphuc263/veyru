@@ -3,12 +3,12 @@ package com.veyru.application.discovery;
 import com.veyru.application.common.PageQuery;
 import com.veyru.application.intelligence.EmbeddingService;
 import com.veyru.application.media.PhotoConversionService;
+import com.veyru.application.port.out.CurrentActor;
 import com.veyru.application.port.out.FavoriteStore;
 import com.veyru.application.port.out.FollowStore;
 import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.port.out.UserStore;
 import com.veyru.application.port.out.VectorIndex;
-import com.veyru.application.port.out.CurrentActor;
 import com.veyru.application.result.photo.PhotoResult;
 import com.veyru.application.result.recommendation.RecommendedUserResult;
 import com.veyru.domain.model.Favorite;
@@ -42,8 +42,7 @@ public class RecommendationService {
    * Get photos similar to the given photo using vector similarity. Falls back to tag-based matching
    * if embedding is unavailable.
    */
-  public List<PhotoResult> getRelatedPhotos(
-      String photoId, int limit, Optional<User> currentUser) {
+  public List<PhotoResult> getRelatedPhotos(String photoId, int limit, Optional<User> currentUser) {
     log.info("Getting related photos for photoId: {}, limit: {}", photoId, limit);
     Photo sourcePhoto = photoStore.findById(photoId).orElse(null);
     if (sourcePhoto == null) {
@@ -150,9 +149,14 @@ public class RecommendationService {
               result.containsKey("score") ? ((Number) result.get("score")).doubleValue() : 0.0;
           suggestions.add(
               new RecommendedUserResult(
-                  candidate.getId(), candidate.getUsername(), candidate.getImageUrl(),
-                  candidate.getBio(), candidate.getFollowerCount(), candidate.getPhotoCount(),
-                  1.0 - score, generateRecommendationReason(currentUser, candidate)));
+                  candidate.getId(),
+                  candidate.getUsername(),
+                  candidate.getImageUrl(),
+                  candidate.getBio(),
+                  candidate.getFollowerCount(),
+                  candidate.getPhotoCount(),
+                  1.0 - score,
+                  generateRecommendationReason(currentUser, candidate)));
           if (suggestions.size() >= limit) break;
         }
         log.info("Found {} suggested users via vector search for {}", suggestions.size(), userId);
@@ -177,8 +181,14 @@ public class RecommendationService {
         .map(
             u -> {
               return new RecommendedUserResult(
-                  u.getId(), u.getUsername(), u.getImageUrl(), u.getBio(),
-                  u.getFollowerCount(), u.getPhotoCount(), 0.0, "Popular on Veyru");
+                  u.getId(),
+                  u.getUsername(),
+                  u.getImageUrl(),
+                  u.getBio(),
+                  u.getFollowerCount(),
+                  u.getPhotoCount(),
+                  0.0,
+                  "Popular on Veyru");
             })
         .toList();
   }

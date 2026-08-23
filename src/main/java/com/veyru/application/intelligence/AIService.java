@@ -1,9 +1,9 @@
 package com.veyru.application.intelligence;
 
-import com.veyru.application.port.out.PhotoStore;
-import com.veyru.application.port.out.CurrentActor;
 import com.veyru.application.common.error.UseCaseError;
 import com.veyru.application.common.error.UseCaseException;
+import com.veyru.application.port.out.CurrentActor;
+import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.result.ai.EngagementAnalysisResult;
 import com.veyru.application.result.ai.ImageAnalysisResult;
 import com.veyru.application.result.ai.PostTimingSuggestionResult;
@@ -65,7 +65,8 @@ public class AIService {
 
   public ImageAnalysisResult analyzeImageForCurrentActor(ImageAnalysisCommand command) {
     String userId = currentActor.id().orElse(command.userId());
-    return analyzeImage(new ImageAnalysisCommand(command.imageBase64(), command.mimeType(), userId));
+    return analyzeImage(
+        new ImageAnalysisCommand(command.imageBase64(), command.mimeType(), userId));
   }
 
   private String requireActorId() {

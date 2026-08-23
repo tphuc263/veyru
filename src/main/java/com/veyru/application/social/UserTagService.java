@@ -1,16 +1,15 @@
 package com.veyru.application.social;
 
+import com.veyru.application.common.error.UseCaseError;
+import com.veyru.application.common.error.UseCaseException;
 import com.veyru.application.identity.UserProfileService;
 import com.veyru.application.notification.NotificationService;
 import com.veyru.application.port.out.AvatarCache;
 import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.port.out.UserStore;
 import com.veyru.application.result.usertag.UserTagResult;
-import com.veyru.application.common.error.UseCaseException;
-import com.veyru.application.common.error.UseCaseError;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
-import java.time.Instant;
 import java.time.Clock;
 import java.util.Collections;
 import java.util.List;
@@ -100,7 +99,9 @@ public class UserTagService {
   }
 
   public List<UserTagResult> getPhotosWhereUserIsTagged(String userId) {
-    userStore.findById(userId).orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
+    userStore
+        .findById(userId)
+        .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     // Query photos where userTags array contains an element with matching taggedUserId
     List<Photo> photos = photoStore.findTaggedUser(userId);
     return photos.stream()
@@ -116,9 +117,15 @@ public class UserTagService {
 
   private UserTagResult convertToResponse(Photo.EmbeddedUserTag tag, String photoId) {
     return new UserTagResult(
-        null, photoId, tag.getTaggedUserId(), tag.getTaggedByUserId(), tag.getUsername(),
-        userAvatarCacheService.getAvatar(tag.getTaggedUserId()), tag.getPositionX(),
-        tag.getPositionY(), tag.getCreatedAt());
+        null,
+        photoId,
+        tag.getTaggedUserId(),
+        tag.getTaggedByUserId(),
+        tag.getUsername(),
+        userAvatarCacheService.getAvatar(tag.getTaggedUserId()),
+        tag.getPositionX(),
+        tag.getPositionY(),
+        tag.getCreatedAt());
   }
 
   public UserTagService(

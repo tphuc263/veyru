@@ -3,7 +3,6 @@ package com.veyru.adapter.in.web;
 import com.veyru.adapter.in.dto.response.PageResponse;
 import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
 import com.veyru.adapter.in.dto.response.search.UserSearchResponseSimple;
-import com.veyru.application.common.PageResult;
 import com.veyru.application.discovery.ExploreService;
 import com.veyru.application.discovery.SearchService;
 import java.util.List;
@@ -79,9 +78,7 @@ public class SearchController {
     return ResponseEntity.ok(PageResponse.from(photos, PhotoResponse::from));
   }
 
-  public SearchController(
-      final SearchService searchService,
-      final ExploreService exploreService) {
+  public SearchController(final SearchService searchService, final ExploreService exploreService) {
     this.searchService = searchService;
     this.exploreService = exploreService;
   }

@@ -13,8 +13,13 @@ public record RecommendedUserResponse(
     String reason) {
   public static RecommendedUserResponse from(RecommendedUserResult value) {
     return new RecommendedUserResponse(
-        value.getId(), value.getUsername(), value.getImageUrl(), value.getBio(),
-        value.getFollowerCount(), value.getPhotoCount(), value.getSimilarityScore(),
+        value.getId(),
+        value.getUsername(),
+        value.getImageUrl(),
+        value.getBio(),
+        value.getFollowerCount(),
+        value.getPhotoCount(),
+        value.getSimilarityScore(),
         value.getReason());
   }
 }

@@ -30,9 +30,7 @@ public class AIController {
 
   @GetMapping("/post-timing-suggestions")
   public ResponseEntity<PostTimingSuggestionResponse> suggestPostTiming() {
-    return ResponseEntity.ok(
-        PostTimingSuggestionResponse.from(
-            aiService.suggestPostTiming()));
+    return ResponseEntity.ok(PostTimingSuggestionResponse.from(aiService.suggestPostTiming()));
   }
 
   @PostMapping("/image-analyses")

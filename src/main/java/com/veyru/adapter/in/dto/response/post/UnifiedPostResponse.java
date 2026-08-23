@@ -29,12 +29,28 @@ public record UnifiedPostResponse(
     int originalShareCount) {
   public static UnifiedPostResponse from(UnifiedPostResult value) {
     return new UnifiedPostResponse(
-        value.getId(), value.getType(), value.getCreatedAt(), value.getUserId(), value.getUsername(),
-        value.getUserImageUrl(), value.getImageUrl(), value.getCaption(), value.getLikeCount(),
-        value.getCommentCount(), value.getShareCount(), value.isLikedByCurrentUser(),
-        value.isSavedByCurrentUser(), value.getShareCaption(), value.getOriginalPhotoId(),
-        value.getOriginalImageUrl(), value.getOriginalCaption(), value.getOriginalUsername(),
-        value.getOriginalUserImageUrl(), value.getOriginalCreatedAt(), value.getOriginalLikeCount(),
-        value.getOriginalCommentCount(), value.getOriginalShareCount());
+        value.getId(),
+        value.getType(),
+        value.getCreatedAt(),
+        value.getUserId(),
+        value.getUsername(),
+        value.getUserImageUrl(),
+        value.getImageUrl(),
+        value.getCaption(),
+        value.getLikeCount(),
+        value.getCommentCount(),
+        value.getShareCount(),
+        value.isLikedByCurrentUser(),
+        value.isSavedByCurrentUser(),
+        value.getShareCaption(),
+        value.getOriginalPhotoId(),
+        value.getOriginalImageUrl(),
+        value.getOriginalCaption(),
+        value.getOriginalUsername(),
+        value.getOriginalUserImageUrl(),
+        value.getOriginalCreatedAt(),
+        value.getOriginalLikeCount(),
+        value.getOriginalCommentCount(),
+        value.getOriginalShareCount());
   }
 }

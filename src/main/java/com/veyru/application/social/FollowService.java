@@ -1,5 +1,7 @@
 package com.veyru.application.social;
 
+import com.veyru.application.common.error.UseCaseError;
+import com.veyru.application.common.error.UseCaseException;
 import com.veyru.application.notification.NotificationService;
 import com.veyru.application.port.out.AvatarCache;
 import com.veyru.application.port.out.CurrentActor;
@@ -7,11 +9,8 @@ import com.veyru.application.port.out.FollowStore;
 import com.veyru.application.port.out.GraphProjection;
 import com.veyru.application.port.out.UserStore;
 import com.veyru.application.result.follow.FollowResult;
-import com.veyru.application.common.error.UseCaseException;
-import com.veyru.application.common.error.UseCaseError;
 import com.veyru.domain.model.Follow;
 import com.veyru.domain.model.User;
-import java.time.Instant;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
@@ -89,7 +88,9 @@ public class FollowService {
 
   public List<FollowResult> getFollowers(String userId, int page, int size) {
     // Validate user exists
-    userStore.findById(userId).orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
+    userStore
+        .findById(userId)
+        .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     List<Follow> follows = followStore.findFollowers(userId, page, size);
     List<String> followerIds = follows.stream().map(Follow::getFollowerId).toList();
     return convertToFollowResponses(followerIds, true);
@@ -97,7 +98,9 @@ public class FollowService {
 
   public List<FollowResult> getFollowing(String userId, int page, int size) {
     // Validate user exists
-    userStore.findById(userId).orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
+    userStore
+        .findById(userId)
+        .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     List<Follow> follows = followStore.findFollowing(userId, page, size);
     List<String> followingIds = follows.stream().map(Follow::getFollowingId).toList();
     return convertToFollowResponses(followingIds, false);
@@ -126,8 +129,13 @@ public class FollowService {
               User user = usersMap.get(userId);
               if (user != null) {
                 return new FollowResult(
-                    user.getId(), user.getId(), user.getUsername(),
-                    userAvatarCacheService.getAvatar(user.getId()), null, null, user.getBio(),
+                    user.getId(),
+                    user.getId(),
+                    user.getUsername(),
+                    userAvatarCacheService.getAvatar(user.getId()),
+                    null,
+                    null,
+                    user.getBio(),
                     currentUserFollowing.contains(userId));
               }
               return null;
@@ -161,7 +169,9 @@ public class FollowService {
   // helper methods
   private User getCurrentUser() {
     String actorId =
-        currentActor.id().orElseThrow(() -> new UseCaseException(UseCaseError.AUTHENTICATION_REQUIRED));
+        currentActor
+            .id()
+            .orElseThrow(() -> new UseCaseException(UseCaseError.AUTHENTICATION_REQUIRED));
     return userStore
         .findById(actorId)
         .orElseThrow(

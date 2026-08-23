@@ -1,5 +1,7 @@
 package com.veyru.application.social;
 
+import com.veyru.application.common.error.UseCaseError;
+import com.veyru.application.common.error.UseCaseException;
 import com.veyru.application.identity.UserProfileService;
 import com.veyru.application.media.PhotoConversionService;
 import com.veyru.application.notification.NotificationService;
@@ -9,12 +11,9 @@ import com.veyru.application.port.out.LikeStore;
 import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.port.out.UserStore;
 import com.veyru.application.result.like.LikeResult;
-import com.veyru.application.common.error.UseCaseException;
-import com.veyru.application.common.error.UseCaseError;
 import com.veyru.domain.model.Like;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
-import java.time.Instant;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
@@ -77,7 +76,9 @@ public class LikeService {
 
   public List<LikeResult> getPhotoLikes(String photoId) {
     // Validate photo exists
-    photoStore.findById(photoId).orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
+    photoStore
+        .findById(photoId)
+        .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     List<Like> likes = likeStore.findByPhotoId(photoId);
     return convertToLikeResponses(likes);
   }
@@ -98,7 +99,9 @@ public class LikeService {
             like -> {
               User user = usersMap.get(like.getUserId());
               return new LikeResult(
-                  like.getId(), like.getUserId(), user == null ? null : user.getUsername(),
+                  like.getId(),
+                  like.getUserId(),
+                  user == null ? null : user.getUsername(),
                   user == null ? null : userAvatarCacheService.getAvatar(user.getId()),
                   like.getCreatedAt());
             })

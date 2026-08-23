@@ -18,8 +18,16 @@ public record NotificationResponse(
     String thumbnailUrl) {
   public static NotificationResponse from(NotificationResult value) {
     return new NotificationResponse(
-        value.getId(), value.getType(), value.getMessage(), value.isRead(), value.getCreatedAt(),
-        value.getActorId(), value.getActorUsername(), value.getActorImageUrl(), value.getPhotoId(),
-        value.getCommentId(), value.getThumbnailUrl());
+        value.getId(),
+        value.getType(),
+        value.getMessage(),
+        value.isRead(),
+        value.getCreatedAt(),
+        value.getActorId(),
+        value.getActorUsername(),
+        value.getActorImageUrl(),
+        value.getPhotoId(),
+        value.getCommentId(),
+        value.getThumbnailUrl());
   }
 }

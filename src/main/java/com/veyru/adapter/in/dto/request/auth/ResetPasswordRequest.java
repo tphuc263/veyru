@@ -8,7 +8,4 @@ public record ResetPasswordRequest(
     @NotBlank(message = "New password must not be blank")
         @Size(min = 6, message = "Password must be at least 6 characters")
         String newPassword,
-    @NotBlank(message = "Confirm password must not be blank") String confirmPassword) {
-
-
-}
+    @NotBlank(message = "Confirm password must not be blank") String confirmPassword) {}

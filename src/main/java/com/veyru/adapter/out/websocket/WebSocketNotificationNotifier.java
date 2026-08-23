@@ -1,7 +1,7 @@
 package com.veyru.adapter.out.websocket;
 
-import com.veyru.adapter.in.dto.websocket.WsEventEnvelope;
 import com.veyru.adapter.in.dto.response.notification.NotificationResponse;
+import com.veyru.adapter.in.dto.websocket.WsEventEnvelope;
 import com.veyru.application.port.out.NotificationNotifier;
 import com.veyru.application.result.notification.NotificationResult;
 import java.time.Clock;

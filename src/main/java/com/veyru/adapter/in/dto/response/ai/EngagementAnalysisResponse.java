@@ -19,15 +19,22 @@ public record EngagementAnalysisResponse(
       double engagementScore) {
     static PostInsight from(EngagementAnalysisResult.PostInsight value) {
       return new PostInsight(
-          value.getPhotoId(), value.getCaption(), value.getImageUrl(), value.getLikeCount(),
-          value.getCommentCount(), value.getEngagementScore());
+          value.getPhotoId(),
+          value.getCaption(),
+          value.getImageUrl(),
+          value.getLikeCount(),
+          value.getCommentCount(),
+          value.getEngagementScore());
     }
   }
 
   public static EngagementAnalysisResponse from(EngagementAnalysisResult value) {
     return new EngagementAnalysisResponse(
-        value.getAverageLikes(), value.getAverageComments(), value.getEngagementRate(),
-        value.getTrend(), value.getTopPosts().stream().map(PostInsight::from).toList(),
+        value.getAverageLikes(),
+        value.getAverageComments(),
+        value.getEngagementRate(),
+        value.getTrend(),
+        value.getTopPosts().stream().map(PostInsight::from).toList(),
         value.getAiSummary());
   }
 }

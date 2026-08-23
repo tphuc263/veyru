@@ -1,16 +1,15 @@
 package com.veyru.application.social;
 
+import com.veyru.application.common.error.UseCaseError;
+import com.veyru.application.common.error.UseCaseException;
 import com.veyru.application.identity.UserProfileService;
 import com.veyru.application.media.PhotoConversionService;
 import com.veyru.application.port.out.FavoriteStore;
 import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.result.photo.PhotoResult;
-import com.veyru.application.common.error.UseCaseException;
-import com.veyru.application.common.error.UseCaseError;
 import com.veyru.domain.model.Favorite;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
-import java.time.Instant;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
@@ -28,7 +27,9 @@ public class FavoriteService {
 
   public void favorite(String photoId) {
     User currentUser = userService.requireCurrentUser();
-    photoStore.findById(photoId).orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
+    photoStore
+        .findById(photoId)
+        .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     if (favoriteStore.exists(currentUser.getId(), photoId)) return;
     Favorite favorite = new Favorite();
     favorite.setUserId(currentUser.getId());
@@ -50,7 +51,9 @@ public class FavoriteService {
             favorite -> {
               Optional<Photo> photoOpt = photoStore.findById(favorite.getPhotoId());
               return photoOpt.map(
-                  photo -> photoConversionService.convertToPhotoResponse(photo, java.util.Optional.of(currentUser)));
+                  photo ->
+                      photoConversionService.convertToPhotoResponse(
+                          photo, java.util.Optional.of(currentUser)));
             })
         .filter(Optional::isPresent)
         .map(Optional::get)

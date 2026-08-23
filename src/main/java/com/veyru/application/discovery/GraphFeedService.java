@@ -7,9 +7,9 @@ import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.result.photo.PhotoResult;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.Clock;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +65,10 @@ public class GraphFeedService {
     // Convert to response
     User currentUser = userService.findUserById(userId);
     return photos.stream()
-        .map(photo -> photoConversionService.convertToPhotoResponse(photo, java.util.Optional.of(currentUser)))
+        .map(
+            photo ->
+                photoConversionService.convertToPhotoResponse(
+                    photo, java.util.Optional.of(currentUser)))
         .toList();
   }
 
@@ -107,7 +110,10 @@ public class GraphFeedService {
         });
     User currentUser = userService.findUserById(userId);
     return photos.stream()
-        .map(photo -> photoConversionService.convertToPhotoResponse(photo, java.util.Optional.of(currentUser)))
+        .map(
+            photo ->
+                photoConversionService.convertToPhotoResponse(
+                    photo, java.util.Optional.of(currentUser)))
         .toList();
   }
 
@@ -173,7 +179,10 @@ public class GraphFeedService {
     // Convert to response
     List<PhotoResult> result =
         scoredPhotos.stream()
-            .map(ps -> photoConversionService.convertToPhotoResponse(ps.photo, java.util.Optional.of(currentUser)))
+            .map(
+                ps ->
+                    photoConversionService.convertToPhotoResponse(
+                        ps.photo, java.util.Optional.of(currentUser)))
             .toList();
     return result;
   }
@@ -185,8 +194,7 @@ public class GraphFeedService {
   /** Traditional score calculation (same as in NewsfeedService) */
   private double calculateTraditionalScore(Photo photo) {
     double score = 0.0;
-    long hoursOld =
-        java.time.Duration.between(photo.getCreatedAt(), clock.instant()).toHours();
+    long hoursOld = java.time.Duration.between(photo.getCreatedAt(), clock.instant()).toHours();
     // Time decay
     if (hoursOld < 24) {
       score += 100 - (hoursOld * 2);

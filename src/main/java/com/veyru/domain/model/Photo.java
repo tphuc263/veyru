@@ -72,8 +72,6 @@ public class Photo {
       return this.username;
     }
 
-
-
     @Override
     public boolean equals(final Object o) {
       if (o == this) return true;
@@ -154,12 +152,6 @@ public class Photo {
     public Instant getCreatedAt() {
       return this.createdAt;
     }
-
-
-
-
-
-
 
     @Override
     public boolean equals(final Object o) {
@@ -296,16 +288,6 @@ public class Photo {
   public List<EmbeddedUserTag> getUserTags() {
     return this.userTags;
   }
-
-
-
-
-
-
-
-
-
-
 
   @Override
   public boolean equals(final Object o) {

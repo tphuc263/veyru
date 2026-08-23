@@ -15,8 +15,14 @@ public record UserTagResponse(
     Instant createdAt) {
   public static UserTagResponse from(UserTagResult value) {
     return new UserTagResponse(
-        value.getId(), value.getPhotoId(), value.getTaggedUserId(), value.getTaggedByUserId(),
-        value.getUsername(), value.getUserImageUrl(), value.getPositionX(), value.getPositionY(),
+        value.getId(),
+        value.getPhotoId(),
+        value.getTaggedUserId(),
+        value.getTaggedByUserId(),
+        value.getUsername(),
+        value.getUserImageUrl(),
+        value.getPositionX(),
+        value.getPositionY(),
         value.getCreatedAt());
   }
 }

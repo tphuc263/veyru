@@ -1,5 +1,7 @@
 package com.veyru.application.social;
 
+import com.veyru.application.common.error.UseCaseError;
+import com.veyru.application.common.error.UseCaseException;
 import com.veyru.application.identity.UserProfileService;
 import com.veyru.application.notification.NotificationService;
 import com.veyru.application.port.out.AvatarCache;
@@ -9,13 +11,10 @@ import com.veyru.application.port.out.GraphProjection;
 import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.port.out.UserStore;
 import com.veyru.application.result.comment.CommentResult;
-import com.veyru.application.common.error.UseCaseException;
-import com.veyru.application.common.error.UseCaseError;
 import com.veyru.domain.model.Comment;
 import com.veyru.domain.model.CommentLike;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
-import java.time.Instant;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
@@ -152,7 +151,9 @@ public class CommentService {
 
   public List<CommentResult> getPhotoComments(String photoId) {
     // Validate photo exists
-    photoStore.findById(photoId).orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
+    photoStore
+        .findById(photoId)
+        .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     String currentUserId = userService.findCurrentUser().map(User::getId).orElse(null);
     // Get only top-level comments (no parent)
     List<Comment> topLevelComments = commentStore.findTopLevelByPhotoId(photoId);

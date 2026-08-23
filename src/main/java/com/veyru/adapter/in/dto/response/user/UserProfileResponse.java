@@ -12,7 +12,11 @@ public record UserProfileResponse(
     boolean isFollowingByCurrentUser) {
   public static UserProfileResponse from(UserProfileResult value) {
     return new UserProfileResponse(
-        value.getId(), value.getUsername(), value.getImageUrl(), value.getStats(), value.getBio(),
+        value.getId(),
+        value.getUsername(),
+        value.getImageUrl(),
+        value.getStats(),
+        value.getBio(),
         value.isFollowingByCurrentUser());
   }
 }

@@ -5,5 +5,4 @@ import jakarta.validation.constraints.NotBlank;
 
 public record ForgotPasswordRequest(
     @NotBlank(message = "Email must not be blank") @Email(message = "Invalid email format")
-        String email) {
-}
+        String email) {}

@@ -1,8 +1,8 @@
 package com.veyru.adapter.in.web;
 
-import com.veyru.application.discovery.RecommendationService;
 import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
 import com.veyru.adapter.in.dto.response.recommendation.RecommendedUserResponse;
+import com.veyru.application.discovery.RecommendationService;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

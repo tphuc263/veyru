@@ -20,11 +20,6 @@ public class IdentityConfig {
       MailSender mail,
       Clock clock) {
     return new AuthenticationService(
-        authentication,
-        users,
-        passwords::encode,
-        mail,
-        () -> UUID.randomUUID().toString(),
-        clock);
+        authentication, users, passwords::encode, mail, () -> UUID.randomUUID().toString(), clock);
   }
 }

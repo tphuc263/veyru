@@ -5,7 +5,6 @@ import com.veyru.adapter.in.dto.response.PageResponse;
 import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
 import com.veyru.adapter.in.dto.response.share.ShareResponse;
 import com.veyru.adapter.in.dto.response.share.ShareWithPhotoResponse;
-import com.veyru.application.common.PageResult;
 import com.veyru.application.social.ShareService;
 import java.util.List;
 import org.springframework.http.ResponseEntity;

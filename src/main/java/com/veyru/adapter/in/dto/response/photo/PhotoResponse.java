@@ -19,9 +19,18 @@ public record PhotoResponse(
     List<String> tags) {
   public static PhotoResponse from(com.veyru.application.result.photo.PhotoResult value) {
     return new PhotoResponse(
-        value.getId(), value.getUserId(), value.getUsername(), value.getUserImageUrl(),
-        value.getImageUrl(), value.getCaption(), value.getCreatedAt(), value.getLikeCount(),
-        value.getCommentCount(), value.getShareCount(), value.isLikedByCurrentUser(),
-        value.isSavedByCurrentUser(), value.getTags());
+        value.getId(),
+        value.getUserId(),
+        value.getUsername(),
+        value.getUserImageUrl(),
+        value.getImageUrl(),
+        value.getCaption(),
+        value.getCreatedAt(),
+        value.getLikeCount(),
+        value.getCommentCount(),
+        value.getShareCount(),
+        value.isLikedByCurrentUser(),
+        value.isSavedByCurrentUser(),
+        value.getTags());
   }
 }

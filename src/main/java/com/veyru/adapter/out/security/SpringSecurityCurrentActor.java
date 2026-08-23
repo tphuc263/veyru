@@ -11,7 +11,8 @@ public class SpringSecurityCurrentActor implements CurrentActor {
   @Override
   public Optional<String> id() {
     var authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication == null || !authentication.isAuthenticated()
+    if (authentication == null
+        || !authentication.isAuthenticated()
         || !(authentication.getPrincipal() instanceof AppUserDetails user)) {
       return Optional.empty();
     }

@@ -14,7 +14,8 @@ class AggregateInvariantTest {
   @Test
   void photoNormalizesTagsAndInitializesCounters() {
     Photo photo =
-        Photo.create("user", "alice", "https://image", " caption ", List.of(" Travel ", "travel"), NOW);
+        Photo.create(
+            "user", "alice", "https://image", " caption ", List.of(" Travel ", "travel"), NOW);
 
     assertThat(photo.getCaption()).isEqualTo("caption");
     assertThat(photo.getTags()).containsExactly("travel");
@@ -44,8 +45,15 @@ class AggregateInvariantTest {
   void notificationMarkReadIsIdempotent() {
     Notification notification =
         Notification.create(
-            "recipient", "actor", "alice", NotificationType.NEW_FOLLOWER,
-            null, null, "message", null, NOW);
+            "recipient",
+            "actor",
+            "alice",
+            NotificationType.NEW_FOLLOWER,
+            null,
+            null,
+            "message",
+            null,
+            NOW);
 
     assertThat(notification.markRead().markRead().isRead()).isTrue();
   }

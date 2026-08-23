@@ -9,10 +9,8 @@ import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.result.photo.PhotoResult;
 import com.veyru.domain.model.Follow;
 import com.veyru.domain.model.Photo;
-import com.veyru.domain.model.User;
-import java.time.Duration;
-import java.time.Instant;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 

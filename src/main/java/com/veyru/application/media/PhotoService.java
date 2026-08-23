@@ -2,6 +2,8 @@ package com.veyru.application.media;
 
 import com.veyru.application.common.PageQuery;
 import com.veyru.application.common.PageResult;
+import com.veyru.application.common.error.UseCaseError;
+import com.veyru.application.common.error.UseCaseException;
 import com.veyru.application.event.PhotoCreatedEvent;
 import com.veyru.application.identity.UserProfileService;
 import com.veyru.application.port.out.*;
@@ -11,14 +13,10 @@ import com.veyru.application.result.comment.CommentResult;
 import com.veyru.application.result.like.LikeResult;
 import com.veyru.application.result.photo.PhotoDetailResult;
 import com.veyru.application.result.photo.PhotoResult;
-import com.veyru.application.common.error.UseCaseException;
-import com.veyru.application.common.error.UseCaseError;
 import com.veyru.domain.model.Comment;
 import com.veyru.domain.model.Like;
 import com.veyru.domain.model.Photo;
-import com.veyru.domain.model.Photo.EmbeddedUser;
 import com.veyru.domain.model.User;
-import java.time.Instant;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
@@ -140,7 +138,8 @@ public class PhotoService {
         .ifPresent(
             currentUser -> {
               response.setLikedByCurrentUser(likeStore.exists(photo.getId(), currentUser.getId()));
-              response.setSavedByCurrentUser(favoriteStore.exists(currentUser.getId(), photo.getId()));
+              response.setSavedByCurrentUser(
+                  favoriteStore.exists(currentUser.getId(), photo.getId()));
             });
 
     return response;
@@ -155,7 +154,9 @@ public class PhotoService {
             like -> {
               User user = usersMap.get(like.getUserId());
               return new LikeResult(
-                  like.getId(), like.getUserId(), user == null ? null : user.getUsername(),
+                  like.getId(),
+                  like.getUserId(),
+                  user == null ? null : user.getUsername(),
                   user == null ? null : userAvatarCacheService.getAvatar(user.getId()),
                   like.getCreatedAt());
             })

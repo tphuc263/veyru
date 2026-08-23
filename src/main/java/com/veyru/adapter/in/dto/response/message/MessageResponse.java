@@ -13,7 +13,12 @@ public record MessageResponse(
     Instant createdAt) {
   public static MessageResponse from(MessageResult value) {
     return new MessageResponse(
-        value.id(), value.conversationId(), value.senderId(), value.receiverId(), value.text(),
-        value.read(), value.createdAt());
+        value.id(),
+        value.conversationId(),
+        value.senderId(),
+        value.receiverId(),
+        value.text(),
+        value.read(),
+        value.createdAt());
   }
 }

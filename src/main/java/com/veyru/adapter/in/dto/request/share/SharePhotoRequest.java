@@ -1,4 +1,3 @@
 package com.veyru.adapter.in.dto.request.share;
 
-public record SharePhotoRequest(String caption) {
-}
+public record SharePhotoRequest(String caption) {}

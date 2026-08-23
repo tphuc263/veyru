@@ -12,13 +12,39 @@ public record UserTagResult(
     Double positionX,
     Double positionY,
     Instant createdAt) {
-  public String getId() { return id; }
-  public String getPhotoId() { return photoId; }
-  public String getTaggedUserId() { return taggedUserId; }
-  public String getTaggedByUserId() { return taggedByUserId; }
-  public String getUsername() { return username; }
-  public String getUserImageUrl() { return userImageUrl; }
-  public Double getPositionX() { return positionX; }
-  public Double getPositionY() { return positionY; }
-  public Instant getCreatedAt() { return createdAt; }
+  public String getId() {
+    return id;
+  }
+
+  public String getPhotoId() {
+    return photoId;
+  }
+
+  public String getTaggedUserId() {
+    return taggedUserId;
+  }
+
+  public String getTaggedByUserId() {
+    return taggedByUserId;
+  }
+
+  public String getUsername() {
+    return username;
+  }
+
+  public String getUserImageUrl() {
+    return userImageUrl;
+  }
+
+  public Double getPositionX() {
+    return positionX;
+  }
+
+  public Double getPositionY() {
+    return positionY;
+  }
+
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
 }

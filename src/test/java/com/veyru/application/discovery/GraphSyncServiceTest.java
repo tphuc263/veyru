@@ -20,8 +20,16 @@ class GraphSyncServiceTest {
     PhotoStore photos = mock(PhotoStore.class);
     Photo photo =
         new Photo(
-            "photo-1", null, null, null, java.util.List.of(),
-            new Photo.EmbeddedUser("user-1", "user"), 0, 0, 0, java.util.List.of());
+            "photo-1",
+            null,
+            null,
+            null,
+            java.util.List.of(),
+            new Photo.EmbeddedUser("user-1", "user"),
+            0,
+            0,
+            0,
+            java.util.List.of());
     when(photos.findById("photo-1")).thenReturn(Optional.of(photo));
     org.mockito.Mockito.doThrow(new RuntimeException("neo4j unavailable"))
         .when(graph)

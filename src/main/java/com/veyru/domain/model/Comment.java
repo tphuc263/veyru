@@ -54,8 +54,7 @@ public class Comment {
     if (!userId.equals(actorId)) throw new IllegalArgumentException("Only the author can edit");
     requireText(text);
     this.text = text.trim();
-    this.mentionedUserIds =
-        mentionedUserIds == null ? List.of() : List.copyOf(mentionedUserIds);
+    this.mentionedUserIds = mentionedUserIds == null ? List.of() : List.copyOf(mentionedUserIds);
     return this;
   }
 
@@ -65,7 +64,8 @@ public class Comment {
   }
 
   private static void requireText(String text) {
-    if (text == null || text.isBlank()) throw new IllegalArgumentException("Comment text is required");
+    if (text == null || text.isBlank())
+      throw new IllegalArgumentException("Comment text is required");
   }
 
   public static class EmbeddedUser {
@@ -79,8 +79,6 @@ public class Comment {
     public String getUsername() {
       return this.username;
     }
-
-
 
     @Override
     public boolean equals(final Object o) {
@@ -170,16 +168,6 @@ public class Comment {
   public List<String> getMentionedUserIds() {
     return this.mentionedUserIds;
   }
-
-
-
-
-
-
-
-
-
-
 
   @Override
   public boolean equals(final Object o) {

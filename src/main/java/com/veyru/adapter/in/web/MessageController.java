@@ -5,7 +5,6 @@ import com.veyru.adapter.in.dto.response.PageResponse;
 import com.veyru.adapter.in.dto.response.message.ConversationResponse;
 import com.veyru.adapter.in.dto.response.message.MessageResponse;
 import com.veyru.adapter.security.AppUserDetails;
-import com.veyru.application.common.PageResult;
 import com.veyru.application.messaging.ConversationService;
 import com.veyru.application.messaging.SendMessageCommand;
 import com.veyru.application.messaging.SendMessageUseCase;
@@ -58,10 +57,8 @@ public class MessageController {
       @PathVariable String conversationId,
       @RequestParam(defaultValue = "0") @Min(0) int page,
       @RequestParam(defaultValue = "50") @Min(1) @Max(100) int size) {
-    var result =
-        conversations.getMessages(conversationId, user.getId(), page, size);
-    return ResponseEntity.ok(
-        PageResponse.from(result, MessageResponse::from));
+    var result = conversations.getMessages(conversationId, user.getId(), page, size);
+    return ResponseEntity.ok(PageResponse.from(result, MessageResponse::from));
   }
 
   @PostMapping("/conversations/{conversationId}/messages")

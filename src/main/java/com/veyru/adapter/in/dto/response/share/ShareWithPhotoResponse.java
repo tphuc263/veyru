@@ -22,10 +22,21 @@ public record ShareWithPhotoResponse(
     int originalShareCount) {
   public static ShareWithPhotoResponse from(ShareWithPhotoResult value) {
     return new ShareWithPhotoResponse(
-        value.getId(), value.getPhotoId(), value.getUserId(), value.getUsername(),
-        value.getUserImageUrl(), value.getCaption(), value.getCreatedAt(),
-        value.getOriginalPhotoId(), value.getOriginalImageUrl(), value.getOriginalCaption(),
-        value.getOriginalUsername(), value.getOriginalUserImageUrl(), value.getOriginalCreatedAt(),
-        value.getOriginalLikeCount(), value.getOriginalCommentCount(), value.getOriginalShareCount());
+        value.getId(),
+        value.getPhotoId(),
+        value.getUserId(),
+        value.getUsername(),
+        value.getUserImageUrl(),
+        value.getCaption(),
+        value.getCreatedAt(),
+        value.getOriginalPhotoId(),
+        value.getOriginalImageUrl(),
+        value.getOriginalCaption(),
+        value.getOriginalUsername(),
+        value.getOriginalUserImageUrl(),
+        value.getOriginalCreatedAt(),
+        value.getOriginalLikeCount(),
+        value.getOriginalCommentCount(),
+        value.getOriginalShareCount());
   }
 }

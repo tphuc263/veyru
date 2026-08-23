@@ -20,18 +20,52 @@ public record EngagementAnalysisResult(
       long likeCount,
       long commentCount,
       double engagementScore) {
-    public String getPhotoId() { return photoId; }
-    public String getCaption() { return caption; }
-    public String getImageUrl() { return imageUrl; }
-    public long getLikeCount() { return likeCount; }
-    public long getCommentCount() { return commentCount; }
-    public double getEngagementScore() { return engagementScore; }
+    public String getPhotoId() {
+      return photoId;
+    }
+
+    public String getCaption() {
+      return caption;
+    }
+
+    public String getImageUrl() {
+      return imageUrl;
+    }
+
+    public long getLikeCount() {
+      return likeCount;
+    }
+
+    public long getCommentCount() {
+      return commentCount;
+    }
+
+    public double getEngagementScore() {
+      return engagementScore;
+    }
   }
 
-  public double getAverageLikes() { return averageLikes; }
-  public double getAverageComments() { return averageComments; }
-  public double getEngagementRate() { return engagementRate; }
-  public String getTrend() { return trend; }
-  public List<PostInsight> getTopPosts() { return topPosts; }
-  public String getAiSummary() { return aiSummary; }
+  public double getAverageLikes() {
+    return averageLikes;
+  }
+
+  public double getAverageComments() {
+    return averageComments;
+  }
+
+  public double getEngagementRate() {
+    return engagementRate;
+  }
+
+  public String getTrend() {
+    return trend;
+  }
+
+  public List<PostInsight> getTopPosts() {
+    return topPosts;
+  }
+
+  public String getAiSummary() {
+    return aiSummary;
+  }
 }

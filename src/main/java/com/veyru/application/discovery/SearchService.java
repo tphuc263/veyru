@@ -73,8 +73,7 @@ public class SearchService {
     // 2. Find Photos that contain these tags directly
     var currentUser = userService.findCurrentUser();
     PageResult<Photo> photos = photoStore.findByTags(tagNames, new PageQuery(page, size));
-    return photos.map(
-        photo -> photoConversionService.convertToPhotoResponse(photo, currentUser));
+    return photos.map(photo -> photoConversionService.convertToPhotoResponse(photo, currentUser));
   }
 
   public List<String> getSearchSuggestions(String query, int limit) {
@@ -105,9 +104,15 @@ public class SearchService {
 
   private UserSearchResult convertToUserSearchResponse(User user) {
     return new UserSearchResult(
-        user.getId(), user.getUsername(), null, null, user.getImageUrl(), user.getBio(),
+        user.getId(),
+        user.getUsername(),
+        null,
+        null,
+        user.getImageUrl(),
+        user.getBio(),
         user.getFollowerCount(),
-        userService.findCurrentUser()
+        userService
+            .findCurrentUser()
             .map(currentUser -> followService.isFollowing(currentUser.getId(), user.getId()))
             .orElse(false),
         0.0);
@@ -115,8 +120,12 @@ public class SearchService {
 
   private UserProfileResult convertToUserProfileResponse(UserSearchResult userSearchResponse) {
     return new UserProfileResult(
-        userSearchResponse.getId(), userSearchResponse.getUsername(),
-        userSearchResponse.getImageUrl(), null, userSearchResponse.getBio(), false);
+        userSearchResponse.getId(),
+        userSearchResponse.getUsername(),
+        userSearchResponse.getImageUrl(),
+        null,
+        userSearchResponse.getBio(),
+        false);
   }
 
   private UserSearchSimpleResult toSimpleResponse(User user) {

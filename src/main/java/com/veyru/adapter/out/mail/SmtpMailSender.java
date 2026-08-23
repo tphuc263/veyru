@@ -1,8 +1,8 @@
 package com.veyru.adapter.out.mail;
 
-import com.veyru.application.port.out.MailSender;
-import com.veyru.application.common.error.UseCaseException;
 import com.veyru.application.common.error.UseCaseError;
+import com.veyru.application.common.error.UseCaseException;
+import com.veyru.application.port.out.MailSender;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;

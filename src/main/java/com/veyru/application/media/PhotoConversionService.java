@@ -17,13 +17,19 @@ public class PhotoConversionService {
     var owner = photo.getUser();
     User actor = currentUser.orElse(null);
     return new PhotoResult(
-        photo.getId(), owner == null ? null : owner.getUserId(),
+        photo.getId(),
+        owner == null ? null : owner.getUserId(),
         owner == null ? null : owner.getUsername(),
         owner == null ? null : userAvatarCacheService.getAvatar(owner.getUserId()),
-        photo.getImageUrl(), photo.getCaption(), photo.getCreatedAt(), (int) photo.getLikeCount(),
-        (int) photo.getCommentCount(), (int) photo.getShareCount(),
+        photo.getImageUrl(),
+        photo.getCaption(),
+        photo.getCreatedAt(),
+        (int) photo.getLikeCount(),
+        (int) photo.getCommentCount(),
+        (int) photo.getShareCount(),
         actor != null && likeStore.exists(photo.getId(), actor.getId()),
-        actor != null && favoriteStore.exists(actor.getId(), photo.getId()), photo.getTags());
+        actor != null && favoriteStore.exists(actor.getId(), photo.getId()),
+        photo.getTags());
   }
 
   public PhotoConversionService(

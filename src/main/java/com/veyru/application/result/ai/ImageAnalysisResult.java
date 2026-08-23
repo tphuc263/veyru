@@ -17,11 +17,31 @@ public record ImageAnalysisResult(
     captionSuggestions = captionSuggestions == null ? null : List.copyOf(captionSuggestions);
   }
 
-  public String getImageDescription() { return imageDescription; }
-  public String getSceneType() { return sceneType; }
-  public String getMood() { return mood; }
-  public List<String> getColors() { return colors; }
-  public List<String> getObjects() { return objects; }
-  public List<String> getSuggestedTags() { return suggestedTags; }
-  public List<String> getCaptionSuggestions() { return captionSuggestions; }
+  public String getImageDescription() {
+    return imageDescription;
+  }
+
+  public String getSceneType() {
+    return sceneType;
+  }
+
+  public String getMood() {
+    return mood;
+  }
+
+  public List<String> getColors() {
+    return colors;
+  }
+
+  public List<String> getObjects() {
+    return objects;
+  }
+
+  public List<String> getSuggestedTags() {
+    return suggestedTags;
+  }
+
+  public List<String> getCaptionSuggestions() {
+    return captionSuggestions;
+  }
 }

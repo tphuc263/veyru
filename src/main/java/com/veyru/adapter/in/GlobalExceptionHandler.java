@@ -1,10 +1,10 @@
 package com.veyru.adapter.in;
 
-import com.veyru.application.identity.IdentityException;
-import com.veyru.application.messaging.MessagingException;
-import com.veyru.application.common.error.UseCaseException;
 import com.veyru.adapter.in.error.ErrorCode;
 import com.veyru.adapter.in.error.ValidationError;
+import com.veyru.application.common.error.UseCaseException;
+import com.veyru.application.identity.IdentityException;
+import com.veyru.application.messaging.MessagingException;
 import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
 import java.util.List;

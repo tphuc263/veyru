@@ -24,6 +24,9 @@ public record PageResponse<T>(
   public static <T, R> PageResponse<R> from(PageResult<T> page, Function<T, R> mapper) {
     return new PageResponse<>(
         page.items().stream().map(mapper).toList(),
-        page.page(), page.size(), page.totalElements(), page.totalPages());
+        page.page(),
+        page.size(),
+        page.totalElements(),
+        page.totalPages());
   }
 }

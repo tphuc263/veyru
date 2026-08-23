@@ -20,8 +20,7 @@ public class MessagingConfig {
       MessagingUserLookup userLookup,
       MessageNotifier notifier,
       Clock clock) {
-    return new ConversationService(
-        conversationStore, messageStore, userLookup, notifier, clock);
+    return new ConversationService(conversationStore, messageStore, userLookup, notifier, clock);
   }
 
   @Bean
@@ -34,12 +33,6 @@ public class MessagingConfig {
       ConversationService conversations,
       Clock clock) {
     return new SendMessageUseCase(
-        messageStore,
-        conversationStore,
-        userLookup,
-        idempotency,
-        notifier,
-        conversations,
-        clock);
+        messageStore, conversationStore, userLookup, idempotency, notifier, conversations, clock);
   }
 }

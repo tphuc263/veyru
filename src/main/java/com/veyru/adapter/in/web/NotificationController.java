@@ -1,7 +1,7 @@
 package com.veyru.adapter.in.web;
 
-import com.veyru.application.notification.NotificationService;
 import com.veyru.adapter.in.dto.response.notification.NotificationResponse;
+import com.veyru.application.notification.NotificationService;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

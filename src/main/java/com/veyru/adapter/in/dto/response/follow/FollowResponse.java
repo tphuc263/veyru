@@ -13,7 +13,13 @@ public record FollowResponse(
     boolean isFollowedByCurrentUser) {
   public static FollowResponse from(FollowResult value) {
     return new FollowResponse(
-        value.getId(), value.getUserId(), value.getUsername(), value.getUserImageUrl(),
-        value.getFirstName(), value.getLastName(), value.getBio(), value.isFollowedByCurrentUser());
+        value.getId(),
+        value.getUserId(),
+        value.getUsername(),
+        value.getUserImageUrl(),
+        value.getFirstName(),
+        value.getLastName(),
+        value.getBio(),
+        value.isFollowedByCurrentUser());
   }
 }

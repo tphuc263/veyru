@@ -2,10 +2,9 @@ package com.veyru.adapter.in.web;
 
 import com.veyru.adapter.in.dto.request.photo.CreatePhotoRequest;
 import com.veyru.adapter.in.dto.response.PageResponse;
-import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
 import com.veyru.adapter.in.dto.response.photo.PhotoDetailResponse;
+import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
 import com.veyru.application.common.ImageFile;
-import com.veyru.application.common.PageResult;
 import com.veyru.application.media.CreatePhotoCommand;
 import com.veyru.application.media.PhotoService;
 import jakarta.validation.Valid;

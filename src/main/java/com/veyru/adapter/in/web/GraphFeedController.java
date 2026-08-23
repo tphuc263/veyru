@@ -1,7 +1,7 @@
 package com.veyru.adapter.in.web;
 
-import com.veyru.application.discovery.GraphFeedService;
 import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
+import com.veyru.application.discovery.GraphFeedService;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,9 +41,7 @@ public class GraphFeedController {
       @RequestParam(defaultValue = "0.5") double alpha) {
     log.info("Hybrid feed requested with alpha: {}", alpha);
     List<PhotoResponse> feed =
-        graphFeedService.getHybridFeed(limit, alpha).stream()
-            .map(PhotoResponse::from)
-            .toList();
+        graphFeedService.getHybridFeed(limit, alpha).stream().map(PhotoResponse::from).toList();
     return ResponseEntity.ok(feed);
   }
 

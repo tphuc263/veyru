@@ -30,7 +30,8 @@ public class Notification {
       String thumbnailUrl,
       Instant createdAt) {
     if (recipientId == null || actorId == null || type == null || createdAt == null) {
-      throw new IllegalArgumentException("Notification recipient, actor, type and time are required");
+      throw new IllegalArgumentException(
+          "Notification recipient, actor, type and time are required");
     }
     return new Notification(
         null,
@@ -84,7 +85,6 @@ public class Notification {
     public String getUsername() {
       return this.username;
     }
-
 
     @Override
     public boolean equals(final Object o) {
@@ -317,17 +317,6 @@ public class Notification {
   public String getThumbnailUrl() {
     return this.thumbnailUrl;
   }
-
-
-
-
-
-
-
-
-
-
-
 
   @Override
   public boolean equals(final Object o) {

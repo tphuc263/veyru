@@ -9,7 +9,4 @@ public record CreateCommentRequest(
         @Size(max = 500, message = "Comment text cannot exceed 500 characters")
         String text,
     String parentCommentId,
-    List<String> mentionedUsernames) {
-
-
-}
+    List<String> mentionedUsernames) {}

@@ -1,6 +1,8 @@
 package com.veyru.application.social;
 
 import com.veyru.application.common.PageResult;
+import com.veyru.application.common.error.UseCaseError;
+import com.veyru.application.common.error.UseCaseException;
 import com.veyru.application.identity.UserProfileService;
 import com.veyru.application.media.PhotoConversionService;
 import com.veyru.application.port.out.AvatarCache;
@@ -10,12 +12,9 @@ import com.veyru.application.port.out.UserStore;
 import com.veyru.application.result.photo.PhotoResult;
 import com.veyru.application.result.share.ShareResult;
 import com.veyru.application.result.share.ShareWithPhotoResult;
-import com.veyru.application.common.error.UseCaseException;
-import com.veyru.application.common.error.UseCaseError;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.Share;
 import com.veyru.domain.model.User;
-import java.time.Instant;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
@@ -63,10 +62,13 @@ public class ShareService {
             share -> {
               User user = userMap.get(share.getUserId());
               return new ShareResult(
-                  share.getId(), share.getPhotoId(), share.getUserId(),
+                  share.getId(),
+                  share.getPhotoId(),
+                  share.getUserId(),
                   user == null ? null : user.getUsername(),
                   user == null ? null : userAvatarCacheService.getAvatar(user.getId()),
-                  share.getCaption(), share.getCreatedAt());
+                  share.getCaption(),
+                  share.getCreatedAt());
             })
         .toList();
   }

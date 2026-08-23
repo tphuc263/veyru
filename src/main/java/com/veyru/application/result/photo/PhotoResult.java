@@ -21,17 +21,55 @@ public record PhotoResult(
     tags = tags == null ? null : List.copyOf(tags);
   }
 
-  public String getId() { return id; }
-  public String getUserId() { return userId; }
-  public String getUsername() { return username; }
-  public String getUserImageUrl() { return userImageUrl; }
-  public String getImageUrl() { return imageUrl; }
-  public String getCaption() { return caption; }
-  public Instant getCreatedAt() { return createdAt; }
-  public int getLikeCount() { return likeCount; }
-  public int getCommentCount() { return commentCount; }
-  public int getShareCount() { return shareCount; }
-  public boolean isLikedByCurrentUser() { return likedByCurrentUser; }
-  public boolean isSavedByCurrentUser() { return savedByCurrentUser; }
-  public List<String> getTags() { return tags; }
+  public String getId() {
+    return id;
+  }
+
+  public String getUserId() {
+    return userId;
+  }
+
+  public String getUsername() {
+    return username;
+  }
+
+  public String getUserImageUrl() {
+    return userImageUrl;
+  }
+
+  public String getImageUrl() {
+    return imageUrl;
+  }
+
+  public String getCaption() {
+    return caption;
+  }
+
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
+
+  public int getLikeCount() {
+    return likeCount;
+  }
+
+  public int getCommentCount() {
+    return commentCount;
+  }
+
+  public int getShareCount() {
+    return shareCount;
+  }
+
+  public boolean isLikedByCurrentUser() {
+    return likedByCurrentUser;
+  }
+
+  public boolean isSavedByCurrentUser() {
+    return savedByCurrentUser;
+  }
+
+  public List<String> getTags() {
+    return tags;
+  }
 }

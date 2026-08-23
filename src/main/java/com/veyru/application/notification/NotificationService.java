@@ -1,16 +1,15 @@
 package com.veyru.application.notification;
 
+import com.veyru.application.common.error.UseCaseError;
+import com.veyru.application.common.error.UseCaseException;
 import com.veyru.application.port.out.AvatarCache;
+import com.veyru.application.port.out.CurrentActor;
 import com.veyru.application.port.out.NotificationNotifier;
 import com.veyru.application.port.out.NotificationStore;
-import com.veyru.application.port.out.CurrentActor;
 import com.veyru.application.result.notification.NotificationResult;
 import com.veyru.domain.enums.NotificationType;
-import com.veyru.application.common.error.UseCaseException;
-import com.veyru.application.common.error.UseCaseError;
 import com.veyru.domain.model.Notification;
 import com.veyru.domain.model.User;
-import java.time.Instant;
 import java.time.Clock;
 import java.util.List;
 import org.slf4j.Logger;
@@ -40,15 +39,27 @@ public class NotificationService {
   public void sendCommentPhotoNotification(
       String photoOwnerId, User actor, String photoId, String commentId, String thumbnailUrl) {
     if (actor.getId().equals(photoOwnerId)) return;
-    publishNotification(photoOwnerId, actor, NotificationType.COMMENT_PHOTO, photoId, commentId,
-        actor.getUsername() + " đã bình luận ảnh của bạn", thumbnailUrl);
+    publishNotification(
+        photoOwnerId,
+        actor,
+        NotificationType.COMMENT_PHOTO,
+        photoId,
+        commentId,
+        actor.getUsername() + " đã bình luận ảnh của bạn",
+        thumbnailUrl);
   }
 
   public void sendLikeCommentNotification(
       String commentOwnerId, User actor, String photoId, String commentId) {
     if (actor.getId().equals(commentOwnerId)) return;
-    publishNotification(commentOwnerId, actor, NotificationType.LIKE_COMMENT, photoId, commentId,
-        actor.getUsername() + " đã thích bình luận của bạn", null);
+    publishNotification(
+        commentOwnerId,
+        actor,
+        NotificationType.LIKE_COMMENT,
+        photoId,
+        commentId,
+        actor.getUsername() + " đã thích bình luận của bạn",
+        null);
   }
 
   public void sendReplyCommentNotification(
@@ -58,28 +69,52 @@ public class NotificationService {
       String commentId,
       String thumbnailUrl) {
     if (actor.getId().equals(parentCommentOwnerId)) return;
-    publishNotification(parentCommentOwnerId, actor, NotificationType.REPLY_COMMENT, photoId, commentId,
-        actor.getUsername() + " đã trả lời bình luận của bạn", thumbnailUrl);
+    publishNotification(
+        parentCommentOwnerId,
+        actor,
+        NotificationType.REPLY_COMMENT,
+        photoId,
+        commentId,
+        actor.getUsername() + " đã trả lời bình luận của bạn",
+        thumbnailUrl);
   }
 
   public void sendMentionNotification(
       String mentionedUserId, User actor, String photoId, String commentId, String thumbnailUrl) {
     if (actor.getId().equals(mentionedUserId)) return;
-    publishNotification(mentionedUserId, actor, NotificationType.MENTION_IN_COMMENT, photoId, commentId,
-        actor.getUsername() + " đã nhắc đến bạn trong một bình luận", thumbnailUrl);
+    publishNotification(
+        mentionedUserId,
+        actor,
+        NotificationType.MENTION_IN_COMMENT,
+        photoId,
+        commentId,
+        actor.getUsername() + " đã nhắc đến bạn trong một bình luận",
+        thumbnailUrl);
   }
 
   public void sendTagInPhotoNotification(
       String taggedUserId, User actor, String photoId, String thumbnailUrl) {
     if (actor.getId().equals(taggedUserId)) return;
-    publishNotification(taggedUserId, actor, NotificationType.TAG_IN_PHOTO, photoId, null,
-        actor.getUsername() + " đã gắn thẻ bạn trong một ảnh", thumbnailUrl);
+    publishNotification(
+        taggedUserId,
+        actor,
+        NotificationType.TAG_IN_PHOTO,
+        photoId,
+        null,
+        actor.getUsername() + " đã gắn thẻ bạn trong một ảnh",
+        thumbnailUrl);
   }
 
   public void sendNewFollowerNotification(String followedUserId, User actor) {
     if (actor.getId().equals(followedUserId)) return;
-    publishNotification(followedUserId, actor, NotificationType.NEW_FOLLOWER, null, null,
-        actor.getUsername() + " đã bắt đầu theo dõi bạn", null);
+    publishNotification(
+        followedUserId,
+        actor,
+        NotificationType.NEW_FOLLOWER,
+        null,
+        null,
+        actor.getUsername() + " đã bắt đầu theo dõi bạn",
+        null);
   }
 
   public List<NotificationResult> getNotifications(String userId, int page, int size) {
@@ -165,11 +200,17 @@ public class NotificationService {
 
   private NotificationResult convertToResponse(Notification notification) {
     return new NotificationResult(
-        notification.getId(), notification.getType(), notification.getMessage(), notification.isRead(),
-        notification.getCreatedAt(), notification.getActorId(),
+        notification.getId(),
+        notification.getType(),
+        notification.getMessage(),
+        notification.isRead(),
+        notification.getCreatedAt(),
+        notification.getActorId(),
         notification.getActor() == null ? null : notification.getActor().getUsername(),
-        userAvatarCacheService.getAvatar(notification.getActorId()), notification.getPhotoId(),
-        notification.getCommentId(), notification.getThumbnailUrl());
+        userAvatarCacheService.getAvatar(notification.getActorId()),
+        notification.getPhotoId(),
+        notification.getCommentId(),
+        notification.getThumbnailUrl());
   }
 
   public NotificationService(

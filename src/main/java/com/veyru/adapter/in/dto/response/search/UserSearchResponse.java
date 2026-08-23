@@ -14,8 +14,14 @@ public record UserSearchResponse(
     double searchScore) {
   public static UserSearchResponse from(UserSearchResult value) {
     return new UserSearchResponse(
-        value.getId(), value.getUsername(), value.getFirstName(), value.getLastName(),
-        value.getImageUrl(), value.getBio(), value.getFollowersCount(),
-        value.isFollowedByCurrentUser(), value.getSearchScore());
+        value.getId(),
+        value.getUsername(),
+        value.getFirstName(),
+        value.getLastName(),
+        value.getImageUrl(),
+        value.getBio(),
+        value.getFollowersCount(),
+        value.isFollowedByCurrentUser(),
+        value.getSearchScore());
   }
 }
