@@ -1,8 +1,9 @@
-package com.veyru.application.event;
+package com.veyru.adapter.in.event;
 
-import com.veyru.domain.service.ai.RecommendationService;
-import com.veyru.domain.service.graph.GraphSyncService;
-import com.veyru.domain.service.photo.NewsfeedService;
+import com.veyru.application.discovery.GraphSyncService;
+import com.veyru.application.discovery.NewsfeedService;
+import com.veyru.application.discovery.RecommendationService;
+import com.veyru.application.event.PhotoCreatedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
@@ -29,17 +30,17 @@ public class PhotoEventListener {
   public void handlePhotoCreated(PhotoCreatedEvent event) {
     log.info(
         "Handling photo created event - photoId: {}, authorId: {}",
-        event.getPhotoId(),
-        event.getAuthorId());
+        event.photoId(),
+        event.authorId());
 
-    graphSyncService.syncPhoto(event.getPhotoId());
-    newsfeedService.updateFollowersFeeds(event.getPhotoId(), event.getAuthorId());
-    log.info("Successfully updated followers\' feeds for photo: {}", event.getPhotoId());
+    graphSyncService.syncPhoto(event.photoId());
+    newsfeedService.updateFollowersFeeds(event.photoId(), event.authorId());
+    log.info("Successfully updated followers\' feeds for photo: {}", event.photoId());
 
     // Index the new photo embedding for AI recommendations
 
-    recommendationService.indexNewPhoto(event.getPhotoId());
-    recommendationService.reindexUser(event.getAuthorId());
+    recommendationService.indexNewPhoto(event.photoId());
+    recommendationService.reindexUser(event.authorId());
   }
 
   public PhotoEventListener(
