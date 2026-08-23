@@ -1,6 +1,6 @@
 package com.veyru.adapter.in.security.oauth2;
 
-import com.veyru.adapter.in.security.jwt.JwtUtils;
+import com.veyru.adapter.security.JwtUtils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

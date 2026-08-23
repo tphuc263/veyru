@@ -2,9 +2,9 @@ package com.veyru.adapter.in;
 
 import com.veyru.application.identity.IdentityException;
 import com.veyru.application.messaging.MessagingException;
-import com.veyru.domain.exception.ApiException;
-import com.veyru.domain.exception.ErrorCode;
-import com.veyru.domain.exception.ValidationError;
+import com.veyru.application.common.error.UseCaseException;
+import com.veyru.adapter.in.error.ErrorCode;
+import com.veyru.adapter.in.error.ValidationError;
 import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
 import java.util.List;
@@ -39,9 +39,9 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 public class GlobalExceptionHandler {
   private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-  @ExceptionHandler(ApiException.class)
-  public ProblemDetail handleApiException(ApiException ex, WebRequest request) {
-    return problem(ex.code(), ex.getMessage(), request);
+  @ExceptionHandler(UseCaseException.class)
+  public ProblemDetail handleUseCaseException(UseCaseException ex, WebRequest request) {
+    return problem(ErrorCode.valueOf(ex.code().name()), ex.getMessage(), request);
   }
 
   @ExceptionHandler(MessagingException.class)

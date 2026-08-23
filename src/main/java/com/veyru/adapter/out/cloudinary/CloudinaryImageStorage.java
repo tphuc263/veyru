@@ -3,8 +3,8 @@ package com.veyru.adapter.out.cloudinary;
 import com.cloudinary.Cloudinary;
 import com.veyru.application.common.ImageFile;
 import com.veyru.application.port.out.ImageStorage;
-import com.veyru.application.error.ApiException;
-import com.veyru.application.error.ErrorCode;
+import com.veyru.application.common.error.UseCaseException;
+import com.veyru.application.common.error.UseCaseError;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,7 +37,7 @@ public class CloudinaryImageStorage implements ImageStorage {
           result.get(SECURE_URL_KEY));
       return (String) result.get(SECURE_URL_KEY);
     } catch (IOException e) {
-      throw new ApiException(ErrorCode.EXTERNAL_SERVICE_FAILURE, e);
+      throw new UseCaseException(UseCaseError.EXTERNAL_SERVICE_FAILURE, e);
     }
   }
 
@@ -53,7 +53,7 @@ public class CloudinaryImageStorage implements ImageStorage {
       log.info("Image deleted successfully - publicId: {}", publicId);
       return result;
     } catch (IOException e) {
-      throw new ApiException(ErrorCode.EXTERNAL_SERVICE_FAILURE, e);
+      throw new UseCaseException(UseCaseError.EXTERNAL_SERVICE_FAILURE, e);
     }
   }
 

@@ -2,10 +2,10 @@ package com.veyru.adapter.in.web;
 
 import com.veyru.adapter.in.dto.request.share.SharePhotoRequest;
 import com.veyru.adapter.in.dto.response.PageResponse;
+import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
+import com.veyru.adapter.in.dto.response.share.ShareResponse;
+import com.veyru.adapter.in.dto.response.share.ShareWithPhotoResponse;
 import com.veyru.application.common.PageResult;
-import com.veyru.application.result.photo.PhotoResponse;
-import com.veyru.application.result.share.ShareResponse;
-import com.veyru.application.result.share.ShareWithPhotoResponse;
 import com.veyru.application.social.ShareService;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
@@ -20,15 +20,16 @@ public class ShareController {
   @PostMapping("/photos/{photoId}/shares")
   public ResponseEntity<PhotoResponse> sharePhoto(
       @PathVariable String photoId, @RequestBody(required = false) SharePhotoRequest request) {
-    String caption = (request != null) ? request.getCaption() : null;
-    PhotoResponse photo = shareService.sharePhoto(photoId, caption);
-    return ResponseEntity.status(201).body(photo);
+    String caption = request != null ? request.caption() : null;
+    return ResponseEntity.status(201)
+        .body(PhotoResponse.from(shareService.sharePhoto(photoId, caption)));
   }
 
   // Get all shares for a photo
   @GetMapping("/photos/{photoId}/shares")
   public ResponseEntity<List<ShareResponse>> getPhotoShares(@PathVariable String photoId) {
-    List<ShareResponse> shares = shareService.getPhotoShares(photoId);
+    List<ShareResponse> shares =
+        shareService.getPhotoShares(photoId).stream().map(ShareResponse::from).toList();
     return ResponseEntity.ok(shares);
   }
 
@@ -52,8 +53,8 @@ public class ShareController {
       @PathVariable String userId,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size) {
-    PageResult<ShareWithPhotoResponse> shares = shareService.getSharesByUserId(userId, page, size);
-    return ResponseEntity.ok(PageResponse.from(shares));
+    var shares = shareService.getSharesByUserId(userId, page, size);
+    return ResponseEntity.ok(PageResponse.from(shares, ShareWithPhotoResponse::from));
   }
 
   public ShareController(final ShareService shareService) {

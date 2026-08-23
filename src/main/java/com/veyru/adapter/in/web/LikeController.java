@@ -1,6 +1,6 @@
 package com.veyru.adapter.in.web;
 
-import com.veyru.application.result.like.LikeResponse;
+import com.veyru.adapter.in.dto.response.like.LikeResponse;
 import com.veyru.application.social.LikeService;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +27,8 @@ public class LikeController {
   // Get all likes for a photo
   @GetMapping("/photos/{photoId}/likes")
   public ResponseEntity<List<LikeResponse>> getPhotoLikes(@PathVariable String photoId) {
-    List<LikeResponse> likes = likeService.getPhotoLikes(photoId);
+    List<LikeResponse> likes =
+        likeService.getPhotoLikes(photoId).stream().map(LikeResponse::from).toList();
     return ResponseEntity.ok(likes);
   }
 

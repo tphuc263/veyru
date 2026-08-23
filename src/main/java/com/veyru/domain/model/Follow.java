@@ -24,21 +24,9 @@ public class Follow {
     return this.createdAt;
   }
 
-  public void setId(final String id) {
-    this.id = id;
-  }
 
-  public void setFollowerId(final String followerId) {
-    this.followerId = followerId;
-  }
 
-  public void setFollowingId(final String followingId) {
-    this.followingId = followingId;
-  }
 
-  public void setCreatedAt(final Instant createdAt) {
-    this.createdAt = createdAt;
-  }
 
   @Override
   public boolean equals(final Object o) {

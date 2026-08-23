@@ -1,8 +1,7 @@
 package com.veyru.adapter.in.web;
 
 import com.veyru.application.discovery.GraphFeedService;
-import com.veyru.application.identity.UserProfileService;
-import com.veyru.application.result.photo.PhotoResponse;
+import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,14 +13,13 @@ import org.springframework.web.bind.annotation.*;
 public class GraphFeedController {
   private static final Logger log = LoggerFactory.getLogger(GraphFeedController.class);
   private final GraphFeedService graphFeedService;
-  private final UserProfileService userService;
 
   @GetMapping("/graph")
   public ResponseEntity<List<PhotoResponse>> getGraphFeed(
       @RequestParam(defaultValue = "20") int limit) {
-    String userId = userService.getCurrentUser().getId();
-    log.info("Graph feed requested by user: {} with limit: {}", userId, limit);
-    List<PhotoResponse> feed = graphFeedService.getGraphBasedFeed(userId, limit);
+    log.info("Graph feed requested with limit: {}", limit);
+    List<PhotoResponse> feed =
+        graphFeedService.getGraphBasedFeed(limit).stream().map(PhotoResponse::from).toList();
     return ResponseEntity.ok(feed);
   }
 
@@ -29,9 +27,11 @@ public class GraphFeedController {
   public ResponseEntity<List<PhotoResponse>> getWeightedPathFeed(
       @RequestParam(defaultValue = "20") int limit,
       @RequestParam(defaultValue = "7") int daysBack) {
-    String userId = userService.getCurrentUser().getId();
-    log.info("Weighted path feed requested by user: {}", userId);
-    List<PhotoResponse> feed = graphFeedService.getWeightedPathFeed(userId, limit, daysBack);
+    log.info("Weighted path feed requested");
+    List<PhotoResponse> feed =
+        graphFeedService.getWeightedPathFeed(limit, daysBack).stream()
+            .map(PhotoResponse::from)
+            .toList();
     return ResponseEntity.ok(feed);
   }
 
@@ -39,17 +39,18 @@ public class GraphFeedController {
   public ResponseEntity<List<PhotoResponse>> getHybridFeed(
       @RequestParam(defaultValue = "20") int limit,
       @RequestParam(defaultValue = "0.5") double alpha) {
-    String userId = userService.getCurrentUser().getId();
-    log.info("Hybrid feed requested by user: {} with alpha: {}", userId, alpha);
-    List<PhotoResponse> feed = graphFeedService.getHybridFeed(userId, limit, alpha);
+    log.info("Hybrid feed requested with alpha: {}", alpha);
+    List<PhotoResponse> feed =
+        graphFeedService.getHybridFeed(limit, alpha).stream()
+            .map(PhotoResponse::from)
+            .toList();
     return ResponseEntity.ok(feed);
   }
 
   @GetMapping("/suggestions")
   public ResponseEntity<List<String>> getSuggestedUsers(
       @RequestParam(defaultValue = "10") int limit) {
-    String userId = userService.getCurrentUser().getId();
-    List<String> suggestions = graphFeedService.getSuggestedUsers(userId, limit);
+    List<String> suggestions = graphFeedService.getSuggestedUsers(limit);
     return ResponseEntity.ok(suggestions);
   }
 
@@ -202,9 +203,7 @@ public class GraphFeedController {
     }
   }
 
-  public GraphFeedController(
-      final GraphFeedService graphFeedService, final UserProfileService userService) {
+  public GraphFeedController(final GraphFeedService graphFeedService) {
     this.graphFeedService = graphFeedService;
-    this.userService = userService;
   }
 }

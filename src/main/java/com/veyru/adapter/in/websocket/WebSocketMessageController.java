@@ -6,7 +6,7 @@ import com.veyru.adapter.in.dto.websocket.WsEventEnvelope;
 import com.veyru.application.messaging.MessagingException;
 import com.veyru.application.messaging.SendMessageCommand;
 import com.veyru.application.messaging.SendMessageUseCase;
-import com.veyru.domain.exception.ErrorCode;
+import com.veyru.adapter.in.error.ErrorCode;
 import java.security.Principal;
 import java.time.Clock;
 import org.slf4j.Logger;

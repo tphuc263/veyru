@@ -1,7 +1,7 @@
 package com.veyru.adapter.in.security.jwt;
 
 import com.veyru.adapter.in.HttpErrorMapper;
-import com.veyru.domain.exception.ErrorCode;
+import com.veyru.adapter.in.error.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;

@@ -2,11 +2,11 @@ package com.veyru.adapter.in.web;
 
 import com.veyru.adapter.in.dto.SendMessageRequest;
 import com.veyru.adapter.in.dto.response.PageResponse;
-import com.veyru.adapter.in.security.userdetails.AppUserDetails;
+import com.veyru.adapter.in.dto.response.message.ConversationResponse;
+import com.veyru.adapter.in.dto.response.message.MessageResponse;
+import com.veyru.adapter.security.AppUserDetails;
 import com.veyru.application.common.PageResult;
-import com.veyru.application.messaging.ConversationResult;
 import com.veyru.application.messaging.ConversationService;
-import com.veyru.application.messaging.MessageResult;
 import com.veyru.application.messaging.SendMessageCommand;
 import com.veyru.application.messaging.SendMessageUseCase;
 import jakarta.validation.Valid;
@@ -44,37 +44,35 @@ public class MessageController {
   }
 
   @GetMapping("/conversations")
-  public ResponseEntity<List<ConversationResult>> getConversations(
+  public ResponseEntity<List<ConversationResponse>> getConversations(
       @AuthenticationPrincipal AppUserDetails user) {
-    return ResponseEntity.ok(conversations.getConversations(user.getId()));
+    return ResponseEntity.ok(
+        conversations.getConversations(user.getId()).stream()
+            .map(ConversationResponse::from)
+            .toList());
   }
 
   @GetMapping("/conversations/{conversationId}/messages")
-  public ResponseEntity<PageResponse<MessageResult>> getMessages(
+  public ResponseEntity<PageResponse<MessageResponse>> getMessages(
       @AuthenticationPrincipal AppUserDetails user,
       @PathVariable String conversationId,
       @RequestParam(defaultValue = "0") @Min(0) int page,
       @RequestParam(defaultValue = "50") @Min(1) @Max(100) int size) {
-    PageResult<MessageResult> result =
+    var result =
         conversations.getMessages(conversationId, user.getId(), page, size);
     return ResponseEntity.ok(
-        new PageResponse<>(
-            result.items(),
-            result.page(),
-            result.size(),
-            result.totalElements(),
-            result.totalPages()));
+        PageResponse.from(result, MessageResponse::from));
   }
 
   @PostMapping("/conversations/{conversationId}/messages")
-  public ResponseEntity<MessageResult> sendMessage(
+  public ResponseEntity<MessageResponse> sendMessage(
       @AuthenticationPrincipal AppUserDetails user,
       @PathVariable String conversationId,
       @Valid @RequestBody SendMessageRequest request) {
-    MessageResult result =
+    var result =
         sendMessage.execute(
             new SendMessageCommand(user.getId(), request.receiverId(), request.text(), null));
-    return ResponseEntity.status(201).body(result);
+    return ResponseEntity.status(201).body(MessageResponse.from(result));
   }
 
   @PutMapping("/conversations/{conversationId}/read-receipt")

@@ -2,11 +2,11 @@ package com.veyru.adapter.in.web;
 
 import com.veyru.adapter.in.dto.request.user.UpdateProfileRequest;
 import com.veyru.adapter.in.dto.response.PageResponse;
+import com.veyru.adapter.in.dto.response.user.UserProfileResponse;
 import com.veyru.application.common.ImageFile;
 import com.veyru.application.common.PageResult;
 import com.veyru.application.identity.UpdateProfileCommand;
 import com.veyru.application.identity.UserProfileService;
-import com.veyru.application.result.user.UserProfileResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -29,20 +29,18 @@ public class UserController {
   public ResponseEntity<PageResponse<UserProfileResponse>> getAllUsers(
       @RequestParam(defaultValue = "0") @Min(0) int page,
       @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
-    PageResult<UserProfileResponse> users = userService.getAllUsers(page, size);
-    return ResponseEntity.ok(PageResponse.from(users));
+    var users = userService.getAllUsers(page, size);
+    return ResponseEntity.ok(PageResponse.from(users, UserProfileResponse::from));
   }
 
   @GetMapping("/{userId}")
   public ResponseEntity<UserProfileResponse> getUserProfile(@PathVariable String userId) {
-    UserProfileResponse profile = userService.getUserProfileById(userId);
-    return ResponseEntity.ok(profile);
+    return ResponseEntity.ok(UserProfileResponse.from(userService.getUserProfileById(userId)));
   }
 
   @GetMapping("/me")
   public ResponseEntity<UserProfileResponse> getCurrentUserProfile() {
-    UserProfileResponse profile = userService.getCurrentUserProfile();
-    return ResponseEntity.ok(profile);
+    return ResponseEntity.ok(UserProfileResponse.from(userService.getCurrentUserProfile()));
   }
 
   @PatchMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -53,10 +51,10 @@ public class UserController {
         file == null
             ? null
             : new ImageFile(file.getBytes(), file.getOriginalFilename(), file.getContentType());
-    UserProfileResponse updatedProfile =
-        userService.updateProfile(
-            new UpdateProfileCommand(request.username(), request.bio(), image));
-    return ResponseEntity.ok(updatedProfile);
+    return ResponseEntity.ok(
+        UserProfileResponse.from(
+            userService.updateProfile(
+                new UpdateProfileCommand(request.username(), request.bio(), image))));
   }
 
   public UserController(final UserProfileService userService) {

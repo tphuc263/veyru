@@ -1,8 +1,8 @@
 package com.veyru.adapter.out.mail;
 
 import com.veyru.application.port.out.MailSender;
-import com.veyru.application.error.ApiException;
-import com.veyru.application.error.ErrorCode;
+import com.veyru.application.common.error.UseCaseException;
+import com.veyru.application.common.error.UseCaseError;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,7 +32,7 @@ public class SmtpMailSender implements MailSender {
       helper.setText(htmlContent, true);
       mailSender.send(message);
     } catch (MessagingException e) {
-      throw new ApiException(ErrorCode.EXTERNAL_SERVICE_FAILURE, e);
+      throw new UseCaseException(UseCaseError.EXTERNAL_SERVICE_FAILURE, e);
     }
   }
 

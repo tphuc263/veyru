@@ -1,9 +1,8 @@
 package com.veyru.adapter.in.security.oauth2;
 
 import com.veyru.application.port.out.UserStore;
-import com.veyru.domain.enums.UserRole;
 import com.veyru.domain.model.User;
-import java.time.Instant;
+import java.time.Clock;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -25,6 +24,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
   private static final Logger log = LoggerFactory.getLogger(OAuth2UserService.class);
   private final UserStore userStore;
   private final PasswordEncoder passwordEncoder;
+  private final Clock clock;
 
   @Override
   public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -73,22 +73,21 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
         }
       }
     }
-    User user = new User();
-    user.setEmail(email);
-    user.setUsername(email.split("@")[0] + "_" + UUID.randomUUID().toString().substring(0, 8));
-    user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
-    user.setImageUrl(picture);
-    user.setBio("Joined via " + provider);
-    user.setRole(UserRole.ROLE_USER);
-    user.setCreatedAt(Instant.now());
-    user.setPhotoCount(0);
-    user.setFollowerCount(0);
-    user.setFollowingCount(0);
+    User user =
+        User.oauthRegistered(
+            email.split("@")[0] + "_" + UUID.randomUUID().toString().substring(0, 8),
+            email,
+            passwordEncoder.encode(UUID.randomUUID().toString()),
+            picture,
+            "Joined via " + provider,
+            clock.instant());
     return userStore.save(user);
   }
 
-  public OAuth2UserService(final UserStore userStore, final PasswordEncoder passwordEncoder) {
+  public OAuth2UserService(
+      final UserStore userStore, final PasswordEncoder passwordEncoder, final Clock clock) {
     this.userStore = userStore;
     this.passwordEncoder = passwordEncoder;
+    this.clock = clock;
   }
 }

@@ -1,9 +1,12 @@
 package com.veyru.application.intelligence;
 
 import com.veyru.application.port.out.PhotoStore;
-import com.veyru.application.result.ai.EngagementAnalysisResponse;
-import com.veyru.application.result.ai.ImageAnalysisResponse;
-import com.veyru.application.result.ai.PostTimingSuggestionResponse;
+import com.veyru.application.port.out.CurrentActor;
+import com.veyru.application.common.error.UseCaseError;
+import com.veyru.application.common.error.UseCaseException;
+import com.veyru.application.result.ai.EngagementAnalysisResult;
+import com.veyru.application.result.ai.ImageAnalysisResult;
+import com.veyru.application.result.ai.PostTimingSuggestionResult;
 import com.veyru.domain.model.Photo;
 import java.time.DayOfWeek;
 import java.time.ZoneId;
@@ -18,6 +21,7 @@ import org.slf4j.LoggerFactory;
 public class AIService {
   private static final Logger log = LoggerFactory.getLogger(AIService.class);
   private final PhotoStore photoStore;
+  private final CurrentActor currentActor;
   private static final Map<String, List<String>> SCENE_TAGS =
       Map.of(
           "nature",
@@ -46,8 +50,28 @@ public class AIService {
           "Life is beautiful \ud83c\udf08",
           "Creating memories \ud83c\udf89");
 
-  public AIService(PhotoStore photoStore) {
+  public AIService(PhotoStore photoStore, CurrentActor currentActor) {
     this.photoStore = photoStore;
+    this.currentActor = currentActor;
+  }
+
+  public EngagementAnalysisResult analyzeEngagement(int recentPostCount) {
+    return analyzeEngagement(requireActorId(), recentPostCount);
+  }
+
+  public PostTimingSuggestionResult suggestPostTiming() {
+    return suggestPostTiming(requireActorId());
+  }
+
+  public ImageAnalysisResult analyzeImageForCurrentActor(ImageAnalysisCommand command) {
+    String userId = currentActor.id().orElse(command.userId());
+    return analyzeImage(new ImageAnalysisCommand(command.imageBase64(), command.mimeType(), userId));
+  }
+
+  private String requireActorId() {
+    return currentActor
+        .id()
+        .orElseThrow(() -> new UseCaseException(UseCaseError.AUTHENTICATION_REQUIRED));
   }
 
   // ==================== USER CONTEXT ====================
@@ -121,13 +145,13 @@ public class AIService {
   }
 
   // ==================== ENGAGEMENT ANALYSIS ====================
-  public EngagementAnalysisResponse analyzeEngagement(String userId, int recentPostCount) {
+  public EngagementAnalysisResult analyzeEngagement(String userId, int recentPostCount) {
     log.info("Analyzing engagement for user: {}, recentPostCount: {}", userId, recentPostCount);
     int count = recentPostCount > 0 ? Math.min(recentPostCount, 50) : 20;
     List<Photo> photos = photoStore.findByUser(userId);
     List<Photo> recentPhotos = photos.stream().limit(count).toList();
     if (recentPhotos.isEmpty()) {
-      return new EngagementAnalysisResponse(
+      return new EngagementAnalysisResult(
           0, 0, 0, "no_data", List.of(), "Chưa có bài đăng nào để phân tích.");
     }
     double avgLikes = recentPhotos.stream().mapToLong(Photo::getLikeCount).average().orElse(0);
@@ -137,7 +161,7 @@ public class AIService {
         recentPhotos.stream().mapToDouble(p -> p.getLikeCount() + p.getCommentCount() * 2.0).sum();
     double engagementRate = recentPhotos.size() > 0 ? totalEngagement / recentPhotos.size() : 0;
     String trend = calculateTrend(recentPhotos);
-    List<EngagementAnalysisResponse.PostInsight> topPosts =
+    List<EngagementAnalysisResult.PostInsight> topPosts =
         recentPhotos.stream()
             .sorted(
                 (a, b) ->
@@ -147,7 +171,7 @@ public class AIService {
             .limit(5)
             .map(
                 p ->
-                    new EngagementAnalysisResponse.PostInsight(
+                    new EngagementAnalysisResult.PostInsight(
                         p.getId(),
                         p.getCaption() != null
                             ? (p.getCaption().length() > 80
@@ -161,7 +185,7 @@ public class AIService {
             .toList();
     String summary =
         buildEngagementSummary(avgLikes, avgComments, engagementRate, trend, recentPhotos);
-    return new EngagementAnalysisResponse(
+    return new EngagementAnalysisResult(
         Math.round(avgLikes * 100.0) / 100.0,
         Math.round(avgComments * 100.0) / 100.0,
         Math.round(engagementRate * 100.0) / 100.0,
@@ -239,7 +263,7 @@ public class AIService {
   }
 
   // ==================== POST TIMING ====================
-  public PostTimingSuggestionResponse suggestPostTiming(String userId) {
+  public PostTimingSuggestionResult suggestPostTiming(String userId) {
     log.info("Suggesting post timing for user: {}", userId);
     List<Photo> photos = photoStore.findByUser(userId);
     if (photos.size() < 3) {
@@ -274,7 +298,7 @@ public class AIService {
             .sorted(Map.Entry.<Integer, Double>comparingByValue().reversed())
             .limit(3)
             .toList();
-    List<PostTimingSuggestionResponse.TimingSlot> bestTimes = new ArrayList<>();
+    List<PostTimingSuggestionResult.TimingSlot> bestTimes = new ArrayList<>();
     for (var dayEntry : dayAvgs) {
       String dayName =
           dayEntry.getKey().getDisplayName(TextStyle.FULL, Locale.forLanguageTag("vi"));
@@ -284,30 +308,30 @@ public class AIService {
         double score = (dayEntry.getValue() + hourEntry.getValue()) / 2.0;
         String reason = String.format("Dựa trên phân tích %d bài đăng của bạn", photos.size());
         bestTimes.add(
-            new PostTimingSuggestionResponse.TimingSlot(
+            new PostTimingSuggestionResult.TimingSlot(
                 dayName, timeRange, Math.round(score * 100.0) / 100.0, reason));
       }
     }
     bestTimes.sort((a, b) -> Double.compare(b.getScore(), a.getScore()));
     bestTimes = bestTimes.stream().limit(5).toList();
     String summary = buildTimingSummary(photos, dayAvgs, hourAvgs);
-    return new PostTimingSuggestionResponse(bestTimes, summary);
+    return new PostTimingSuggestionResult(bestTimes, summary);
   }
 
-  private PostTimingSuggestionResponse getDefaultTimingSuggestion() {
-    List<PostTimingSuggestionResponse.TimingSlot> defaults =
+  private PostTimingSuggestionResult getDefaultTimingSuggestion() {
+    List<PostTimingSuggestionResult.TimingSlot> defaults =
         List.of(
-            new PostTimingSuggestionResponse.TimingSlot(
+            new PostTimingSuggestionResult.TimingSlot(
                 "Thứ Hai", "07:00 - 09:00", 8.5, "Khung giờ sáng sớm phổ biến cho Instagram"),
-            new PostTimingSuggestionResponse.TimingSlot(
+            new PostTimingSuggestionResult.TimingSlot(
                 "Thứ Tư", "12:00 - 13:00", 8.0, "Giờ nghỉ trưa - nhiều người online"),
-            new PostTimingSuggestionResponse.TimingSlot(
+            new PostTimingSuggestionResult.TimingSlot(
                 "Thứ Sáu", "17:00 - 19:00", 9.0, "Cuối tuần - người dùng thư giãn nhiều hơn"),
-            new PostTimingSuggestionResponse.TimingSlot(
+            new PostTimingSuggestionResult.TimingSlot(
                 "Thứ Bảy", "10:00 - 11:00", 8.8, "Cuối tuần sáng - thời gian rảnh"),
-            new PostTimingSuggestionResponse.TimingSlot(
+            new PostTimingSuggestionResult.TimingSlot(
                 "Chủ Nhật", "19:00 - 21:00", 8.2, "Tối Chủ Nhật - chuẩn bị tuần mới"));
-    return new PostTimingSuggestionResponse(
+    return new PostTimingSuggestionResult(
         defaults,
         "\ud83d\udca1 Bạn chưa có đủ dữ liệu để phân tích cá nhân hóa. "
             + "Đây là gợi ý dựa trên thống kê chung của mạng xã hội. "
@@ -337,13 +361,13 @@ public class AIService {
   }
 
   // ==================== IMAGE ANALYSIS ====================
-  public ImageAnalysisResponse analyzeImage(ImageAnalysisCommand request) {
+  public ImageAnalysisResult analyzeImage(ImageAnalysisCommand request) {
     log.info("Analyzing image for user: {}", request.userId());
     UserContext userContext = buildUserContext(request.userId());
     return generateImageAnalysis(userContext);
   }
 
-  private ImageAnalysisResponse generateImageAnalysis(UserContext userContext) {
+  private ImageAnalysisResult generateImageAnalysis(UserContext userContext) {
     List<String> userTags = userContext.isHasHistory() ? userContext.getTopTags() : List.of();
     List<String> suggestedTags;
     if (!userTags.isEmpty()) {
@@ -357,7 +381,7 @@ public class AIService {
     }
     List<String> captionSuggestions = generateCaptionSuggestions(userContext);
     String sceneType = determineSceneType(userTags);
-    return new ImageAnalysisResponse(
+    return new ImageAnalysisResult(
         "Photo",
         sceneType,
         "neutral",

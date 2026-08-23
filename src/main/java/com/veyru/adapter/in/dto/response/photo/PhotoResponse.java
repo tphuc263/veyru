@@ -17,7 +17,7 @@ public record PhotoResponse(
     boolean isLikedByCurrentUser,
     boolean isSavedByCurrentUser,
     List<String> tags) {
-  public static PhotoResponse from(com.veyru.application.result.photo.PhotoResponse value) {
+  public static PhotoResponse from(com.veyru.application.result.photo.PhotoResult value) {
     return new PhotoResponse(
         value.getId(), value.getUserId(), value.getUsername(), value.getUserImageUrl(),
         value.getImageUrl(), value.getCaption(), value.getCreatedAt(), value.getLikeCount(),

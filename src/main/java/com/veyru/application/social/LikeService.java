@@ -8,13 +8,14 @@ import com.veyru.application.port.out.GraphProjection;
 import com.veyru.application.port.out.LikeStore;
 import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.port.out.UserStore;
-import com.veyru.application.result.like.LikeResponse;
-import com.veyru.application.error.ApiException;
-import com.veyru.application.error.ErrorCode;
+import com.veyru.application.result.like.LikeResult;
+import com.veyru.application.common.error.UseCaseException;
+import com.veyru.application.common.error.UseCaseError;
 import com.veyru.domain.model.Like;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
 import java.time.Instant;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,13 +32,14 @@ public class LikeService {
   private final NotificationService notificationService;
   private final AvatarCache userAvatarCacheService;
   private final GraphProjection neo4jGraphService;
+  private final Clock clock;
 
   public void like(String photoId) {
-    User currentUser = userService.getCurrentUser();
+    User currentUser = userService.requireCurrentUser();
     Photo photo =
         photoStore
             .findById(photoId)
-            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
+            .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     boolean alreadyLiked = likeStore.exists(photoId, currentUser.getId());
     if (alreadyLiked) {
       return;
@@ -45,7 +47,7 @@ public class LikeService {
     Like like = new Like();
     like.setPhotoId(photoId);
     like.setUserId(currentUser.getId());
-    like.setCreatedAt(Instant.now());
+    like.setCreatedAt(clock.instant());
     likeStore.save(like);
     photoStore.incrementLikeCount(photoId, 1);
     // Sync to Neo4j graph - create like relationship
@@ -61,7 +63,7 @@ public class LikeService {
   }
 
   public void unlike(String photoId) {
-    User currentUser = userService.getCurrentUser();
+    User currentUser = userService.requireCurrentUser();
     Like like = likeStore.find(photoId, currentUser.getId()).orElse(null);
     if (like == null) return;
     likeStore.delete(like);
@@ -73,9 +75,9 @@ public class LikeService {
     log.info("User {} unliked photo {}", currentUser.getId(), photoId);
   }
 
-  public List<LikeResponse> getPhotoLikes(String photoId) {
+  public List<LikeResult> getPhotoLikes(String photoId) {
     // Validate photo exists
-    photoStore.findById(photoId).orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
+    photoStore.findById(photoId).orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     List<Like> likes = likeStore.findByPhotoId(photoId);
     return convertToLikeResponses(likes);
   }
@@ -85,7 +87,7 @@ public class LikeService {
   }
 
   // Helper method
-  private List<LikeResponse> convertToLikeResponses(List<Like> likes) {
+  private List<LikeResult> convertToLikeResponses(List<Like> likes) {
     // Get all user IDs and fetch users in batch for performance
     List<String> userIds = likes.stream().map(Like::getUserId).distinct().toList();
     Map<String, User> usersMap =
@@ -94,7 +96,7 @@ public class LikeService {
     return likes.stream()
         .map(
             like -> {
-              LikeResponse response = new LikeResponse();
+              LikeResult response = new LikeResult();
               response.setId(like.getId());
               response.setUserId(like.getUserId());
               response.setCreatedAt(like.getCreatedAt());
@@ -116,7 +118,8 @@ public class LikeService {
       final PhotoConversionService photoConversionService,
       final NotificationService notificationService,
       final AvatarCache userAvatarCacheService,
-      final GraphProjection neo4jGraphService) {
+      final GraphProjection neo4jGraphService,
+      final Clock clock) {
     this.likeStore = likeStore;
     this.photoStore = photoStore;
     this.userStore = userStore;
@@ -125,5 +128,6 @@ public class LikeService {
     this.notificationService = notificationService;
     this.userAvatarCacheService = userAvatarCacheService;
     this.neo4jGraphService = neo4jGraphService;
+    this.clock = clock;
   }
 }

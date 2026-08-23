@@ -1,6 +1,6 @@
 package com.veyru.adapter.in;
 
-import com.veyru.domain.exception.ErrorCode;
+import com.veyru.adapter.in.error.ErrorCode;
 import org.springframework.http.HttpStatus;
 
 public final class HttpErrorMapper {

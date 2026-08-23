@@ -1,7 +1,7 @@
 package com.veyru.adapter.in.web;
 
 import com.veyru.adapter.in.dto.request.usertag.CreateUserTagRequest;
-import com.veyru.application.result.usertag.UserTagResponse;
+import com.veyru.adapter.in.dto.response.usertag.UserTagResponse;
 import com.veyru.application.social.CreateUserTagCommand;
 import com.veyru.application.social.UserTagService;
 import jakarta.validation.Valid;
@@ -18,10 +18,11 @@ public class UserTagController {
   public ResponseEntity<UserTagResponse> tagUserInPhoto(
       @PathVariable String photoId, @Valid @RequestBody CreateUserTagRequest request) {
     UserTagResponse response =
-        userTagService.tagUserInPhoto(
-            photoId,
-            new CreateUserTagCommand(
-                request.taggedUserId(), request.positionX(), request.positionY()));
+        UserTagResponse.from(
+            userTagService.tagUserInPhoto(
+                photoId,
+                new CreateUserTagCommand(
+                    request.taggedUserId(), request.positionX(), request.positionY())));
     return ResponseEntity.status(201).body(response);
   }
 
@@ -34,14 +35,18 @@ public class UserTagController {
 
   @GetMapping("/photos/{photoId}/user-tags")
   public ResponseEntity<List<UserTagResponse>> getPhotoUserTags(@PathVariable String photoId) {
-    List<UserTagResponse> tags = userTagService.getPhotoUserTags(photoId);
+    List<UserTagResponse> tags =
+        userTagService.getPhotoUserTags(photoId).stream().map(UserTagResponse::from).toList();
     return ResponseEntity.ok(tags);
   }
 
   @GetMapping("/users/{userId}/photo-tags")
   public ResponseEntity<List<UserTagResponse>> getPhotosWhereUserIsTagged(
       @PathVariable String userId) {
-    List<UserTagResponse> tags = userTagService.getPhotosWhereUserIsTagged(userId);
+    List<UserTagResponse> tags =
+        userTagService.getPhotosWhereUserIsTagged(userId).stream()
+            .map(UserTagResponse::from)
+            .toList();
     return ResponseEntity.ok(tags);
   }
 

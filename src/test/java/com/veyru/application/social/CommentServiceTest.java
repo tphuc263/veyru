@@ -13,11 +13,12 @@ import com.veyru.application.port.out.CommentStore;
 import com.veyru.application.port.out.GraphProjection;
 import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.port.out.UserStore;
-import com.veyru.application.error.ApiException;
-import com.veyru.application.error.ErrorCode;
+import com.veyru.application.common.error.UseCaseException;
+import com.veyru.application.common.error.UseCaseError;
 import com.veyru.domain.model.Comment;
 import com.veyru.domain.model.User;
 import java.util.Optional;
+import java.time.Clock;
 import org.junit.jupiter.api.Test;
 
 class CommentServiceTest {
@@ -32,7 +33,8 @@ class CommentServiceTest {
           userService,
           mock(NotificationService.class),
           mock(AvatarCache.class),
-          mock(GraphProjection.class));
+          mock(GraphProjection.class),
+          Clock.systemUTC());
 
   @Test
   void returnsNotFoundWhenUpdatingMissingComment() {
@@ -40,22 +42,24 @@ class CommentServiceTest {
 
     assertThatThrownBy(() -> service.updateComment("missing", new UpdateCommentCommand("text")))
         .isInstanceOfSatisfying(
-            ApiException.class,
-            exception -> assertThat(exception.code()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND));
+            UseCaseException.class,
+            exception -> assertThat(exception.code()).isEqualTo(UseCaseError.RESOURCE_NOT_FOUND));
   }
 
   @Test
   void returnsAccessDeniedWhenUpdatingAnotherUsersComment() {
-    Comment comment = new Comment();
-    comment.setUserId("owner");
-    User actor = new User();
-    actor.setId("actor");
+    Comment comment =
+        Comment.create("photo", "owner", "owner", "text", java.util.List.of(), java.time.Instant.EPOCH);
+    User actor =
+        new User(
+            "actor", "actor", "actor@example.com", null, "hash", null, null, null,
+            java.time.Instant.EPOCH, 0, 0, 0, null, null);
     when(commentStore.findById("comment")).thenReturn(Optional.of(comment));
-    when(userService.getCurrentUser()).thenReturn(actor);
+    when(userService.requireCurrentUser()).thenReturn(actor);
 
     assertThatThrownBy(() -> service.updateComment("comment", new UpdateCommentCommand("text")))
         .isInstanceOfSatisfying(
-            ApiException.class,
-            exception -> assertThat(exception.code()).isEqualTo(ErrorCode.ACCESS_DENIED));
+            UseCaseException.class,
+            exception -> assertThat(exception.code()).isEqualTo(UseCaseError.ACCESS_DENIED));
   }
 }

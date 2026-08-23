@@ -3,13 +3,15 @@ package com.veyru.application.notification;
 import com.veyru.application.port.out.AvatarCache;
 import com.veyru.application.port.out.NotificationNotifier;
 import com.veyru.application.port.out.NotificationStore;
-import com.veyru.application.result.notification.NotificationResponse;
+import com.veyru.application.port.out.CurrentActor;
+import com.veyru.application.result.notification.NotificationResult;
 import com.veyru.domain.enums.NotificationType;
-import com.veyru.application.error.ApiException;
-import com.veyru.application.error.ErrorCode;
+import com.veyru.application.common.error.UseCaseException;
+import com.veyru.application.common.error.UseCaseError;
 import com.veyru.domain.model.Notification;
 import com.veyru.domain.model.User;
 import java.time.Instant;
+import java.time.Clock;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +21,8 @@ public class NotificationService {
   private final NotificationStore notificationStore;
   private final NotificationNotifier notifier;
   private final AvatarCache userAvatarCacheService;
+  private final Clock clock;
+  private final CurrentActor currentActor;
 
   public void sendLikePhotoNotification(
       String photoOwnerId, User actor, String photoId, String thumbnailUrl) {
@@ -78,10 +82,14 @@ public class NotificationService {
         actor.getUsername() + " đã bắt đầu theo dõi bạn", null);
   }
 
-  public List<NotificationResponse> getNotifications(String userId, int page, int size) {
+  public List<NotificationResult> getNotifications(String userId, int page, int size) {
     return notificationStore.findByRecipient(userId, page, size).stream()
         .map(this::convertToResponse)
         .toList();
+  }
+
+  public List<NotificationResult> getNotifications(int page, int size) {
+    return getNotifications(requireActorId(), page, size);
   }
 
   public long getUnreadCount(String userId) {
@@ -94,18 +102,32 @@ public class NotificationService {
         .filter(notification -> notification.getRecipientId().equals(recipientId))
         .ifPresentOrElse(
             notification -> {
-              notification.setRead(true);
+              notification.markRead();
               notificationStore.save(notification);
             },
             () -> {
-              throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND);
+              throw new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND);
             });
+  }
+
+  public void markAsRead(String notificationId) {
+    markAsRead(notificationId, requireActorId());
   }
 
   public void markAllAsRead(String userId) {
     List<Notification> unreadNotifications = notificationStore.findUnread(userId);
-    unreadNotifications.forEach(notification -> notification.setRead(true));
+    unreadNotifications.forEach(Notification::markRead);
     notificationStore.saveAll(unreadNotifications);
+  }
+
+  public void markAllAsRead() {
+    markAllAsRead(requireActorId());
+  }
+
+  private String requireActorId() {
+    return currentActor
+        .id()
+        .orElseThrow(() -> new UseCaseException(UseCaseError.AUTHENTICATION_REQUIRED));
   }
 
   private void publishNotification(
@@ -118,18 +140,16 @@ public class NotificationService {
       String thumbnailUrl) {
     // Save to database
     Notification notification =
-        Notification.builder()
-            .recipientId(recipientId)
-            .actorId(actor.getId())
-            .type(type)
-            .photoId(photoId)
-            .commentId(commentId)
-            .message(message)
-            .read(false)
-            .createdAt(Instant.now())
-            .actor(Notification.EmbeddedActor.builder().username(actor.getUsername()).build())
-            .thumbnailUrl(thumbnailUrl)
-            .build();
+        Notification.create(
+            recipientId,
+            actor.getId(),
+            actor.getUsername(),
+            type,
+            photoId,
+            commentId,
+            message,
+            thumbnailUrl,
+            clock.instant());
     Notification savedNotification = notificationStore.save(notification);
     log.info("Saved notification: {} for user: {}", savedNotification.getId(), recipientId);
     // Send real-time notification via WebSocket
@@ -137,14 +157,14 @@ public class NotificationService {
   }
 
   // Send real-time notification via WebSocket
-  private void sendRealTimeNotification(String userId, NotificationResponse response) {
+  private void sendRealTimeNotification(String userId, NotificationResult response) {
 
     notifier.send(userId, response);
     log.info("Sent real-time notification to user: {}", userId);
   }
 
-  private NotificationResponse convertToResponse(Notification notification) {
-    return NotificationResponse.builder()
+  private NotificationResult convertToResponse(Notification notification) {
+    return NotificationResult.builder()
         .id(notification.getId())
         .type(notification.getType())
         .message(notification.getMessage())
@@ -163,9 +183,13 @@ public class NotificationService {
   public NotificationService(
       NotificationStore notificationStore,
       NotificationNotifier notifier,
-      AvatarCache userAvatarCacheService) {
+      AvatarCache userAvatarCacheService,
+      Clock clock,
+      CurrentActor currentActor) {
     this.notificationStore = notificationStore;
     this.notifier = notifier;
     this.userAvatarCacheService = userAvatarCacheService;
+    this.clock = clock;
+    this.currentActor = currentActor;
   }
 }

@@ -7,8 +7,8 @@ import com.veyru.application.media.PhotoConversionService;
 import com.veyru.application.port.out.*;
 import com.veyru.application.port.out.AvatarCache;
 import com.veyru.application.port.out.FeedCache;
-import com.veyru.application.result.photo.PhotoResponse;
-import com.veyru.application.result.post.UnifiedPostResponse;
+import com.veyru.application.result.photo.PhotoResult;
+import com.veyru.application.result.post.UnifiedPostResult;
 import com.veyru.application.social.ShareService;
 import com.veyru.domain.model.Follow;
 import com.veyru.domain.model.Photo;
@@ -16,6 +16,7 @@ import com.veyru.domain.model.Share;
 import com.veyru.domain.model.User;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -34,12 +35,13 @@ public class NewsfeedService {
   private final AvatarCache userAvatarCacheService;
   private final LikeStore likeStore;
   private final FavoriteStore favoriteStore;
+  private final Clock clock;
   // Cache configuration
   private static final String NEWSFEED_CACHE_KEY = "newsfeed:user:";
   private static final Duration CACHE_TTL = Duration.ofHours(2);
   private static final int MAX_CACHED_ITEMS = 200;
 
-  public PageResult<PhotoResponse> getNewsfeed(String userId, int page, int size) {
+  public PageResult<PhotoResult> getNewsfeed(String userId, int page, int size) {
     User currentUser = userService.findUserById(userId);
     // Get users that current user follows
     List<String> followingIds = new ArrayList<>(getFollowingUserIds(userId));
@@ -52,7 +54,7 @@ public class NewsfeedService {
     // Include user's own photos in feed
     followingIds.add(userId);
     // Fetch recent photos from followed users (last 30 days)
-    Instant cutoffTime = Instant.now().minus(Duration.ofDays(30));
+    Instant cutoffTime = clock.instant().minus(Duration.ofDays(30));
     List<Photo> photos = photoStore.findByUsersAfter(followingIds, cutoffTime);
     // If no recent photos, get all photos from followed users
     if (photos.isEmpty()) {
@@ -66,7 +68,7 @@ public class NewsfeedService {
   }
 
   @SuppressWarnings("unchecked")
-  public PageResult<PhotoResponse> getCachedNewsfeed(String userId, int page, int size) {
+  public PageResult<PhotoResult> getCachedNewsfeed(String userId, int page, int size) {
     User currentUser = userService.findUserById(userId);
     String cacheKey = NEWSFEED_CACHE_KEY + userId;
 
@@ -90,9 +92,9 @@ public class NewsfeedService {
     List<String> pagePhotoIds = cachedPhotoIds.subList(start, end);
     // Fetch photos and convert to response
     List<Photo> photos = photoStore.findAllById(pagePhotoIds);
-    List<PhotoResponse> photoResponses =
+    List<PhotoResult> photoResponses =
         photos.stream()
-            .map(photo -> photoConversionService.convertToPhotoResponse(photo, currentUser))
+            .map(photo -> photoConversionService.convertToPhotoResponse(photo, java.util.Optional.of(currentUser)))
             .toList();
     // Maintain order from cache
     photoResponses.sort(
@@ -117,7 +119,7 @@ public class NewsfeedService {
     // Include user's own photos in feed
     followingIds.add(userId);
     // Fetch recent photos
-    Instant cutoffTime = Instant.now().minus(Duration.ofDays(30));
+    Instant cutoffTime = clock.instant().minus(Duration.ofDays(30));
     List<Photo> candidatePhotos = photoStore.findByUsersAfter(followingIds, cutoffTime);
     List<Photo> rankedPhotos = rankPhotos(candidatePhotos);
     // Limit cache size for performance
@@ -159,14 +161,14 @@ public class NewsfeedService {
     log.info("Updated feeds for {} followers", followers.size());
   }
 
-  public PageResult<PhotoResponse> getSmartNewsfeed(String userId, int page, int size) {
+  public PageResult<PhotoResult> getSmartNewsfeed(String userId, int page, int size) {
     log.info("Getting smart newsfeed for user: {}", userId);
     // Use simple real-time generation for now
     // This is more reliable and easier to debug
     return getNewsfeed(userId, page, size);
   }
 
-  public PageResult<UnifiedPostResponse> getUnifiedNewsfeed(String userId, int page, int size) {
+  public PageResult<UnifiedPostResult> getUnifiedNewsfeed(String userId, int page, int size) {
     log.info("Getting unified newsfeed (photos + shares) for user: {}", userId);
     User currentUser = userService.findUserById(userId);
     // Get following user IDs
@@ -176,7 +178,7 @@ public class NewsfeedService {
     // Get photos from followed users
     List<Photo> photos = new ArrayList<>();
     if (!followingIds.isEmpty()) {
-      Instant cutoffTime = Instant.now().minus(Duration.ofDays(30));
+      Instant cutoffTime = clock.instant().minus(Duration.ofDays(30));
       photos = photoStore.findByUsersAfter(followingIds, cutoffTime);
       if (photos.isEmpty()) {
         photos = photoStore.findByUsers(followingIds);
@@ -188,12 +190,12 @@ public class NewsfeedService {
       shares = shareService.getSharesByUserIds(followingIds);
     }
     // Combine and sort by createdAt
-    List<UnifiedPostResponse> unifiedPosts = new ArrayList<>();
+    List<UnifiedPostResult> unifiedPosts = new ArrayList<>();
     // Add photos
     for (Photo photo : photos) {
-      UnifiedPostResponse post = new UnifiedPostResponse();
+      UnifiedPostResult post = new UnifiedPostResult();
       post.setId(photo.getId());
-      post.setType(UnifiedPostResponse.PostType.PHOTO);
+      post.setType(UnifiedPostResult.PostType.PHOTO);
       post.setCreatedAt(photo.getCreatedAt());
       post.setUserId(photo.getUser().getUserId());
       post.setUsername(photo.getUser().getUsername());
@@ -218,9 +220,9 @@ public class NewsfeedService {
     // Add shares
     for (Share share : shares) {
       Photo originalPhoto = photoStore.findById(share.getPhotoId()).orElse(null);
-      UnifiedPostResponse post = new UnifiedPostResponse();
+      UnifiedPostResult post = new UnifiedPostResult();
       post.setId("share_" + share.getId());
-      post.setType(UnifiedPostResponse.PostType.SHARE);
+      post.setType(UnifiedPostResult.PostType.SHARE);
       post.setCreatedAt(share.getCreatedAt());
       post.setUserId(share.getUserId());
       // Get user info from repository
@@ -268,13 +270,25 @@ public class NewsfeedService {
           unifiedPosts.size(),
           (int) Math.ceil((double) unifiedPosts.size() / pageable.size()));
     }
-    List<UnifiedPostResponse> pagePosts = unifiedPosts.subList(start, end);
+    List<UnifiedPostResult> pagePosts = unifiedPosts.subList(start, end);
     return new PageResult<>(
         pagePosts,
         pageable.page(),
         pageable.size(),
         unifiedPosts.size(),
         (int) Math.ceil((double) unifiedPosts.size() / pageable.size()));
+  }
+
+  public PageResult<PhotoResult> getNewsfeed(int page, int size) {
+    return getNewsfeed(userService.requireCurrentUserId(), page, size);
+  }
+
+  public PageResult<PhotoResult> getSmartNewsfeed(int page, int size) {
+    return getSmartNewsfeed(userService.requireCurrentUserId(), page, size);
+  }
+
+  public PageResult<UnifiedPostResult> getUnifiedNewsfeed(int page, int size) {
+    return getUnifiedNewsfeed(userService.requireCurrentUserId(), page, size);
   }
 
   private List<String> getFollowingUserIds(String userId) {
@@ -293,7 +307,7 @@ public class NewsfeedService {
   private double calculateRelevantScore(Photo photo) {
     double score = 0.0;
     // Time decay: newer photos get higher score
-    long hoursOld = Duration.between(photo.getCreatedAt(), Instant.now()).toHours();
+    long hoursOld = Duration.between(photo.getCreatedAt(), clock.instant()).toHours();
     // Score decreases as photo gets older
     // Recent photos (< 24h): 100-50 points
     // Medium age (24-168h): 50-10 points
@@ -319,7 +333,7 @@ public class NewsfeedService {
     return score;
   }
 
-  private PageResult<PhotoResponse> paginateAndConvert(
+  private PageResult<PhotoResult> paginateAndConvert(
       List<Photo> photos, User currentUser, PageQuery pageable) {
     int start = (int) (long) pageable.page() * pageable.size();
     int end = Math.min(start + pageable.size(), photos.size());
@@ -332,9 +346,9 @@ public class NewsfeedService {
           (int) Math.ceil((double) photos.size() / pageable.size()));
     }
     List<Photo> pagePhotos = photos.subList(start, end);
-    List<PhotoResponse> photoResponses =
+    List<PhotoResult> photoResponses =
         pagePhotos.stream()
-            .map(photo -> photoConversionService.convertToPhotoResponse(photo, currentUser))
+            .map(photo -> photoConversionService.convertToPhotoResponse(photo, java.util.Optional.of(currentUser)))
             .toList();
     return new PageResult<>(
         photoResponses,
@@ -365,7 +379,8 @@ public class NewsfeedService {
       final ShareService shareService,
       final AvatarCache userAvatarCacheService,
       final LikeStore likeStore,
-      final FavoriteStore favoriteStore) {
+      final FavoriteStore favoriteStore,
+      final Clock clock) {
     this.followStore = followStore;
     this.photoStore = photoStore;
     this.userStore = userStore;
@@ -376,5 +391,6 @@ public class NewsfeedService {
     this.userAvatarCacheService = userAvatarCacheService;
     this.likeStore = likeStore;
     this.favoriteStore = favoriteStore;
+    this.clock = clock;
   }
 }

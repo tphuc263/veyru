@@ -6,10 +6,10 @@ import com.veyru.application.port.out.AvatarCache;
 import com.veyru.application.port.out.CurrentActor;
 import com.veyru.application.port.out.ImageStorage;
 import com.veyru.application.port.out.UserStore;
-import com.veyru.application.result.user.UserProfileResponse;
+import com.veyru.application.result.user.UserProfileResult;
 import com.veyru.application.social.FollowService;
-import com.veyru.application.error.ApiException;
-import com.veyru.application.error.ErrorCode;
+import com.veyru.application.common.error.UseCaseException;
+import com.veyru.application.common.error.UseCaseError;
 import com.veyru.domain.model.User;
 import java.util.HashMap;
 import java.util.List;
@@ -27,9 +27,9 @@ public class UserProfileService {
   private final AvatarCache userAvatarCacheService;
   private final CurrentActor currentActor;
 
-  public UserProfileResponse getUserProfileById(String targetUserId) {
+  public UserProfileResult getUserProfileById(String targetUserId) {
     User targetUser = findUserById(targetUserId);
-    UserProfileResponse response = mapToUserProfileResponse(targetUser);
+    UserProfileResult response = mapToUserProfileResponse(targetUser);
     findCurrentUser()
         .filter(currentUser -> followService.isFollowing(currentUser.getId(), targetUserId))
         .ifPresent(currentUser -> response.setFollowingByCurrentUser(true));
@@ -41,9 +41,9 @@ public class UserProfileService {
     return response;
   }
 
-  public UserProfileResponse getCurrentUserProfile() {
-    User user = getCurrentUser();
-    UserProfileResponse response = mapToUserProfileResponse(user);
+  public UserProfileResult getCurrentUserProfile() {
+    User user = requireCurrentUser();
+    UserProfileResult response = mapToUserProfileResponse(user);
     HashMap<String, Long> stats = new HashMap<>();
     stats.put("posts", user.getPhotoCount());
     stats.put("followers", user.getFollowerCount());
@@ -52,8 +52,8 @@ public class UserProfileService {
     return response;
   }
 
-  public UserProfileResponse updateProfile(UpdateProfileCommand request) {
-    User user = getCurrentUser();
+  public UserProfileResult updateProfile(UpdateProfileCommand request) {
+    User user = requireCurrentUser();
     String oldImageUrl = user.getImageUrl();
     updateUserFields(user, request);
     // Handle image update if provided
@@ -65,7 +65,7 @@ public class UserProfileService {
       }
       // Upload new imag
       String newImageUrl = imageStorage.upload(request.image());
-      user.setImageUrl(newImageUrl);
+      user.updateProfile(null, null, newImageUrl);
       log.info("New profile image uploaded for user ID: {}", user.getId());
     }
     User updatedUser = userStore.save(user);
@@ -77,24 +77,30 @@ public class UserProfileService {
     return mapToUserProfileResponse(updatedUser);
   }
 
-  public PageResult<UserProfileResponse> getAllUsers(int page, int size) {
+  public PageResult<UserProfileResult> getAllUsers(int page, int size) {
     log.info("Fetching all users - page: {}, size: {}", page, size);
     PageResult<User> users = userStore.findAll(new PageQuery(page, size));
     return users.map(this::mapToUserProfileResponse);
   }
 
   // helper methods
-  public User getCurrentUser() {
-    return requireCurrentUser();
-  }
-
   public User requireCurrentUser() {
     return findUserById(
-        currentActor.id().orElseThrow(() -> new ApiException(ErrorCode.AUTHENTICATION_REQUIRED)));
+        currentActor.id().orElseThrow(() -> new UseCaseException(UseCaseError.AUTHENTICATION_REQUIRED)));
   }
 
   public Optional<User> findCurrentUser() {
     return currentActor.id().flatMap(userStore::findById);
+  }
+
+  public String requireCurrentUserId() {
+    return currentActor
+        .id()
+        .orElseThrow(() -> new UseCaseException(UseCaseError.AUTHENTICATION_REQUIRED));
+  }
+
+  public Optional<String> findCurrentUserId() {
+    return currentActor.id();
   }
 
   public User findUserById(String userId) {
@@ -103,21 +109,16 @@ public class UserProfileService {
         .orElseThrow(
             () -> {
               log.error("User not found with ID: {}", userId);
-              return new ApiException(ErrorCode.RESOURCE_NOT_FOUND);
+              return new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND);
             });
   }
 
   private void updateUserFields(User user, UpdateProfileCommand request) {
-    if (request.username() != null) {
-      user.setUsername(request.username());
-    }
-    if (request.bio() != null) {
-      user.setBio(request.bio());
-    }
+    user.updateProfile(request.username(), request.bio(), null);
   }
 
-  private UserProfileResponse mapToUserProfileResponse(User user) {
-    UserProfileResponse response = new UserProfileResponse();
+  private UserProfileResult mapToUserProfileResponse(User user) {
+    UserProfileResult response = new UserProfileResult();
     response.setId(user.getId());
     response.setUsername(user.getUsername());
     response.setImageUrl(user.getImageUrl());

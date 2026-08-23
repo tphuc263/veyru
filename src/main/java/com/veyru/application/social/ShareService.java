@@ -7,15 +7,16 @@ import com.veyru.application.port.out.AvatarCache;
 import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.port.out.ShareStore;
 import com.veyru.application.port.out.UserStore;
-import com.veyru.application.result.photo.PhotoResponse;
-import com.veyru.application.result.share.ShareResponse;
-import com.veyru.application.result.share.ShareWithPhotoResponse;
-import com.veyru.application.error.ApiException;
-import com.veyru.application.error.ErrorCode;
+import com.veyru.application.result.photo.PhotoResult;
+import com.veyru.application.result.share.ShareResult;
+import com.veyru.application.result.share.ShareWithPhotoResult;
+import com.veyru.application.common.error.UseCaseException;
+import com.veyru.application.common.error.UseCaseError;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.Share;
 import com.veyru.domain.model.User;
 import java.time.Instant;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -30,28 +31,29 @@ public class ShareService {
   private final UserProfileService userService;
   private final PhotoConversionService photoConversionService;
   private final AvatarCache userAvatarCacheService;
+  private final Clock clock;
 
-  public PhotoResponse sharePhoto(String photoId, String caption) {
-    User currentUser = userService.getCurrentUser();
+  public PhotoResult sharePhoto(String photoId, String caption) {
+    User currentUser = userService.requireCurrentUser();
     Photo photo =
         photoStore
             .findById(photoId)
-            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
+            .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     // Create share record
     Share share = new Share();
     share.setPhotoId(photoId);
     share.setUserId(currentUser.getId());
     share.setCaption(caption);
-    share.setCreatedAt(Instant.now());
+    share.setCreatedAt(clock.instant());
     shareStore.save(share);
     // Increment share count on photo
     photoStore.incrementShareCount(photoId, 1);
-    photo.setShareCount(photo.getShareCount() + 1);
+    photo.recordShare();
     log.info("User {} shared photo {} to their profile", currentUser.getId(), photoId);
-    return photoConversionService.convertToPhotoResponse(photo, currentUser);
+    return photoConversionService.convertToPhotoResponse(photo, java.util.Optional.of(currentUser));
   }
 
-  public List<ShareResponse> getPhotoShares(String photoId) {
+  public List<ShareResult> getPhotoShares(String photoId) {
     List<Share> shares = shareStore.findByPhotoId(photoId);
     List<String> userIds = shares.stream().map(Share::getUserId).distinct().toList();
     Map<String, User> userMap =
@@ -59,7 +61,7 @@ public class ShareService {
     return shares.stream()
         .map(
             share -> {
-              ShareResponse response = new ShareResponse();
+              ShareResult response = new ShareResult();
               response.setId(share.getId());
               response.setPhotoId(share.getPhotoId());
               response.setUserId(share.getUserId());
@@ -80,11 +82,11 @@ public class ShareService {
   }
 
   public boolean hasShared(String photoId) {
-    User currentUser = userService.getCurrentUser();
+    User currentUser = userService.requireCurrentUser();
     return shareStore.exists(photoId, currentUser.getId());
   }
 
-  public PageResult<ShareWithPhotoResponse> getSharesByUserId(String userId, int page, int size) {
+  public PageResult<ShareWithPhotoResult> getSharesByUserId(String userId, int page, int size) {
     List<Share> shares = shareStore.findByUserId(userId, page, size);
     // Get all photo IDs from shares
     List<String> photoIds = shares.stream().map(Share::getPhotoId).distinct().toList();
@@ -103,11 +105,11 @@ public class ShareService {
             .collect(Collectors.toMap(User::getId, u -> u));
     // Get current sharer user info
     User sharerUser = userStore.findById(userId).orElse(null);
-    List<ShareWithPhotoResponse> items =
+    List<ShareWithPhotoResult> items =
         shares.stream()
             .map(
                 share -> {
-                  ShareWithPhotoResponse response = new ShareWithPhotoResponse();
+                  ShareWithPhotoResult response = new ShareWithPhotoResult();
                   response.setId(share.getId());
                   response.setPhotoId(share.getPhotoId());
                   response.setUserId(share.getUserId());
@@ -160,12 +162,14 @@ public class ShareService {
       final UserStore userStore,
       final UserProfileService userService,
       final PhotoConversionService photoConversionService,
-      final AvatarCache userAvatarCacheService) {
+      final AvatarCache userAvatarCacheService,
+      final Clock clock) {
     this.shareStore = shareStore;
     this.photoStore = photoStore;
     this.userStore = userStore;
     this.userService = userService;
     this.photoConversionService = photoConversionService;
     this.userAvatarCacheService = userAvatarCacheService;
+    this.clock = clock;
   }
 }

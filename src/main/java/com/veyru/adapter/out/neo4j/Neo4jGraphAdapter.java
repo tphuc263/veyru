@@ -4,6 +4,7 @@ import com.veyru.application.discovery.GraphFeedItem;
 import com.veyru.application.port.out.GraphFeedQuery;
 import com.veyru.application.port.out.GraphProjection;
 import java.time.Instant;
+import java.time.Clock;
 import java.util.*;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 public class Neo4jGraphAdapter implements GraphProjection, GraphFeedQuery {
   private static final org.slf4j.Logger log = LoggerFactory.getLogger(Neo4jGraphAdapter.class);
   private final Driver neo4jDriver;
+  private final Clock clock;
   // Weight factors for Dijkstra algorithm
   private static final double FOLLOW_WEIGHT = 0.3;
   private static final double ENGAGEMENT_WEIGHT = 0.4;
@@ -281,7 +283,7 @@ public class Neo4jGraphAdapter implements GraphProjection, GraphFeedQuery {
                   "userId",
                   userId,
                   "cutoffTime",
-                  Instant.now().minusSeconds(30L * 24 * 60 * 60).toEpochMilli(),
+                  clock.instant().minusSeconds(30L * 24 * 60 * 60).toEpochMilli(),
                   "FOLLOW_WEIGHT",
                   FOLLOW_WEIGHT,
                   "ENGAGEMENT_WEIGHT",
@@ -371,7 +373,7 @@ public class Neo4jGraphAdapter implements GraphProjection, GraphFeedQuery {
       LIMIT $limit
       """;
     try (Session session = neo4jDriver.session()) {
-      Instant cutoffTime = Instant.now().minusSeconds((long) daysBack * 24 * 60 * 60);
+      Instant cutoffTime = clock.instant().minusSeconds((long) daysBack * 24 * 60 * 60);
       Result result =
           session.run(
               cypher,
@@ -770,7 +772,8 @@ public class Neo4jGraphAdapter implements GraphProjection, GraphFeedQuery {
     }
   }
 
-  public Neo4jGraphAdapter(final Driver neo4jDriver) {
+  public Neo4jGraphAdapter(final Driver neo4jDriver, final Clock clock) {
     this.neo4jDriver = neo4jDriver;
+    this.clock = clock;
   }
 }

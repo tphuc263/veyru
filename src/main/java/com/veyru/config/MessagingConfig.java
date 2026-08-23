@@ -14,19 +14,14 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class MessagingConfig {
   @Bean
-  public Clock messagingClock() {
-    return Clock.systemUTC();
-  }
-
-  @Bean
   public ConversationService conversationService(
       ConversationStore conversationStore,
       MessageStore messageStore,
       MessagingUserLookup userLookup,
       MessageNotifier notifier,
-      Clock messagingClock) {
+      Clock clock) {
     return new ConversationService(
-        conversationStore, messageStore, userLookup, notifier, messagingClock);
+        conversationStore, messageStore, userLookup, notifier, clock);
   }
 
   @Bean
@@ -37,7 +32,7 @@ public class MessagingConfig {
       MessageIdempotency idempotency,
       MessageNotifier notifier,
       ConversationService conversations,
-      Clock messagingClock) {
+      Clock clock) {
     return new SendMessageUseCase(
         messageStore,
         conversationStore,
@@ -45,6 +40,6 @@ public class MessagingConfig {
         idempotency,
         notifier,
         conversations,
-        messagingClock);
+        clock);
   }
 }

@@ -1,6 +1,6 @@
 package com.veyru.adapter.out.security;
 
-import com.veyru.adapter.in.security.userdetails.AppUserDetails;
+import com.veyru.adapter.security.AppUserDetails;
 import com.veyru.application.port.out.CurrentActor;
 import java.util.Optional;
 import org.springframework.security.core.context.SecurityContextHolder;

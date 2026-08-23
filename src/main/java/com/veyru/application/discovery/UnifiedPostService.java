@@ -7,7 +7,7 @@ import com.veyru.application.port.out.AvatarCache;
 import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.port.out.ShareStore;
 import com.veyru.application.port.out.UserStore;
-import com.veyru.application.result.post.UnifiedPostResponse;
+import com.veyru.application.result.post.UnifiedPostResult;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.Share;
 import com.veyru.domain.model.User;
@@ -31,7 +31,7 @@ public class UnifiedPostService {
    * Get unified posts (photos + shares) for a user's profile Sorted by createdAt descending (newest
    * first)
    */
-  public PageResult<UnifiedPostResponse> getUserPosts(String userId, int page, int size) {
+  public PageResult<UnifiedPostResult> getUserPosts(String userId, int page, int size) {
     log.info("Fetching unified posts for user: {}", userId);
     // Fetch photos
     PageResult<Photo> photosPage = photoStore.findByUser(userId, new PageQuery(page, size));
@@ -39,15 +39,15 @@ public class UnifiedPostService {
     // Fetch shares
     List<Share> shares = shareStore.findByUserId(userId, page, size);
     // Convert to unified posts
-    List<UnifiedPostResponse> allPosts = new ArrayList<>();
+    List<UnifiedPostResult> allPosts = new ArrayList<>();
     // Add photos
     User currentUser = null;
 
-    currentUser = userService.getCurrentUser();
+    currentUser = userService.requireCurrentUser();
 
     // Not logged in, that's okay
     for (Photo photo : photos) {
-      UnifiedPostResponse post = convertPhotoToUnifiedPost(photo, currentUser);
+      UnifiedPostResult post = convertPhotoToUnifiedPost(photo, currentUser);
       allPosts.add(post);
     }
     // Add shares
@@ -69,13 +69,13 @@ public class UnifiedPostService {
     for (Share share : shares) {
       Photo originalPhoto = photoMap.get(share.getPhotoId());
       if (originalPhoto != null) {
-        UnifiedPostResponse post =
+        UnifiedPostResult post =
             convertShareToUnifiedPost(share, originalPhoto, sharerUser, userMap);
         allPosts.add(post);
       }
     }
     // Sort by createdAt descending
-    allPosts.sort(Comparator.comparing(UnifiedPostResponse::getCreatedAt).reversed());
+    allPosts.sort(Comparator.comparing(UnifiedPostResult::getCreatedAt).reversed());
     // Paginate
     int start = page * size;
     int end = Math.min(start + size, allPosts.size());
@@ -83,15 +83,15 @@ public class UnifiedPostService {
       return new PageResult<>(
           List.of(), page, size, allPosts.size(), (int) Math.ceil((double) allPosts.size() / size));
     }
-    List<UnifiedPostResponse> pagePosts = allPosts.subList(start, end);
+    List<UnifiedPostResult> pagePosts = allPosts.subList(start, end);
     return new PageResult<>(
         pagePosts, page, size, allPosts.size(), (int) Math.ceil((double) allPosts.size() / size));
   }
 
-  private UnifiedPostResponse convertPhotoToUnifiedPost(Photo photo, User currentUser) {
-    UnifiedPostResponse post = new UnifiedPostResponse();
+  private UnifiedPostResult convertPhotoToUnifiedPost(Photo photo, User currentUser) {
+    UnifiedPostResult post = new UnifiedPostResult();
     post.setId(photo.getId());
-    post.setType(UnifiedPostResponse.PostType.PHOTO);
+    post.setType(UnifiedPostResult.PostType.PHOTO);
     post.setCreatedAt(photo.getCreatedAt());
     if (photo.getUser() != null) {
       post.setUserId(photo.getUser().getUserId());
@@ -112,11 +112,11 @@ public class UnifiedPostService {
     return post;
   }
 
-  private UnifiedPostResponse convertShareToUnifiedPost(
+  private UnifiedPostResult convertShareToUnifiedPost(
       Share share, Photo originalPhoto, User sharerUser, Map<String, User> userMap) {
-    UnifiedPostResponse post = new UnifiedPostResponse();
+    UnifiedPostResult post = new UnifiedPostResult();
     post.setId("share_" + share.getId()); // Prefix to distinguish from photos
-    post.setType(UnifiedPostResponse.PostType.SHARE);
+    post.setType(UnifiedPostResult.PostType.SHARE);
     post.setCreatedAt(share.getCreatedAt());
     // Sharer info
     if (sharerUser != null) {

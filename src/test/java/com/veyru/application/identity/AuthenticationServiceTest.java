@@ -21,7 +21,6 @@ class AuthenticationServiceTest {
     IdentityUserStore users = mock(IdentityUserStore.class);
     MailSender mail = mock(MailSender.class);
     User user = User.registered("alice", "alice@example.com", "hash", now);
-    user.setId("user-id");
     when(users.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
     AuthenticationService service =
         new AuthenticationService(

@@ -8,8 +8,9 @@ import com.veyru.application.port.out.FollowStore;
 import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.port.out.UserStore;
 import com.veyru.application.port.out.VectorIndex;
-import com.veyru.application.result.photo.PhotoResponse;
-import com.veyru.application.result.recommendation.RecommendedUserResponse;
+import com.veyru.application.port.out.CurrentActor;
+import com.veyru.application.result.photo.PhotoResult;
+import com.veyru.application.result.recommendation.RecommendedUserResult;
 import com.veyru.domain.model.Favorite;
 import com.veyru.domain.model.Follow;
 import com.veyru.domain.model.Photo;
@@ -34,13 +35,15 @@ public class RecommendationService {
   private final FavoriteStore favoriteStore;
   private final FollowStore followStore;
   private final PhotoConversionService photoConversionService;
+  private final CurrentActor currentActor;
 
   // ─── RELATED POSTS ─────────────────────────────────────────────
   /**
    * Get photos similar to the given photo using vector similarity. Falls back to tag-based matching
    * if embedding is unavailable.
    */
-  public List<PhotoResponse> getRelatedPhotos(String photoId, int limit, User currentUser) {
+  public List<PhotoResult> getRelatedPhotos(
+      String photoId, int limit, Optional<User> currentUser) {
     log.info("Getting related photos for photoId: {}, limit: {}", photoId, limit);
     Photo sourcePhoto = photoStore.findById(photoId).orElse(null);
     if (sourcePhoto == null) {
@@ -65,7 +68,7 @@ public class RecommendationService {
         // Maintain order from vector search
         Map<String, Photo> photoMap =
             photos.stream().collect(Collectors.toMap(Photo::getId, p -> p));
-        List<PhotoResponse> responses = new ArrayList<>();
+        List<PhotoResult> responses = new ArrayList<>();
         for (String pid : photoIds) {
           Photo p = photoMap.get(pid);
           if (p != null) {
@@ -81,9 +84,24 @@ public class RecommendationService {
     return getRelatedPhotosByTags(sourcePhoto, limit, currentUser);
   }
 
+  public List<PhotoResult> getRelatedPhotos(String photoId, int limit) {
+    return getRelatedPhotos(photoId, limit, currentActor.id().flatMap(userStore::findById));
+  }
+
+  public List<RecommendedUserResult> getSuggestedUsers(int limit) {
+    return getSuggestedUsers(
+        currentActor
+            .id()
+            .orElseThrow(
+                () ->
+                    new com.veyru.application.common.error.UseCaseException(
+                        com.veyru.application.common.error.UseCaseError.AUTHENTICATION_REQUIRED)),
+        limit);
+  }
+
   /** Fallback: find related photos by shared tags. */
-  private List<PhotoResponse> getRelatedPhotosByTags(
-      Photo sourcePhoto, int limit, User currentUser) {
+  private List<PhotoResult> getRelatedPhotosByTags(
+      Photo sourcePhoto, int limit, Optional<User> currentUser) {
     if (sourcePhoto.getTags() == null || sourcePhoto.getTags().isEmpty()) {
       return Collections.emptyList();
     }
@@ -101,7 +119,7 @@ public class RecommendationService {
    * Get user suggestions based on interest similarity. Builds a user profile embedding from their
    * content and engagement, then finds the closest users who the current user does NOT follow.
    */
-  public List<RecommendedUserResponse> getSuggestedUsers(String userId, int limit) {
+  public List<RecommendedUserResult> getSuggestedUsers(String userId, int limit) {
     log.info("Getting suggested users for userId: {}, limit: {}", userId, limit);
     User currentUser = userStore.findById(userId).orElse(null);
     if (currentUser == null) {
@@ -120,7 +138,7 @@ public class RecommendationService {
       if (!results.isEmpty()) {
         // Get already-followed user IDs
         Set<String> followingIds = getFollowingIds(userId);
-        List<RecommendedUserResponse> suggestions = new ArrayList<>();
+        List<RecommendedUserResult> suggestions = new ArrayList<>();
         for (Map<String, Object> result : results) {
           String candidateId = (String) result.get("entityId");
           if (candidateId == null || followingIds.contains(candidateId)) {
@@ -130,7 +148,7 @@ public class RecommendationService {
           if (candidate == null) continue;
           double score =
               result.containsKey("score") ? ((Number) result.get("score")).doubleValue() : 0.0;
-          RecommendedUserResponse resp = new RecommendedUserResponse();
+          RecommendedUserResult resp = new RecommendedUserResult();
           resp.setId(candidate.getId());
           resp.setUsername(candidate.getUsername());
           resp.setImageUrl(candidate.getImageUrl());
@@ -152,7 +170,7 @@ public class RecommendationService {
   }
 
   /** Fallback: suggest popular users that the current user doesn't follow. */
-  private List<RecommendedUserResponse> getFallbackSuggestedUsers(User currentUser, int limit) {
+  private List<RecommendedUserResult> getFallbackSuggestedUsers(User currentUser, int limit) {
     Set<String> followingIds = getFollowingIds(currentUser.getId());
     followingIds.add(currentUser.getId());
     // Get all users, sort by follower count, exclude followed
@@ -163,7 +181,7 @@ public class RecommendationService {
         .limit(limit)
         .map(
             u -> {
-              RecommendedUserResponse resp = new RecommendedUserResponse();
+              RecommendedUserResult resp = new RecommendedUserResult();
               resp.setId(u.getId());
               resp.setUsername(u.getUsername());
               resp.setImageUrl(u.getImageUrl());
@@ -344,7 +362,8 @@ public class RecommendationService {
       final UserStore userStore,
       final FavoriteStore favoriteStore,
       final FollowStore followStore,
-      final PhotoConversionService photoConversionService) {
+      final PhotoConversionService photoConversionService,
+      final CurrentActor currentActor) {
     this.embeddingService = embeddingService;
     this.redisVectorService = redisVectorService;
     this.photoStore = photoStore;
@@ -352,5 +371,6 @@ public class RecommendationService {
     this.favoriteStore = favoriteStore;
     this.followStore = followStore;
     this.photoConversionService = photoConversionService;
+    this.currentActor = currentActor;
   }
 }

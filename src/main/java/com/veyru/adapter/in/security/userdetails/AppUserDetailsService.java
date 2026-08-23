@@ -1,5 +1,6 @@
 package com.veyru.adapter.in.security.userdetails;
 
+import com.veyru.adapter.security.AppUserDetails;
 import com.veyru.application.port.out.UserStore;
 import com.veyru.domain.model.User;
 import org.slf4j.Logger;

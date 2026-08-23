@@ -17,13 +17,14 @@ public class IdentityConfig {
       AuthenticationGateway authentication,
       IdentityUserStore users,
       PasswordEncoder passwords,
-      MailSender mail) {
+      MailSender mail,
+      Clock clock) {
     return new AuthenticationService(
         authentication,
         users,
         passwords::encode,
         mail,
         () -> UUID.randomUUID().toString(),
-        Clock.systemUTC());
+        clock);
   }
 }

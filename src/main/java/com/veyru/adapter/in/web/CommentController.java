@@ -2,7 +2,7 @@ package com.veyru.adapter.in.web;
 
 import com.veyru.adapter.in.dto.request.comment.CreateCommentRequest;
 import com.veyru.adapter.in.dto.request.comment.UpdateCommentRequest;
-import com.veyru.application.result.comment.CommentResponse;
+import com.veyru.adapter.in.dto.response.comment.CommentResponse;
 import com.veyru.application.social.CommentService;
 import com.veyru.application.social.CreateCommentCommand;
 import com.veyru.application.social.UpdateCommentCommand;
@@ -21,10 +21,11 @@ public class CommentController {
   public ResponseEntity<CommentResponse> createComment(
       @PathVariable String photoId, @Valid @RequestBody CreateCommentRequest request) {
     CommentResponse comment =
-        commentService.createComment(
-            photoId,
-            new CreateCommentCommand(
-                request.text(), request.parentCommentId(), request.mentionedUsernames()));
+        CommentResponse.from(
+            commentService.createComment(
+                photoId,
+                new CreateCommentCommand(
+                    request.text(), request.parentCommentId(), request.mentionedUsernames())));
     return ResponseEntity.status(201).body(comment);
   }
 
@@ -33,7 +34,8 @@ public class CommentController {
   public ResponseEntity<CommentResponse> updateComment(
       @PathVariable String commentId, @Valid @RequestBody UpdateCommentRequest request) {
     CommentResponse comment =
-        commentService.updateComment(commentId, new UpdateCommentCommand(request.text()));
+        CommentResponse.from(
+            commentService.updateComment(commentId, new UpdateCommentCommand(request.text())));
     return ResponseEntity.ok(comment);
   }
 
@@ -47,7 +49,8 @@ public class CommentController {
   // Get all comments for a photo (top-level comments with nested replies)
   @GetMapping("/photos/{photoId}/comments")
   public ResponseEntity<List<CommentResponse>> getPhotoComments(@PathVariable String photoId) {
-    List<CommentResponse> comments = commentService.getPhotoComments(photoId);
+    List<CommentResponse> comments =
+        commentService.getPhotoComments(photoId).stream().map(CommentResponse::from).toList();
     return ResponseEntity.ok(comments);
   }
 
@@ -57,7 +60,10 @@ public class CommentController {
       @PathVariable String commentId,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size) {
-    List<CommentResponse> replies = commentService.getCommentReplies(commentId, page, size);
+    List<CommentResponse> replies =
+        commentService.getCommentReplies(commentId, page, size).stream()
+            .map(CommentResponse::from)
+            .toList();
     return ResponseEntity.ok(replies);
   }
 
@@ -71,13 +77,13 @@ public class CommentController {
   // Get a specific comment
   @GetMapping("/comments/{commentId}")
   public ResponseEntity<CommentResponse> getComment(@PathVariable String commentId) {
-    CommentResponse comment = commentService.getComment(commentId);
+    CommentResponse comment = CommentResponse.from(commentService.getComment(commentId));
     return ResponseEntity.ok(comment);
   }
 
   @PutMapping("/comments/{commentId}/likes/me")
   public ResponseEntity<CommentResponse> likeComment(@PathVariable String commentId) {
-    CommentResponse comment = commentService.likeComment(commentId);
+    CommentResponse comment = CommentResponse.from(commentService.likeComment(commentId));
     return ResponseEntity.ok(comment);
   }
 

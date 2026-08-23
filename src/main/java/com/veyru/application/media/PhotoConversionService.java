@@ -3,7 +3,7 @@ package com.veyru.application.media;
 import com.veyru.application.port.out.AvatarCache;
 import com.veyru.application.port.out.FavoriteStore;
 import com.veyru.application.port.out.LikeStore;
-import com.veyru.application.result.photo.PhotoResponse;
+import com.veyru.application.result.photo.PhotoResult;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
 import java.util.Optional;
@@ -13,8 +13,8 @@ public class PhotoConversionService {
   private final FavoriteStore favoriteStore;
   private final AvatarCache userAvatarCacheService;
 
-  public PhotoResponse convertToPhotoResponse(Photo photo, Optional<User> currentUser) {
-    PhotoResponse response = new PhotoResponse();
+  public PhotoResult convertToPhotoResponse(Photo photo, Optional<User> currentUser) {
+    PhotoResult response = new PhotoResult();
     response.setId(photo.getId());
     response.setImageUrl(photo.getImageUrl());
     response.setCaption(photo.getCaption());
@@ -39,10 +39,6 @@ public class PhotoConversionService {
       response.setSavedByCurrentUser(false);
     }
     return response;
-  }
-
-  public PhotoResponse convertToPhotoResponse(Photo photo, User currentUser) {
-    return convertToPhotoResponse(photo, Optional.ofNullable(currentUser));
   }
 
   public PhotoConversionService(

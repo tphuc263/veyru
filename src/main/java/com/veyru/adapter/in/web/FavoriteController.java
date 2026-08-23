@@ -1,6 +1,6 @@
 package com.veyru.adapter.in.web;
 
-import com.veyru.application.result.photo.PhotoResponse;
+import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
 import com.veyru.application.social.FavoriteService;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +28,8 @@ public class FavoriteController {
   @GetMapping("/users/me/favorites")
   public ResponseEntity<List<PhotoResponse>> getFavorites(
       @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-    List<PhotoResponse> favorites = favoriteService.getFavorites(page, size);
+    List<PhotoResponse> favorites =
+        favoriteService.getFavorites(page, size).stream().map(PhotoResponse::from).toList();
     return ResponseEntity.ok(favorites);
   }
 

@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class TagConfig {
   @Bean
-  public TagQueryService tagQueryService(TrendingTagQuery trendingTags) {
-    return new TagQueryService(trendingTags, Clock.systemUTC());
+  public TagQueryService tagQueryService(TrendingTagQuery trendingTags, Clock clock) {
+    return new TagQueryService(trendingTags, clock);
   }
 }

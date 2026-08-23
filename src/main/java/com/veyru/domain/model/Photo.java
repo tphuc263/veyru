@@ -2,6 +2,7 @@ package com.veyru.domain.model;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 
 public class Photo {
   private String id;
@@ -15,6 +16,50 @@ public class Photo {
   private long shareCount;
   private List<EmbeddedUserTag> userTags;
 
+  public static Photo create(
+      String authorId,
+      String authorUsername,
+      String imageUrl,
+      String caption,
+      List<String> tags,
+      Instant createdAt) {
+    if (authorId == null || authorId.isBlank() || imageUrl == null || imageUrl.isBlank()) {
+      throw new IllegalArgumentException("Photo author and image are required");
+    }
+    if (caption != null && caption.length() > 2_200) {
+      throw new IllegalArgumentException("Photo caption is too long");
+    }
+    List<String> normalizedTags =
+        tags == null
+            ? List.of()
+            : tags.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(tag -> !tag.isEmpty())
+                .map(String::toLowerCase)
+                .distinct()
+                .toList();
+    if (normalizedTags.size() > 30 || normalizedTags.stream().anyMatch(tag -> tag.length() > 50)) {
+      throw new IllegalArgumentException("Photo tags are invalid");
+    }
+    return new Photo(
+        null,
+        imageUrl,
+        caption == null ? null : caption.trim(),
+        createdAt,
+        normalizedTags,
+        new EmbeddedUser(authorId, authorUsername),
+        0,
+        0,
+        0,
+        List.of());
+  }
+
+  public Photo recordShare() {
+    shareCount++;
+    return this;
+  }
+
   public static class EmbeddedUser {
     private String userId;
     private String username;
@@ -27,13 +72,7 @@ public class Photo {
       return this.username;
     }
 
-    public void setUserId(final String userId) {
-      this.userId = userId;
-    }
 
-    public void setUsername(final String username) {
-      this.username = username;
-    }
 
     @Override
     public boolean equals(final Object o) {
@@ -116,29 +155,11 @@ public class Photo {
       return this.createdAt;
     }
 
-    public void setTaggedUserId(final String taggedUserId) {
-      this.taggedUserId = taggedUserId;
-    }
 
-    public void setTaggedByUserId(final String taggedByUserId) {
-      this.taggedByUserId = taggedByUserId;
-    }
 
-    public void setUsername(final String username) {
-      this.username = username;
-    }
 
-    public void setPositionX(final Double positionX) {
-      this.positionX = positionX;
-    }
 
-    public void setPositionY(final Double positionY) {
-      this.positionY = positionY;
-    }
 
-    public void setCreatedAt(final Instant createdAt) {
-      this.createdAt = createdAt;
-    }
 
     @Override
     public boolean equals(final Object o) {
@@ -276,45 +297,15 @@ public class Photo {
     return this.userTags;
   }
 
-  public void setId(final String id) {
-    this.id = id;
-  }
 
-  public void setImageUrl(final String imageUrl) {
-    this.imageUrl = imageUrl;
-  }
 
-  public void setCaption(final String caption) {
-    this.caption = caption;
-  }
 
-  public void setCreatedAt(final Instant createdAt) {
-    this.createdAt = createdAt;
-  }
 
-  public void setTags(final List<String> tags) {
-    this.tags = tags;
-  }
 
-  public void setUser(final EmbeddedUser user) {
-    this.user = user;
-  }
 
-  public void setLikeCount(final long likeCount) {
-    this.likeCount = likeCount;
-  }
 
-  public void setCommentCount(final long commentCount) {
-    this.commentCount = commentCount;
-  }
 
-  public void setShareCount(final long shareCount) {
-    this.shareCount = shareCount;
-  }
 
-  public void setUserTags(final List<EmbeddedUserTag> userTags) {
-    this.userTags = userTags;
-  }
 
   @Override
   public boolean equals(final Object o) {

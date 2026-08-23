@@ -8,14 +8,15 @@ import com.veyru.application.port.out.CommentStore;
 import com.veyru.application.port.out.GraphProjection;
 import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.port.out.UserStore;
-import com.veyru.application.result.comment.CommentResponse;
-import com.veyru.application.error.ApiException;
-import com.veyru.application.error.ErrorCode;
+import com.veyru.application.result.comment.CommentResult;
+import com.veyru.application.common.error.UseCaseException;
+import com.veyru.application.common.error.UseCaseError;
 import com.veyru.domain.model.Comment;
 import com.veyru.domain.model.CommentLike;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
 import java.time.Instant;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -35,28 +36,17 @@ public class CommentService {
   private final NotificationService notificationService;
   private final AvatarCache userAvatarCacheService;
   private final GraphProjection neo4jGraphService;
+  private final Clock clock;
   // Pattern to match @username mentions
   private static final Pattern MENTION_PATTERN = Pattern.compile("@(\\w+)");
 
-  public CommentResponse createComment(String photoId, CreateCommentCommand request) {
+  public CommentResult createComment(String photoId, CreateCommentCommand request) {
     // Validate photo exists
     Photo photo =
         photoStore
             .findById(photoId)
-            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
-    User currentUser = userService.getCurrentUser();
-    Comment.EmbeddedUser embeddedUser = new Comment.EmbeddedUser();
-    embeddedUser.setUserId(currentUser.getId());
-    embeddedUser.setUsername(currentUser.getUsername());
-    // Create comment
-    Comment comment = new Comment();
-    comment.setPhotoId(photoId);
-    comment.setUserId(currentUser.getId());
-    comment.setText(request.text());
-    comment.setCreatedAt(Instant.now());
-    comment.setUser(embeddedUser);
-    comment.setLikeCount(0);
-    comment.setReplyCount(0);
+            .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
+    User currentUser = userService.requireCurrentUser();
     // Handle nested comments (replies)
     String parentCommentId = request.parentCommentId();
     Comment parentComment = null;
@@ -64,12 +54,19 @@ public class CommentService {
       parentComment =
           commentStore
               .findById(parentCommentId)
-              .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
-      comment.setParentCommentId(parentCommentId);
+              .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     }
     // Extract mentioned users from text
     List<String> mentionedUserIds = extractMentionedUserIds(request.text());
-    comment.setMentionedUserIds(mentionedUserIds);
+    Comment comment =
+        Comment.create(
+            photoId,
+            currentUser.getId(),
+            currentUser.getUsername(),
+            request.text(),
+            mentionedUserIds,
+            clock.instant());
+    if (parentComment != null) comment.replyTo(parentComment);
     Comment savedComment = commentStore.save(comment);
     // Update parent comment reply count if this is a reply
     if (parentComment != null) {
@@ -108,20 +105,18 @@ public class CommentService {
     return convertToCommentResponse(savedComment, currentUser.getId());
   }
 
-  public CommentResponse updateComment(String commentId, UpdateCommentCommand request) {
+  public CommentResult updateComment(String commentId, UpdateCommentCommand request) {
     Comment comment =
         commentStore
             .findById(commentId)
-            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
-    User currentUser = userService.getCurrentUser();
+            .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
+    User currentUser = userService.requireCurrentUser();
     // Check if current user is the owner of the comment
     if (!comment.getUserId().equals(currentUser.getId())) {
-      throw new ApiException(ErrorCode.ACCESS_DENIED);
+      throw new UseCaseException(UseCaseError.ACCESS_DENIED);
     }
-    comment.setText(request.text());
-    // Update mentioned users
     List<String> mentionedUserIds = extractMentionedUserIds(request.text());
-    comment.setMentionedUserIds(mentionedUserIds);
+    comment.edit(currentUser.getId(), request.text(), mentionedUserIds);
     Comment updatedComment = commentStore.save(comment);
     log.info("Comment {} updated successfully by user {}", commentId, currentUser.getId());
     return convertToCommentResponse(updatedComment, currentUser.getId());
@@ -131,11 +126,11 @@ public class CommentService {
     Comment comment =
         commentStore
             .findById(commentId)
-            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
-    User currentUser = userService.getCurrentUser();
+            .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
+    User currentUser = userService.requireCurrentUser();
     // Check if current user is the owner of the comment
     if (!comment.getUserId().equals(currentUser.getId())) {
-      throw new ApiException(ErrorCode.ACCESS_DENIED);
+      throw new UseCaseException(UseCaseError.ACCESS_DENIED);
     }
     // Delete all replies if this is a parent comment
     if (comment.getParentCommentId() == null) {
@@ -155,16 +150,10 @@ public class CommentService {
     log.info("Comment {} deleted successfully by user {}", commentId, currentUser.getId());
   }
 
-  public List<CommentResponse> getPhotoComments(String photoId) {
+  public List<CommentResult> getPhotoComments(String photoId) {
     // Validate photo exists
-    photoStore.findById(photoId).orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
-    User currentUser = null;
-    try {
-      currentUser = userService.getCurrentUser();
-    } catch (ApiException e) {
-    }
-    // User not authenticated, continue without user context
-    String currentUserId = currentUser != null ? currentUser.getId() : null;
+    photoStore.findById(photoId).orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
+    String currentUserId = userService.findCurrentUser().map(User::getId).orElse(null);
     // Get only top-level comments (no parent)
     List<Comment> topLevelComments = commentStore.findTopLevelByPhotoId(photoId);
     return
@@ -172,7 +161,7 @@ public class CommentService {
     topLevelComments.stream()
         .map(
             comment -> {
-              CommentResponse response = convertToCommentResponse(comment, currentUserId);
+              CommentResult response = convertToCommentResponse(comment, currentUserId);
               loadNestedReplies(response, currentUserId);
               return response;
             })
@@ -180,14 +169,14 @@ public class CommentService {
   }
 
   // Recursive method to load all nested replies
-  private void loadNestedReplies(CommentResponse parentResponse, String currentUserId) {
+  private void loadNestedReplies(CommentResult parentResponse, String currentUserId) {
     List<Comment> replies = commentStore.findReplies(parentResponse.getId());
-    List<CommentResponse> replyResponses =
+    List<CommentResult> replyResponses =
         // Recursively load nested replies
         replies.stream()
             .map(
                 reply -> {
-                  CommentResponse replyResponse = convertToCommentResponse(reply, currentUserId);
+                  CommentResult replyResponse = convertToCommentResponse(reply, currentUserId);
                   loadNestedReplies(replyResponse, currentUserId);
                   return replyResponse;
                 })
@@ -195,18 +184,12 @@ public class CommentService {
     parentResponse.setReplies(replyResponses);
   }
 
-  public List<CommentResponse> getCommentReplies(String commentId, int page, int size) {
+  public List<CommentResult> getCommentReplies(String commentId, int page, int size) {
     Comment parentComment =
         commentStore
             .findById(commentId)
-            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
-    User currentUser = null;
-    try {
-      currentUser = userService.getCurrentUser();
-    } catch (ApiException e) {
-    }
-    // User not authenticated
-    String currentUserId = currentUser != null ? currentUser.getId() : null;
+            .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
+    String currentUserId = userService.findCurrentUser().map(User::getId).orElse(null);
     List<Comment> replies = commentStore.findReplies(commentId, page, size);
     return replies.stream().map(reply -> convertToCommentResponse(reply, currentUserId)).toList();
   }
@@ -215,35 +198,29 @@ public class CommentService {
     return commentStore.countByPhotoId(photoId);
   }
 
-  public CommentResponse getComment(String commentId) {
+  public CommentResult getComment(String commentId) {
     Comment comment =
         commentStore
             .findById(commentId)
-            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
-    User currentUser = null;
-    try {
-      currentUser = userService.getCurrentUser();
-    } catch (ApiException e) {
-    }
-    // User not authenticated
-    String currentUserId = currentUser != null ? currentUser.getId() : null;
+            .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
+    String currentUserId = userService.findCurrentUser().map(User::getId).orElse(null);
     return convertToCommentResponse(comment, currentUserId);
   }
 
-  public CommentResponse likeComment(String commentId) {
+  public CommentResult likeComment(String commentId) {
     Comment comment =
         commentStore
             .findById(commentId)
-            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
-    User currentUser = userService.getCurrentUser();
+            .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
+    User currentUser = userService.requireCurrentUser();
     if (!commentLikeStore.exists(commentId, currentUser.getId())) {
       CommentLike like = new CommentLike();
       like.setCommentId(commentId);
       like.setUserId(currentUser.getId());
-      like.setCreatedAt(Instant.now());
+      like.setCreatedAt(clock.instant());
       commentLikeStore.save(like);
       commentStore.incrementLikeCount(commentId, 1);
-      comment.setLikeCount(comment.getLikeCount() + 1);
+      comment.recordLike();
       // Send notification
       notificationService.sendLikeCommentNotification(
           comment.getUserId(), currentUser, comment.getPhotoId(), commentId);
@@ -256,8 +233,8 @@ public class CommentService {
     Comment comment =
         commentStore
             .findById(commentId)
-            .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
-    User currentUser = userService.getCurrentUser();
+            .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
+    User currentUser = userService.requireCurrentUser();
     commentLikeStore
         .find(commentId, currentUser.getId())
         .ifPresent(
@@ -279,8 +256,8 @@ public class CommentService {
     return mentionedUserIds;
   }
 
-  private CommentResponse convertToCommentResponse(Comment comment, String currentUserId) {
-    CommentResponse response = new CommentResponse();
+  private CommentResult convertToCommentResponse(Comment comment, String currentUserId) {
+    CommentResult response = new CommentResult();
     response.setId(comment.getId());
     response.setPhotoId(comment.getPhotoId());
     response.setUserId(comment.getUserId());
@@ -299,13 +276,13 @@ public class CommentService {
     }
     // Convert mentioned user IDs to response format
     if (comment.getMentionedUserIds() != null && !comment.getMentionedUserIds().isEmpty()) {
-      List<CommentResponse.MentionedUser> mentionedUsers = new ArrayList<>();
+      List<CommentResult.MentionedUser> mentionedUsers = new ArrayList<>();
       for (String userId : comment.getMentionedUserIds()) {
         userStore
             .findById(userId)
             .ifPresent(
                 user -> {
-                  CommentResponse.MentionedUser mu = new CommentResponse.MentionedUser();
+                  CommentResult.MentionedUser mu = new CommentResult.MentionedUser();
                   mu.setUserId(user.getId());
                   mu.setUsername(user.getUsername());
                   mentionedUsers.add(mu);
@@ -316,14 +293,8 @@ public class CommentService {
     return response;
   }
 
-  private List<CommentResponse> convertToCommentResponses(List<Comment> comments) {
-    User currentUser = null;
-    try {
-      currentUser = userService.getCurrentUser();
-    } catch (ApiException e) {
-    }
-    // User not authenticated
-    String currentUserId = currentUser != null ? currentUser.getId() : null;
+  private List<CommentResult> convertToCommentResponses(List<Comment> comments) {
+    String currentUserId = userService.findCurrentUser().map(User::getId).orElse(null);
     return comments.stream()
         .map(comment -> convertToCommentResponse(comment, currentUserId))
         .toList();
@@ -337,7 +308,8 @@ public class CommentService {
       final UserProfileService userService,
       final NotificationService notificationService,
       final AvatarCache userAvatarCacheService,
-      final GraphProjection neo4jGraphService) {
+      final GraphProjection neo4jGraphService,
+      final Clock clock) {
     this.commentStore = commentStore;
     this.commentLikeStore = commentLikeStore;
     this.photoStore = photoStore;
@@ -346,5 +318,6 @@ public class CommentService {
     this.notificationService = notificationService;
     this.userAvatarCacheService = userAvatarCacheService;
     this.neo4jGraphService = neo4jGraphService;
+    this.clock = clock;
   }
 }

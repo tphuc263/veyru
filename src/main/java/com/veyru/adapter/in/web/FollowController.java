@@ -1,6 +1,6 @@
 package com.veyru.adapter.in.web;
 
-import com.veyru.application.result.follow.FollowResponse;
+import com.veyru.adapter.in.dto.response.follow.FollowResponse;
 import com.veyru.application.social.FollowService;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +31,8 @@ public class FollowController {
       @PathVariable String userId,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size) {
-    List<FollowResponse> followers = followService.getFollowers(userId, page, size);
+    List<FollowResponse> followers =
+        followService.getFollowers(userId, page, size).stream().map(FollowResponse::from).toList();
     return ResponseEntity.ok(followers);
   }
 
@@ -41,7 +42,8 @@ public class FollowController {
       @PathVariable String userId,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size) {
-    List<FollowResponse> following = followService.getFollowing(userId, page, size);
+    List<FollowResponse> following =
+        followService.getFollowing(userId, page, size).stream().map(FollowResponse::from).toList();
     return ResponseEntity.ok(following);
   }
 

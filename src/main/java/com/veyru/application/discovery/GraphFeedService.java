@@ -4,11 +4,12 @@ import com.veyru.application.identity.UserProfileService;
 import com.veyru.application.media.PhotoConversionService;
 import com.veyru.application.port.out.GraphFeedQuery;
 import com.veyru.application.port.out.PhotoStore;
-import com.veyru.application.result.photo.PhotoResponse;
+import com.veyru.application.result.photo.PhotoResult;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.Clock;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +24,7 @@ public class GraphFeedService {
   private final PhotoStore photoStore;
   private final UserProfileService userService;
   private final PhotoConversionService photoConversionService;
+  private final Clock clock;
 
   /**
    * Get personalized feed using Neo4j graph-based ranking Uses weighted path algorithm similar to
@@ -31,7 +33,7 @@ public class GraphFeedService {
    * <p>Advantages over traditional ranking: - Considers user's engagement patterns - Uses graph
    * traversal for better personalization - Can find "similar" users through mutual connections
    */
-  public List<PhotoResponse> getGraphBasedFeed(String userId, int limit) {
+  public List<PhotoResult> getGraphBasedFeed(String userId, int limit) {
     log.info("Getting graph-based feed for user: {} with limit: {}", userId, limit);
 
     // Get feed from Neo4j using Dijkstra-like algorithm
@@ -63,8 +65,12 @@ public class GraphFeedService {
     // Convert to response
     User currentUser = userService.findUserById(userId);
     return photos.stream()
-        .map(photo -> photoConversionService.convertToPhotoResponse(photo, currentUser))
+        .map(photo -> photoConversionService.convertToPhotoResponse(photo, java.util.Optional.of(currentUser)))
         .toList();
+  }
+
+  public List<PhotoResult> getGraphBasedFeed(int limit) {
+    return getGraphBasedFeed(userService.requireCurrentUserId(), limit);
   }
 
   /**
@@ -72,7 +78,7 @@ public class GraphFeedService {
    * Direct follows - Mutual engagement patterns - Content similarity (tag overlap) - Author
    * popularity
    */
-  public List<PhotoResponse> getWeightedPathFeed(String userId, int limit, int daysBack) {
+  public List<PhotoResult> getWeightedPathFeed(String userId, int limit, int daysBack) {
     log.info("Getting weighted path feed for user: {}", userId);
 
     List<GraphFeedItem> feedNodes = neo4jGraphService.getWeightedPathFeed(userId, limit, daysBack);
@@ -101,8 +107,12 @@ public class GraphFeedService {
         });
     User currentUser = userService.findUserById(userId);
     return photos.stream()
-        .map(photo -> photoConversionService.convertToPhotoResponse(photo, currentUser))
+        .map(photo -> photoConversionService.convertToPhotoResponse(photo, java.util.Optional.of(currentUser)))
         .toList();
+  }
+
+  public List<PhotoResult> getWeightedPathFeed(int limit, int daysBack) {
+    return getWeightedPathFeed(userService.requireCurrentUserId(), limit, daysBack);
   }
 
   /**
@@ -114,7 +124,7 @@ public class GraphFeedService {
    * @param limit Number of photos to return
    * @param alpha Weight for graph score (0.0 to 1.0). Higher = more personalized
    */
-  public List<PhotoResponse> getHybridFeed(String userId, int limit, double alpha) {
+  public List<PhotoResult> getHybridFeed(String userId, int limit, double alpha) {
     log.info("Getting hybrid feed for user: {} with alpha: {}", userId, alpha);
     // Get graph-based scores
     List<GraphFeedItem> graphNodes =
@@ -132,7 +142,7 @@ public class GraphFeedService {
       return getGraphBasedFeed(userId, limit);
     }
     // Fetch photos from candidates
-    Instant cutoffTime = Instant.now().minus(Duration.ofDays(30));
+    Instant cutoffTime = clock.instant().minus(Duration.ofDays(30));
     List<Photo> photos = photoStore.findByUsersAfter(followingIds, cutoffTime);
     if (photos.isEmpty()) {
       photos = photoStore.findByUsers(followingIds);
@@ -161,18 +171,22 @@ public class GraphFeedService {
             .limit(limit)
             .toList();
     // Convert to response
-    List<PhotoResponse> result =
+    List<PhotoResult> result =
         scoredPhotos.stream()
-            .map(ps -> photoConversionService.convertToPhotoResponse(ps.photo, currentUser))
+            .map(ps -> photoConversionService.convertToPhotoResponse(ps.photo, java.util.Optional.of(currentUser)))
             .toList();
     return result;
+  }
+
+  public List<PhotoResult> getHybridFeed(int limit, double alpha) {
+    return getHybridFeed(userService.requireCurrentUserId(), limit, alpha);
   }
 
   /** Traditional score calculation (same as in NewsfeedService) */
   private double calculateTraditionalScore(Photo photo) {
     double score = 0.0;
     long hoursOld =
-        java.time.Duration.between(photo.getCreatedAt(), java.time.Instant.now()).toHours();
+        java.time.Duration.between(photo.getCreatedAt(), clock.instant()).toHours();
     // Time decay
     if (hoursOld < 24) {
       score += 100 - (hoursOld * 2);
@@ -201,6 +215,10 @@ public class GraphFeedService {
     return neo4jGraphService.getSuggestedUsersFromGraph(userId, limit);
   }
 
+  public List<String> getSuggestedUsers(int limit) {
+    return getSuggestedUsers(userService.requireCurrentUserId(), limit);
+  }
+
   /** Get graph statistics for monitoring */
   public String getGraphStats() {
     return neo4jGraphService.getGraphStats().toString();
@@ -221,10 +239,12 @@ public class GraphFeedService {
       final GraphFeedQuery neo4jGraphService,
       final PhotoStore photoStore,
       final UserProfileService userService,
-      final PhotoConversionService photoConversionService) {
+      final PhotoConversionService photoConversionService,
+      final Clock clock) {
     this.neo4jGraphService = neo4jGraphService;
     this.photoStore = photoStore;
     this.userService = userService;
     this.photoConversionService = photoConversionService;
+    this.clock = clock;
   }
 }

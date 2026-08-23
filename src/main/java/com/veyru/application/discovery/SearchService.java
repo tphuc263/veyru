@@ -6,10 +6,10 @@ import com.veyru.application.identity.UserProfileService;
 import com.veyru.application.media.PhotoConversionService;
 import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.port.out.UserStore;
-import com.veyru.application.result.photo.PhotoResponse;
-import com.veyru.application.result.search.UserSearchResponse;
-import com.veyru.application.result.search.UserSearchResponseSimple;
-import com.veyru.application.result.user.UserProfileResponse;
+import com.veyru.application.result.photo.PhotoResult;
+import com.veyru.application.result.search.UserSearchResult;
+import com.veyru.application.result.search.UserSearchSimpleResult;
+import com.veyru.application.result.user.UserProfileResult;
 import com.veyru.application.social.FollowService;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
@@ -26,7 +26,7 @@ public class SearchService {
   private final UserProfileService userService;
   private final FollowService followService;
 
-  public PageResult<UserSearchResponseSimple> searchUsers(String query, int page, int size) {
+  public PageResult<UserSearchSimpleResult> searchUsers(String query, int page, int size) {
     log.info("Searching users for: {}", query);
     String sanitizedQuery = sanitizeSearchQuery(query);
     if (sanitizedQuery.isEmpty()) {
@@ -38,13 +38,13 @@ public class SearchService {
     return users.map(this::toSimpleResponse);
   }
 
-  public PageResult<PhotoResponse> searchPhotos(String query, int page, int size) {
+  public PageResult<PhotoResult> searchPhotos(String query, int page, int size) {
     log.info("Searching photos for: {}", query);
     String sanitizedQuery = sanitizeSearchQuery(query);
     if (sanitizedQuery.isEmpty()) {
       return new PageResult<>(List.of(), page, size, 0, 0);
     }
-    User currentUser = userService.getCurrentUser();
+    var currentUser = userService.findCurrentUser();
     // Try text search first
 
     PageResult<Photo> photos = photoStore.searchText(sanitizedQuery, new PageQuery(page, size));
@@ -58,7 +58,7 @@ public class SearchService {
         .map(photo -> photoConversionService.convertToPhotoResponse(photo, currentUser));
   }
 
-  public PageResult<PhotoResponse> searchPhotosByTags(String query, int page, int size) {
+  public PageResult<PhotoResult> searchPhotosByTags(String query, int page, int size) {
     log.info("Searching photos by tags for: {}", query);
     String sanitizedQuery = sanitizeSearchQuery(query);
     if (sanitizedQuery.isEmpty()) {
@@ -71,14 +71,10 @@ public class SearchService {
       return new PageResult<>(List.of(), page, size, 0, 0);
     }
     // 2. Find Photos that contain these tags directly
-    User currentUser = null;
-
-    currentUser = userService.getCurrentUser();
-
-    final User finalCurrentUser = currentUser;
+    var currentUser = userService.findCurrentUser();
     PageResult<Photo> photos = photoStore.findByTags(tagNames, new PageQuery(page, size));
     return photos.map(
-        photo -> photoConversionService.convertToPhotoResponse(photo, finalCurrentUser));
+        photo -> photoConversionService.convertToPhotoResponse(photo, currentUser));
   }
 
   public List<String> getSearchSuggestions(String query, int limit) {
@@ -107,8 +103,8 @@ public class SearchService {
     query.trim().replaceAll("[\"\'`]", "").replaceAll("\\s+", " "); // Normalize whitespace
   }
 
-  private UserSearchResponse convertToUserSearchResponse(User user) {
-    UserSearchResponse response = new UserSearchResponse();
+  private UserSearchResult convertToUserSearchResponse(User user) {
+    UserSearchResult response = new UserSearchResult();
     response.setId(user.getId());
     response.setUsername(user.getUsername());
     response.setImageUrl(user.getImageUrl());
@@ -117,14 +113,17 @@ public class SearchService {
     response.setFollowersCount(user.getFollowerCount());
     // Check if current user follows this user
 
-    User currentUser = userService.getCurrentUser();
-    response.setFollowedByCurrentUser(followService.isFollowing(currentUser.getId(), user.getId()));
+    response.setFollowedByCurrentUser(
+        userService
+            .findCurrentUser()
+            .map(currentUser -> followService.isFollowing(currentUser.getId(), user.getId()))
+            .orElse(false));
 
     return response;
   }
 
-  private UserProfileResponse convertToUserProfileResponse(UserSearchResponse userSearchResponse) {
-    UserProfileResponse response = new UserProfileResponse();
+  private UserProfileResult convertToUserProfileResponse(UserSearchResult userSearchResponse) {
+    UserProfileResult response = new UserProfileResult();
     response.setId(userSearchResponse.getId());
     response.setUsername(userSearchResponse.getUsername());
     response.setImageUrl(userSearchResponse.getImageUrl());
@@ -132,8 +131,8 @@ public class SearchService {
     return response;
   }
 
-  private UserSearchResponseSimple toSimpleResponse(User user) {
-    UserSearchResponseSimple response = new UserSearchResponseSimple();
+  private UserSearchSimpleResult toSimpleResponse(User user) {
+    UserSearchSimpleResult response = new UserSearchSimpleResult();
     response.setId(user.getId());
     response.setUsername(user.getUsername());
     response.setImageUrl(user.getImageUrl());

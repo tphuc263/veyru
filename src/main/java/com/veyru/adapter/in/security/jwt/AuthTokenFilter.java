@@ -1,6 +1,7 @@
 package com.veyru.adapter.in.security.jwt;
 
 import com.veyru.adapter.in.security.userdetails.AppUserDetailsService;
+import com.veyru.adapter.security.JwtUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

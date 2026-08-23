@@ -6,12 +6,13 @@ import com.veyru.application.port.out.CurrentActor;
 import com.veyru.application.port.out.FollowStore;
 import com.veyru.application.port.out.GraphProjection;
 import com.veyru.application.port.out.UserStore;
-import com.veyru.application.result.follow.FollowResponse;
-import com.veyru.application.error.ApiException;
-import com.veyru.application.error.ErrorCode;
+import com.veyru.application.result.follow.FollowResult;
+import com.veyru.application.common.error.UseCaseException;
+import com.veyru.application.common.error.UseCaseError;
 import com.veyru.domain.model.Follow;
 import com.veyru.domain.model.User;
 import java.time.Instant;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -28,12 +29,13 @@ public class FollowService {
   private final AvatarCache userAvatarCacheService;
   private final GraphProjection neo4jGraphService;
   private final CurrentActor currentActor;
+  private final Clock clock;
 
   public void follow(String targetUserId) {
     User currentUser = getCurrentUser();
     Follow existingFollow = checkBeforeFollow(targetUserId, currentUser);
     if (existingFollow != null) return;
-    Follow follow = Follow.create(currentUser.getId(), targetUserId, Instant.now());
+    Follow follow = Follow.create(currentUser.getId(), targetUserId, clock.instant());
     followStore.save(follow);
     log.info("User {} followed user {}", currentUser.getId(), targetUserId);
     // Sync to Neo4j graph
@@ -85,17 +87,17 @@ public class FollowService {
     //
   }
 
-  public List<FollowResponse> getFollowers(String userId, int page, int size) {
+  public List<FollowResult> getFollowers(String userId, int page, int size) {
     // Validate user exists
-    userStore.findById(userId).orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
+    userStore.findById(userId).orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     List<Follow> follows = followStore.findFollowers(userId, page, size);
     List<String> followerIds = follows.stream().map(Follow::getFollowerId).toList();
     return convertToFollowResponses(followerIds, true);
   }
 
-  public List<FollowResponse> getFollowing(String userId, int page, int size) {
+  public List<FollowResult> getFollowing(String userId, int page, int size) {
     // Validate user exists
-    userStore.findById(userId).orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
+    userStore.findById(userId).orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     List<Follow> follows = followStore.findFollowing(userId, page, size);
     List<String> followingIds = follows.stream().map(Follow::getFollowingId).toList();
     return convertToFollowResponses(followingIds, false);
@@ -107,7 +109,7 @@ public class FollowService {
   }
 
   // Helper methods
-  private List<FollowResponse> convertToFollowResponses(
+  private List<FollowResult> convertToFollowResponses(
       List<String> userIds, boolean isFollowersList) {
     if (userIds.isEmpty()) {
       return List.of();
@@ -123,7 +125,7 @@ public class FollowService {
             userId -> {
               User user = usersMap.get(userId);
               if (user != null) {
-                FollowResponse response = new FollowResponse();
+                FollowResult response = new FollowResult();
                 response.setId(user.getId());
                 response.setUsername(user.getUsername());
                 response.setBio(user.getBio());
@@ -152,10 +154,10 @@ public class FollowService {
   private Follow checkBeforeFollow(String targetUserId, User currentUser) {
     userStore
         .findById(targetUserId)
-        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
+        .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     // Prevent self-following
     if (currentUser.getId().equals(targetUserId)) {
-      throw new ApiException(ErrorCode.VALIDATION_FAILED);
+      throw new UseCaseException(UseCaseError.VALIDATION_FAILED);
     }
     return followStore.find(currentUser.getId(), targetUserId).orElse(null);
   }
@@ -163,13 +165,13 @@ public class FollowService {
   // helper methods
   private User getCurrentUser() {
     String actorId =
-        currentActor.id().orElseThrow(() -> new ApiException(ErrorCode.AUTHENTICATION_REQUIRED));
+        currentActor.id().orElseThrow(() -> new UseCaseException(UseCaseError.AUTHENTICATION_REQUIRED));
     return userStore
         .findById(actorId)
         .orElseThrow(
             () -> {
               log.error("User not found with ID: {}", actorId);
-              return new ApiException(ErrorCode.RESOURCE_NOT_FOUND);
+              return new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND);
             });
   }
 
@@ -179,12 +181,14 @@ public class FollowService {
       final NotificationService notificationService,
       final AvatarCache userAvatarCacheService,
       final GraphProjection neo4jGraphService,
-      final CurrentActor currentActor) {
+      final CurrentActor currentActor,
+      final Clock clock) {
     this.followStore = followStore;
     this.userStore = userStore;
     this.notificationService = notificationService;
     this.userAvatarCacheService = userAvatarCacheService;
     this.neo4jGraphService = neo4jGraphService;
     this.currentActor = currentActor;
+    this.clock = clock;
   }
 }

@@ -10,15 +10,6 @@ public record CreateCommentRequest(
         String text,
     String parentCommentId,
     List<String> mentionedUsernames) {
-  public String getText() {
-    return text;
-  }
 
-  public String getParentCommentId() {
-    return parentCommentId;
-  }
 
-  public List<String> getMentionedUsernames() {
-    return mentionedUsernames;
-  }
 }
