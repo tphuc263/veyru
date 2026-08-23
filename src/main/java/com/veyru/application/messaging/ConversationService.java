@@ -1,5 +1,6 @@
 package com.veyru.application.messaging;
 
+import com.veyru.application.common.PageResult;
 import com.veyru.application.messaging.MessagingException.Reason;
 import com.veyru.application.port.out.ConversationStore;
 import com.veyru.application.port.out.MessageNotifier;

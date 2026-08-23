@@ -35,7 +35,10 @@ public class MongoTrendingTagQuery implements TrendingTagQuery {
             sort(Sort.by(Sort.Direction.DESC, "count")),
             limit(maxResults),
             project().and("_id").as("tag"));
-    return mongoTemplate.aggregate(aggregation, "photos", Document.class).getMappedResults().stream()
+    return mongoTemplate
+        .aggregate(aggregation, "photos", Document.class)
+        .getMappedResults()
+        .stream()
         .map(result -> result.getString("tag"))
         .toList();
   }
