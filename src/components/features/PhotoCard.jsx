@@ -38,7 +38,7 @@ const PhotoCard = ({
         const prevSaved = isSaved;
         setIsSaved(!isSaved);
         try {
-            await toggleFavorite(photoId);
+            await toggleFavorite(photoId, prevSaved);
         } catch (err) {
             setIsSaved(prevSaved);
             console.error('Failed to toggle save:', err);

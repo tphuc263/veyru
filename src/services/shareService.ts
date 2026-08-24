@@ -1,37 +1,33 @@
 import api from '../config/ApiConfig';
+import type { components } from '../types/generated-api';
 
-export const sharePhoto = async (photoId: string, caption?: string): Promise<any> => {
-    try {
-        const response = await api.post(`/shares/photo/${photoId}`, { caption });
-        return response;
-    } catch (error: any) {
-        throw new Error(`Failed to share photo: ${error.message}`);
-    }
+type PhotoResponse = components['schemas']['PhotoResponse'];
+type ShareResponse = components['schemas']['ShareResponse'];
+type UserShares = components['schemas']['PageResponseShareWithPhotoResponse'];
+
+export const sharePhoto = async (photoId: string, caption?: string): Promise<PhotoResponse> => {
+    const response = await api.post<PhotoResponse>(`/photos/${photoId}/shares`, { caption });
+    return response.data;
 };
 
-export const getPhotoShares = async (photoId: string): Promise<any[]> => {
-    try {
-        const response = await api.get(`/shares/photo/${photoId}`);
-        return response.data as any[];
-    } catch (error: any) {
-        throw new Error(`Failed to get photo shares: ${error.message}`);
-    }
+export const getPhotoShares = async (photoId: string): Promise<ShareResponse[]> => {
+    const response = await api.get<ShareResponse[]>(`/photos/${photoId}/shares`);
+    return response.data;
 };
 
 export const getShareCount = async (photoId: string): Promise<number> => {
-    try {
-        const response = await api.get(`/shares/photo/${photoId}/count`);
-        return response.data as number;
-    } catch (error: any) {
-        throw new Error(`Failed to get share count: ${error.message}`);
-    }
+    const response = await api.get<number>(`/photos/${photoId}/shares/count`);
+    return response.data;
 };
 
 export const checkHasShared = async (photoId: string): Promise<boolean> => {
-    try {
-        const response = await api.get(`/shares/photo/${photoId}/check`);
-        return response.data as boolean;
-    } catch (error: any) {
-        throw new Error(`Failed to check share status: ${error.message}`);
-    }
+    const response = await api.get<boolean>(`/photos/${photoId}/shares/me`);
+    return response.data;
+};
+
+export const getUserShares = async (userId: string, page: number = 0, size: number = 20): Promise<UserShares> => {
+        const response = await api.get<UserShares>(`/users/${userId}/shares`, {
+            params: { page, size }
+        });
+        return response.data;
 };

@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
-import { resetPassword, validateResetToken } from '../../services/authService'
-import { Loader } from '../../components/common/Loader.jsx'
+import { resetPassword } from '../../services/authService'
 import { toastSuccess, toastError } from '../../utils/toastService.js'
 import '../../assets/styles/pages/authPage.css'
 
@@ -16,30 +15,7 @@ const ResetPassword = () => {
     })
     const [errors, setErrors] = useState({})
     const [loading, setLoading] = useState(false)
-    const [validating, setValidating] = useState(true)
-    const [tokenValid, setTokenValid] = useState(false)
     const [resetComplete, setResetComplete] = useState(false)
-
-    useEffect(() => {
-        const checkToken = async () => {
-            if (!token) {
-                setTokenValid(false)
-                setValidating(false)
-                return
-            }
-
-            try {
-                const isValid = await validateResetToken(token)
-                setTokenValid(isValid)
-            } catch {
-                setTokenValid(false)
-            } finally {
-                setValidating(false)
-            }
-        }
-
-        checkToken()
-    }, [token])
 
     const handleChange = (e) => {
         const { name, value } = e.target
@@ -71,6 +47,10 @@ const ResetPassword = () => {
     const handleSubmit = async (e) => {
         e.preventDefault()
         if (!validate()) return
+        if (!token) {
+            setErrors({ submit: 'Missing password reset token.' })
+            return
+        }
 
         try {
             setLoading(true)
@@ -84,55 +64,6 @@ const ResetPassword = () => {
         } finally {
             setLoading(false)
         }
-    }
-
-    // Loading state
-    if (validating) {
-        return (
-            <div className="auth-container">
-                <div className="auth-card">
-                    <div className="auth-header">
-                        <h1 className="instagram-title">Share App</h1>
-                    </div>
-                    <div className="reset-password-loading">
-                        <Loader active={true} />
-                        <p>Validating your reset link...</p>
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
-    // Invalid/expired token
-    if (!tokenValid) {
-        return (
-            <div className="auth-container">
-                <div className="auth-card">
-                    <div className="auth-header">
-                        <h1 className="instagram-title">Share App</h1>
-                    </div>
-                    <div className="reset-password-invalid">
-                        <div className="invalid-icon">
-                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--ig-error-color)" strokeWidth="1.5">
-                                <circle cx="12" cy="12" r="10"/>
-                                <line x1="15" y1="9" x2="9" y2="15"/>
-                                <line x1="9" y1="9" x2="15" y2="15"/>
-                            </svg>
-                        </div>
-                        <h2>Invalid or Expired Link</h2>
-                        <p>This password reset link is no longer valid. Please request a new one.</p>
-                        <Link to="/forgot-password" className="submit-btn" style={{ textDecoration: 'none', display: 'inline-block', textAlign: 'center' }}>
-                            Request New Link
-                        </Link>
-                    </div>
-                </div>
-                <div className="auth-signup-card">
-                    <p>
-                        <Link to="/login" className="auth-link">Back to Login</Link>
-                    </p>
-                </div>
-            </div>
-        )
     }
 
     // Success state 

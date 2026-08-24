@@ -1,3 +1,4 @@
+import {lazy, Suspense} from 'react'
 import {Route, Routes, Navigate} from 'react-router-dom'
 import {AuthProvider} from './context/AuthContext'
 import {SocketProvider} from './context/SocketContext'
@@ -7,18 +8,18 @@ import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import './assets/styles/toast.css'
 
-import Login from './pages/auth/Login'
-import Register from './pages/auth/Register'
-import OAuth2Redirect from './pages/auth/OAuth2Redirect'
-import ForgotPassword from './pages/auth/ForgotPassword'
-import ResetPassword from './pages/auth/ResetPassword'
-import Home from './pages/home/Home'
-import Search from './pages/search/Search'
-import Create from './pages/create/Create'
-import Profile from './pages/profile/Profile'
-import EditProfileForm from './pages/profile/EditProfileForm.jsx'
-import Messages from './pages/messages/Messages'
-import Notifications from './pages/notifications/Notifications'
+const Login = lazy(() => import('./pages/auth/Login'))
+const Register = lazy(() => import('./pages/auth/Register'))
+const OAuth2Redirect = lazy(() => import('./pages/auth/OAuth2Redirect'))
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'))
+const Home = lazy(() => import('./pages/home/Home'))
+const Search = lazy(() => import('./pages/search/Search'))
+const Create = lazy(() => import('./pages/create/Create'))
+const Profile = lazy(() => import('./pages/profile/Profile'))
+const EditProfileForm = lazy(() => import('./pages/profile/EditProfileForm.jsx'))
+const Messages = lazy(() => import('./pages/messages/Messages'))
+const Notifications = lazy(() => import('./pages/notifications/Notifications'))
 
 const NotFoundPage = () => (
     <div className="page-placeholder">
@@ -32,6 +33,7 @@ function App() {
         <AuthProvider>
             <SocketProvider>
                 <Layout>
+                    <Suspense fallback={<div className="page-placeholder">Loading…</div>}>
                     <Routes>
                         <Route path="/" element={<Navigate to="/login" replace/>} />
 
@@ -58,6 +60,7 @@ function App() {
 
                         <Route path="*" element={<NotFoundPage />} />
                     </Routes>
+                    </Suspense>
                 </Layout>
                 <ToastContainer 
                     position="top-right"

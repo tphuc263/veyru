@@ -13,7 +13,7 @@ import { useOptimisticLike } from '../../hooks/useOptimisticLike';
 import { Heart, MessageCircle } from 'lucide-react';
 import ShareModal from './ShareModal';
 import CommentSection from './CommentSection';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuthContext } from '../../context/AuthContext';
 
 const PhotoModal = ({ photoId, onClose, onPhotoUpdate, onPhotoClick }) => {
   const [photoDetail, setPhotoDetail] = useState(null);
@@ -33,7 +33,7 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate, onPhotoClick }) => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
   const commentInputRef = useRef(null);
-  const { user } = useAuth();
+  const { user } = useAuthContext();
 
   // Pass actual photoDetail values directly - the hook will sync when they change
   const { isLiked, likesCount, isProcessing, handleLike } = useOptimisticLike(
@@ -223,7 +223,7 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate, onPhotoClick }) => {
     const prevSaved = isSaved;
     setIsSaved(!isSaved);
     try {
-      await toggleFavorite(photoId);
+      await toggleFavorite(photoId, prevSaved);
     } catch (err) {
       setIsSaved(prevSaved);
       console.error('Failed to toggle save:', err);

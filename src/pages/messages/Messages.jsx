@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 import {
     getConversations,
     getMessages,
+    getOnlineUsers,
     startConversation,
     sendMessage,
 } from '../../services/messageService';
@@ -72,8 +73,7 @@ const Messages = () => {
                     const optimisticIndex = prev.findIndex(
                         (m) =>
                             m.isOptimistic &&
-                            m.senderId === message.senderId &&
-                            m.text === message.text
+                            m.clientMessageId === message.clientMessageId
                     );
                     if (optimisticIndex !== -1) {
                         const next = [...prev];
@@ -220,7 +220,7 @@ const Messages = () => {
             // Fetch online statuses for all participants
             if (data && data.length > 0) {
                 const participantIds = data.map(conv => conv.participantId);
-                const onlineStatuses = await import('../../services/messageService').then(m => m.getOnlineUsers(participantIds));
+                const onlineStatuses = await getOnlineUsers(participantIds);
                 updateOnlineUsers(onlineStatuses);
             }
         } catch (error) {
@@ -235,7 +235,7 @@ const Messages = () => {
             setMessagesLoading(true);
             const data = await getMessages(conversationId);
             // Messages come in DESC order, reverse for display
-            setMessages((data?.content || []).reverse());
+            setMessages((data?.items || data?.content || []).reverse());
         } catch (error) {
             console.error('Failed to load messages:', error);
         } finally {
@@ -313,11 +313,13 @@ const Messages = () => {
         if (!newMessage.trim() || !activeConversation) return;
 
         const text = newMessage.trim();
+        const clientMessageId = crypto.randomUUID();
         console.log('[handleSendMessage] Sending message:', { text, receiverId: activeConversation.participantId });
 
         // Optimistic update: hiển thị tin nhắn ngay lập tức trước khi server xác nhận
         const optimisticMessage = {
             id: `temp-${Date.now()}`,
+            clientMessageId,
             conversationId: activeConversation.id,
             senderId: user?.id,
             receiverId: activeConversation.participantId,
@@ -329,10 +331,14 @@ const Messages = () => {
         setMessages((prev) => [...prev, optimisticMessage]);
 
         if (isSocketConnected()) {
-            sendSocketMessage(activeConversation.participantId, text);
+            sendSocketMessage(activeConversation.id, activeConversation.participantId, text, clientMessageId);
         } else {
             try {
-                const savedMessage = await sendMessage(activeConversation.participantId, text);
+                const savedMessage = await sendMessage(
+                    activeConversation.participantId,
+                    text,
+                    activeConversation.id
+                );
                 setMessages((prev) =>
                     prev.map((m) => (m.id === optimisticMessage.id ? savedMessage : m))
                 );

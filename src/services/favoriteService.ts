@@ -1,30 +1,28 @@
 import api from '../config/ApiConfig';
+import type { components } from '../types/generated-api';
 
-export const toggleFavorite = async (photoId: string): Promise<any> => {
-    try {
-        const response = await api.post(`/favorites/toggle/${photoId}`);
-        return response.data;
-    } catch (error: any) {
-        throw new Error(`Failed to toggle favorite: ${error.message}`);
-    }
+type PhotoResponse = components['schemas']['PhotoResponse'];
+
+export const favoritePhoto = async (photoId: string): Promise<void> => {
+    await api.put(`/users/me/favorites/${photoId}`);
 };
 
-export const getFavorites = async (page: number = 0, size: number = 20): Promise<any[]> => {
-    try {
-        const response = await api.get('/favorites/me', {
+export const unfavoritePhoto = async (photoId: string): Promise<void> => {
+    await api.delete(`/users/me/favorites/${photoId}`);
+};
+
+export const toggleFavorite = async (photoId: string, currentlyFavorited?: boolean): Promise<void> => {
+    return currentlyFavorited ? unfavoritePhoto(photoId) : favoritePhoto(photoId);
+};
+
+export const getFavorites = async (page: number = 0, size: number = 20): Promise<PhotoResponse[]> => {
+        const response = await api.get<PhotoResponse[]>('/users/me/favorites', {
             params: { page, size }
         });
-        return response.data as any[];
-    } catch (error: any) {
-        throw new Error(`Failed to get favorites: ${error.message}`);
-    }
+        return response.data;
 };
 
 export const checkFavorite = async (photoId: string): Promise<boolean> => {
-    try {
-        const response = await api.get(`/favorites/check/${photoId}`);
-        return response.data as boolean;
-    } catch (error: any) {
-        throw new Error(`Failed to check favorite: ${error.message}`);
-    }
+    const response = await api.get<boolean>(`/users/me/favorites/${photoId}`);
+    return response.data;
 };

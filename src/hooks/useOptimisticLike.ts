@@ -1,20 +1,21 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { toggleLike } from '../services/likeService';
 import { showToast } from '../utils/toastService';
+import type { Photo } from '../types/api';
 
 
 export const useOptimisticLike = (
   photoId: string,
   initialIsLiked: boolean,
   initialLikesCount: number,
-  onUpdate?: (photoId: string, photo: any) => void
+  onUpdate?: (photoId: string, photo: Partial<Photo>) => void
 ) => {
   const [isLiked, setIsLiked] = useState(initialIsLiked);
   const [likesCount, setLikesCount] = useState(initialLikesCount);
   const [isProcessing, setIsProcessing] = useState(false);
   
   // Request deduplication - prevent multiple simultaneous requests
-  const pendingRequestRef = useRef<Promise<any> | null>(null);
+  const pendingRequestRef = useRef<Promise<void> | null>(null);
   const lastActionTimeRef = useRef<number>(0);
   
   // Track the current photoId to detect when it changes
@@ -42,10 +43,7 @@ export const useOptimisticLike = (
     lastActionTimeRef.current = now;
 
     if (pendingRequestRef.current) {
-      try {
-        await pendingRequestRef.current;
-      } catch (error) {
-      }
+      await pendingRequestRef.current.catch(() => undefined);
       return;
     }
 
@@ -64,19 +62,17 @@ export const useOptimisticLike = (
     setLikesCount(optimisticLikesCount);
     
     // Step 2: Send request to backend
-    const requestPromise = toggleLike(photoId);
+    const requestPromise = toggleLike(photoId, isLiked);
     pendingRequestRef.current = requestPromise;
     
     try {
-      const response = await requestPromise;
-      
-      // Step 3: Use backend response as source of truth
-      const updatedPhoto = response.data;
-      
-      setIsLiked(updatedPhoto.isLikedByCurrentUser);
-      setLikesCount(updatedPhoto.likeCount);
-      
-      // Step 4: Notify parent component to sync state
+      await requestPromise;
+
+      const updatedPhoto = {
+        isLikedByCurrentUser: optimisticIsLiked,
+        likeCount: optimisticLikesCount,
+      };
+
       if (onUpdateRef.current) {
         onUpdateRef.current(photoId, updatedPhoto);
       }

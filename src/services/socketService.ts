@@ -1,5 +1,5 @@
 import { Client } from '@stomp/stompjs';
-import { getToken } from '../utils/storage';
+import { markAsRead } from './messageService';
 
 const resolveBrokerUrl = (): string => {
     const envSocketUrl = import.meta.env.VITE_SOCKET_URL;
@@ -10,36 +10,49 @@ const resolveBrokerUrl = (): string => {
     return normalizedBase.endsWith('/ws') ? normalizedBase : `${normalizedBase}/ws`;
 };
 
+const csrfToken = (): string =>
+    document.cookie
+        .split('; ')
+        .find(cookie => cookie.startsWith('XSRF-TOKEN='))
+        ?.slice('XSRF-TOKEN='.length) ?? '';
+
 let client: Client | null = null;
 let currentUserId: string | null = null;
-let pendingMessages: any[] = [];
+interface PendingMessage {
+    destination: string;
+    body: string;
+}
+
+type SocketListener = (data: unknown) => void;
+
+let pendingMessages: PendingMessage[] = [];
 
 // Event listeners registry
 const listeners = {
-    connect: new Set<() => void>(),
-    disconnect: new Set<(reason: string) => void>(),
-    connect_error: new Set<(err: any) => void>(),
-    user_online: new Set<(userId: string) => void>(),
-    user_offline: new Set<(userId: string) => void>(),
-    new_message: new Set<(message: any) => void>(),
-    user_typing: new Set<(data: any) => void>(),
-    user_stop_typing: new Set<(data: any) => void>(),
-    messages_read: new Set<(data: any) => void>()
+    connect: new Set<SocketListener>(),
+    disconnect: new Set<SocketListener>(),
+    connect_error: new Set<SocketListener>(),
+    user_online: new Set<SocketListener>(),
+    user_offline: new Set<SocketListener>(),
+    new_message: new Set<SocketListener>(),
+    user_typing: new Set<SocketListener>(),
+    user_stop_typing: new Set<SocketListener>(),
+    messages_read: new Set<SocketListener>()
 };
 
-export const subscribeToSocketEvent = (event: keyof typeof listeners, callback: any) => {
+export const subscribeToSocketEvent = (event: keyof typeof listeners, callback: SocketListener) => {
     if (listeners[event]) {
         listeners[event].add(callback);
     }
 };
 
-export const unsubscribeFromSocketEvent = (event: keyof typeof listeners, callback: any) => {
+export const unsubscribeFromSocketEvent = (event: keyof typeof listeners, callback: SocketListener) => {
     if (listeners[event]) {
         listeners[event].delete(callback);
     }
 };
 
-const triggerEvent = (event: keyof typeof listeners, data?: any) => {
+const triggerEvent = (event: keyof typeof listeners, data?: unknown) => {
     if (listeners[event]) {
         listeners[event].forEach(callback => callback(data));
     }
@@ -62,16 +75,13 @@ export const connectSocket = (userId: string): Client => {
         client = null;
     }
 
-    const token = getToken();
     currentUserId = userId;
 
     console.log('[socketService] Creating new STOMP connection for user:', userId);
     
     client = new Client({
         brokerURL: resolveBrokerUrl(),
-        connectHeaders: {
-            Authorization: `Bearer ${token}`
-        },
+        connectHeaders: {'X-XSRF-TOKEN': decodeURIComponent(csrfToken())},
         reconnectDelay: 5000,
         heartbeatIncoming: 10000,
         heartbeatOutgoing: 10000,
@@ -103,7 +113,10 @@ export const connectSocket = (userId: string): Client => {
                     const envelope = JSON.parse(message.body);
                     console.log('[socketService] Received message envelope:', envelope);
                     if (envelope.type === 'CHAT_MESSAGE') {
-                        triggerEvent('new_message', envelope.payload);
+                        triggerEvent('new_message', {
+                            ...envelope.payload,
+                            clientMessageId: envelope.clientMessageId,
+                        });
                     } else if (envelope.type === 'MESSAGES_READ') {
                         triggerEvent('messages_read', envelope.payload);
                     }
@@ -162,10 +175,10 @@ export const getSocket = (): Client | null => {
     return client;
 };
 
-export const publishEvent = (type: string, payload: any): void => {
+export const publishEvent = (type: string, payload: unknown, clientMessageId: string = crypto.randomUUID()): string => {
     const envelope = {
         type,
-        clientMessageId: crypto.randomUUID(),
+        clientMessageId,
         timestamp: new Date().toISOString(),
         payload
     };
@@ -183,11 +196,12 @@ export const publishEvent = (type: string, payload: any): void => {
             body: JSON.stringify(envelope)
         });
     }
+    return clientMessageId;
 };
 
 // Send a message via STOMP
-export const sendSocketMessage = (receiverId: string, text: string): void => {
-    publishEvent('CHAT_MESSAGE', { receiverId, text });
+export const sendSocketMessage = (conversationId: string, receiverId: string, text: string, clientMessageId: string): void => {
+    publishEvent('CHAT_MESSAGE', { conversationId, receiverId, text }, clientMessageId);
 };
 
 export const isSocketConnected = (): boolean => {
@@ -197,7 +211,6 @@ export const isSocketConnected = (): boolean => {
 // Mark messages as read via REST API
 export const markMessagesRead = async (conversationId: string, _otherUserId: string): Promise<void> => {
     try {
-        const { markAsRead } = await import('./messageService');
         await markAsRead(conversationId);
         console.log(`[Socket] Marked messages as read for conversation: ${conversationId}`);
     } catch (e) {

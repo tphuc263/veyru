@@ -1,6 +1,6 @@
 # Multi-stage build for React Frontend with Nginx
 # Stage 1: Build
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 
 WORKDIR /app
 
@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production=false
+RUN npm ci
 
 # Copy source code
 COPY . .
@@ -23,8 +23,8 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_SOCKET_URL=$VITE_SOCKET_URL
 ENV VITE_OAUTH_URL=$VITE_OAUTH_URL
 
-# Build the application (skip TypeScript checking for faster Docker builds)
-RUN npm run build:docker
+# Build and type-check the application.
+RUN npm run build
 
 # Stage 2: Production with Nginx
 FROM nginx:alpine
