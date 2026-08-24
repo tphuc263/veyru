@@ -1,0 +1,19 @@
+/* ===================================
+   MAIN STYLESHEET - IMPORT ALL STYLES
+   ================================== */
+
+/* Import order matters for cascade */
+@import 'variables.css';
+/* CSS Variables and design tokens */
+@import 'base.css';
+/* Reset and base styles */
+@import 'layout/maincontent.css';
+/* Layout-specific styles */
+@import 'layout/sidebar.css';
+
+@import 'pages/authPage.css';
+@import 'pages/homePage.css';
+@import 'pages/SearchPage.css';
+@import 'pages/createPage.css';
+@import 'pages/editProfile.css';
+@import 'pages/messagesPage.css';

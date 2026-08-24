@@ -1,0 +1,134 @@
+.photo-card {
+    background-color: var(--ig-surface);
+    border: 1px solid var(--ig-border-color);
+    border-radius: 8px;
+    margin: 20px auto;
+    max-width: 470px;
+    box-shadow: var(--ig-shadow-sm);
+    overflow: hidden;
+}
+
+.photo-card-header {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--ig-border-color);
+}
+
+.avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%; /* Làm tròn ảnh đại diện */
+    object-fit: cover;
+    margin-right: 12px;
+}
+
+.photo-card .username {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--ig-primary-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 300px;
+}
+
+.share-indicator {
+    font-size: 14px;
+    color: var(--ig-secondary-text);
+    margin-left: 4px;
+}
+
+.photo {
+    width: 100%;
+    display: block; /* Loại bỏ khoảng trắng thừa dưới ảnh */
+    object-fit: cover; /* Đảm bảo ảnh vừa khung mà không bị méo */
+}
+
+.photo-card-actions {
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.action-buttons-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    color: var(--ig-primary-text);
+    transition: opacity 0.2s;
+}
+
+.action-btn:hover:not(:disabled) {
+    opacity: 0.6;
+}
+
+.action-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.action-btn.liked {
+    color: #ed4956;
+}
+
+.action-btn.saved {
+    color: var(--ig-primary-text);
+}
+
+.action-btn svg {
+    width: 24px;
+    height: 24px;
+}
+
+.likes-count-inline,
+.comments-count-inline {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ig-primary-text);
+    margin-right: 16px;
+    min-width: 20px;
+}
+
+.photo-card-likes {
+    padding: 0 16px 8px;
+    font-size: 14px;
+    color: var(--ig-primary-text);
+}
+
+.photo-card-posts-inline {
+    color: var(--ig-secondary-text);
+}
+
+.photo-card-caption {
+    padding: 0 16px 12px;
+    font-size: 14px;
+    color: var(--ig-primary-text);
+    line-height: 1.5;
+}
+
+.photo-card-caption .username {
+    font-weight: 600;
+    margin-right: 6px;
+}
+
+.photo-card-comments-count {
+    padding: 0 16px 12px;
+    font-size: 14px;
+    color: var(--ig-secondary-text);
+    cursor: pointer;
+}
+
+.photo-card-comments-count:hover {
+    color: var(--ig-primary-text);
+}

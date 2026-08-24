@@ -1,0 +1,192 @@
+/* Follow List Modal - Instagram-style */
+.follow-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.follow-modal {
+    background: var(--ig-surface, #fff);
+    border-radius: 12px;
+    width: 400px;
+    max-height: 400px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+}
+
+.follow-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--ig-border-color, #dbdbdb);
+}
+
+.follow-modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ig-primary-text, #262626);
+}
+
+.follow-modal-close {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: var(--ig-primary-text, #262626);
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.follow-modal-close:hover {
+    opacity: 0.6;
+}
+
+.follow-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+}
+
+.follow-modal-loader {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 0;
+}
+
+.follow-modal-error,
+.follow-modal-empty {
+    text-align: center;
+    padding: 40px 16px;
+    color: var(--ig-secondary-text, #8e8e8e);
+    font-size: 14px;
+}
+
+/* User Item */
+.follow-user-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    transition: background 0.15s;
+}
+
+.follow-user-item:hover {
+    background: var(--ig-hover-bg, #fafafa);
+}
+
+.follow-user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.follow-user-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.follow-user-details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.follow-user-username {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--ig-primary-text, #262626);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.follow-user-name {
+    font-size: 14px;
+    color: var(--ig-secondary-text, #8e8e8e);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.follow-toggle-btn {
+    background-color: #0095f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 7px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s;
+}
+
+.follow-toggle-btn:hover {
+    background-color: #1877f2;
+}
+
+.follow-toggle-btn.following {
+    background-color: var(--ig-hover-bg, #efefef);
+    color: var(--ig-primary-text, #262626);
+    border: 1px solid var(--ig-border-color, #dbdbdb);
+}
+
+.follow-toggle-btn.following:hover {
+    background-color: #fafafa;
+}
+
+.follow-toggle-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Scrollbar */
+.follow-modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.follow-modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.follow-modal-body::-webkit-scrollbar-thumb {
+    background: #dbdbdb;
+    border-radius: 3px;
+}
+
+.follow-modal-body::-webkit-scrollbar-thumb:hover {
+    background: #c7c7c7;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .follow-modal {
+        width: 90vw;
+        max-height: 70vh;
+    }
+}

@@ -1,0 +1,27 @@
+/* ── Instagram-style ring spinner ── */
+.loader {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    border: 2.5px solid var(--ig-border-color, #dbdbdb);
+    border-top-color: var(--ig-primary-text, #262626);
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ── Sizes (add .loader-sm / .loader-lg on the wrapper or extend via props) ── */
+.loader-sm {
+    width: 16px;
+    height: 16px;
+}
+
+.loader-lg {
+    width: 48px;
+    height: 48px;
+    border-width: 3px;
+}
+

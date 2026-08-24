@@ -1,0 +1,214 @@
+.create-page {
+    display: flex;
+    flex-direction: column;
+    max-width: 500px; /* Chiều rộng tối đa của trang */
+    margin: 40px auto; /* Căn giữa và tạo khoảng cách trên dưới */
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Hiệu ứng đổ bóng nhẹ */
+    overflow: hidden; /* Đảm bảo nội dung không tràn ra ngoài border-radius */
+    border: 1px solid #dbdbdb; /* Viền nhẹ giống Instagram */
+}
+
+.create-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid #efefef; /* Đường kẻ phân chia */
+    font-size: 16px;
+    font-weight: 600;
+    color: #262626;
+}
+
+.create-header h2 {
+    margin: 0;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #262626;
+}
+
+.cancel-btn,
+.post-btn {
+    background: none;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 600;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.cancel-btn {
+    color: #8e8e8e; /* Màu xám nhạt */
+}
+
+.post-btn {
+    color: #0095f6; /* Màu xanh của Instagram */
+}
+
+.post-btn:disabled {
+    opacity: 0.5; /* Làm mờ khi vô hiệu hóa */
+    cursor: not-allowed;
+}
+
+.error-message {
+    color: #ed4956; /* Màu đỏ cho lỗi */
+    text-align: center;
+    padding: 10px 16px;
+    background-color: #ffebeb;
+    border-bottom: 1px solid #f0a8ae;
+    font-size: 0.9em;
+}
+
+.image-upload-section {
+    padding: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 250px; /* Chiều cao tối thiểu cho vùng chọn ảnh */
+    background-color: #fafafa; /* Màu nền nhẹ cho khu vực chọn ảnh */
+    border-bottom: 1px solid #efefef;
+}
+
+.image-preview-container {
+    width: 100%;
+    max-width: 400px; /* Giới hạn chiều rộng của ảnh preview */
+    height: 250px;
+    border: 2px dashed #dbdbdb; /* Viền nét đứt */
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    overflow: hidden; /* Đảm bảo ảnh preview không tràn ra ngoài */
+    position: relative; /* Cho phép căn giữa ảnh bên trong */
+    background-color: #e0e0e0; /* Màu nền cho vùng chưa có ảnh */
+    color: #8e8e8e;
+}
+
+.image-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Đảm bảo ảnh được cover toàn bộ khung hình */
+    display: block; /* Loại bỏ khoảng trắng dưới ảnh */
+}
+
+.placeholder {
+    text-align: center;
+}
+
+.placeholder .icon {
+    font-size: 3em; /* Kích thước icon dấu cộng */
+    font-weight: 100; /* Làm cho icon mảnh hơn */
+    line-height: 1; /* Căn chỉnh dòng */
+    margin-bottom: 10px;
+    display: block; /* Đặt icon trên dòng riêng */
+}
+
+.placeholder p {
+    font-size: 1.1em;
+    margin: 0;
+}
+
+.form-section {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#caption-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #dbdbdb;
+    border-radius: 8px;
+    font-size: 14px;
+    resize: vertical;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    min-height: 120px;
+    line-height: 1.5;
+    box-sizing: border-box;
+    background-color: #fafafa;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+#caption-input::placeholder {
+    color: #8e8e8e;
+}
+
+#caption-input:focus {
+    outline: none;
+    border-color: #a8a8a8;
+    background-color: #fff;
+}
+
+.tags-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #dbdbdb;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    box-sizing: border-box;
+    background-color: #fafafa;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.tags-input::placeholder {
+    color: #8e8e8e;
+}
+
+.tags-input:focus {
+    outline: none;
+    border-color: #a8a8a8;
+    background-color: #fff;
+}
+
+/* Trending Hashtags */
+.trending-hashtags {
+    padding: 14px;
+    background: linear-gradient(135deg, #fff5f5 0%, #fff9f0 100%);
+    border-radius: 12px;
+    border: 1px solid #ffe4e4;
+}
+
+.trending-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #e1306c;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+
+.trending-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.trending-tag-btn {
+    background-color: #fff;
+    border: 1px solid #f0f0f0;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 13px;
+    color: #444;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.trending-tag-btn:hover {
+    background: linear-gradient(135deg, #E1306C, #F77737);
+    border-color: transparent;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(225, 48, 108, 0.3);
+}

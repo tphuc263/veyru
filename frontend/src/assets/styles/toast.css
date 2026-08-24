@@ -1,0 +1,112 @@
+/* Custom styles for react-toastify - Instagram inspired */
+
+/* Toast container */
+.Toastify__toast-container {
+    z-index: 9999;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Base toast styling */
+.Toastify__toast {
+    border-radius: 8px;
+    padding: 12px 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    font-size: 14px;
+    min-height: 44px;
+    background: #262626;
+    color: #fafafa;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Hide all icons */
+.Toastify__toast .Toastify__toast-icon {
+    display: none;
+}
+
+/* Success toast */
+.Toastify__toast--success {
+    background: #262626;
+    color: #fafafa;
+}
+
+/* Error toast */
+.Toastify__toast--error {
+    background: #262626;
+    color: #fafafa;
+}
+
+/* Info toast */
+.Toastify__toast--info {
+    background: #262626;
+    color: #fafafa;
+}
+
+/* Warning toast */
+.Toastify__toast--warning {
+    background: #262626;
+    color: #fafafa;
+}
+
+/* Default toast */
+.Toastify__toast--default {
+    background: #262626;
+    color: #fafafa;
+}
+
+/* Close button */
+.Toastify__close-button {
+    color: #8e8e8e;
+    opacity: 1;
+    padding: 4px;
+    margin-left: 8px;
+}
+
+.Toastify__close-button:hover {
+    color: #fafafa;
+}
+
+/* Toast body */
+.Toastify__toast-body {
+    padding: 0;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Animation - subtle slide from top */
+@keyframes toastSlideIn {
+    from {
+        transform: translate3d(0, -20px, 0);
+        opacity: 0;
+    }
+    to {
+        transform: translate3d(0, 0, 0);
+        opacity: 1;
+    }
+}
+
+.Toastify__toast--top-right {
+    animation: toastSlideIn 0.2s ease-out;
+}
+
+/* Responsive */
+@media only screen and (max-width: 480px) {
+    .Toastify__toast-container {
+        width: calc(100vw - 32px);
+        padding: 0;
+        left: 16px !important;
+        right: 16px !important;
+        margin: 0;
+        top: 16px !important;
+    }
+
+    .Toastify__toast {
+        margin-bottom: 0;
+        border-radius: 8px;
+    }
+}
+
+/* Dark mode support */
+[data-theme="dark"] .Toastify__toast {
+    background-color: #2c2c2c;
+    color: #ffffff;
+}

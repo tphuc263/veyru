@@ -1,0 +1,281 @@
+/* ===================================
+   AI INLINE ASSISTANT - Instagram Style
+   ================================== */
+
+/* ===== Inline Container ===== */
+.ai-inline {
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ===== Mood Row ===== */
+.ai-mood-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ai-mood-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #8e8e8e;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ai-mood-scroll {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 2px 0;
+}
+
+.ai-mood-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.ai-mood-pill {
+    padding: 5px 10px;
+    border: 1px solid #dbdbdb;
+    border-radius: 20px;
+    background: #fff;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #262626;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ai-mood-pill:hover {
+    border-color: #0095f6;
+    background: #f0f8ff;
+}
+
+.ai-mood-pill.active {
+    background: #0095f6;
+    color: #fff;
+    border-color: #0095f6;
+}
+
+/* ===== AI Inline Button ===== */
+.ai-inline-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.ai-inline-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ai-inline-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.ai-inline-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.ai-spark-icon {
+    font-size: 14px;
+}
+
+.ai-toggle-btn {
+    padding: 6px 12px;
+    background: #f0f0f0;
+    color: #666;
+    border: none;
+    border-radius: 16px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ai-toggle-btn:hover {
+    background: #e0e0e0;
+}
+
+/* ===== Suggestions Panel ===== */
+.ai-suggestions-panel {
+    margin-top: 12px;
+    padding: 12px;
+    background: #fafafa;
+    border-radius: 12px;
+    border: 1px solid #eee;
+}
+
+/* ===== Spinner Small ===== */
+.ai-spinner-sm {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    display: inline-block;
+    animation: aiSpin 0.8s linear infinite;
+}
+
+@keyframes aiSpin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== Inline Error ===== */
+.ai-inline-error {
+    color: #ed4956;
+    font-size: 12px;
+    margin: 0;
+    padding: 6px 10px;
+    background: #fff0f0;
+    border-radius: 6px;
+    text-align: center;
+}
+
+/* ===== Caption Results ===== */
+.ai-caption-results {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ai-caption-card {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #fafafa;
+    border: 1px solid #efefef;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ai-caption-card:hover {
+    background: #f0f8ff;
+    border-color: #0095f6;
+}
+
+.ai-caption-preview {
+    margin: 0;
+    font-size: 13px;
+    color: #262626;
+    line-height: 1.5;
+    flex: 1;
+}
+
+.ai-apply-tag {
+    flex-shrink: 0;
+    padding: 3px 10px;
+    background: #0095f6;
+    color: #fff;
+    border-radius: 14px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+/* ===== Section Labels ===== */
+.ai-section-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #262626;
+    margin-bottom: 8px;
+}
+
+/* ===== Tag Row (shared for suggested & trending) ===== */
+.ai-tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* ===== AI Suggested Tags ===== */
+.ai-suggested-tags {
+    padding-top: 2px;
+}
+
+.ai-tag-pill {
+    padding: 5px 10px;
+    background: #f0f0ff;
+    color: #5851DB;
+    border-radius: 14px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    border: 1px solid transparent;
+}
+
+.ai-tag-pill:hover {
+    background: #5851DB;
+    color: #fff;
+}
+
+.ai-tag-pill.selected {
+    background: #5851DB;
+    color: #fff;
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* ===== Trending Tags ===== */
+.ai-trending-tags {
+    padding-top: 2px;
+}
+
+.ai-trending-pill {
+    padding: 5px 10px;
+    background: #fff4f0;
+    color: #E1306C;
+    border-radius: 14px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    border: 1px solid transparent;
+}
+
+.ai-trending-pill:hover {
+    background: #E1306C;
+    color: #fff;
+}
+
+.ai-trending-pill.selected {
+    background: #E1306C;
+    color: #fff;
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 480px) {
+    .ai-mood-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    .ai-mood-scroll {
+        width: 100%;
+    }
+}

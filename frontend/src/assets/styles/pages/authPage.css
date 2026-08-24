@@ -1,0 +1,469 @@
+.auth-container {
+    width: 100%;
+    max-width: 360px; /* Chiều rộng chuẩn cho form đăng nhập */
+    margin: 0 auto;
+}
+
+/* Card chứa form */
+.auth-card {
+    background: var(--ig-surface);
+    padding: var(--ig-spacing-xl) var(--ig-spacing-lg);
+    border: 1px solid var(--ig-border-color);
+    border-radius: var(--ig-radius-sm);
+    box-shadow: var(--ig-shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ig-spacing-lg); /* Khoảng cách giữa các phần tử con */
+}
+
+/* Header: Chứa logo/tên app */
+.auth-header {
+    text-align: center;
+    margin-bottom: var(--ig-spacing-sm);
+}
+
+.auth-header h1 {
+    font-family: 'Inter', sans-serif;
+    font-size: var(--ig-font-size-2xl);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: var(--ig-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent; /* Fallback for browsers not supporting background-clip */
+    margin: 0;
+}
+
+/* Instagram-style title */
+.instagram-title {
+    font-family: 'Billabong', 'Brush Script MT', cursive !important;
+    font-size: 3.5rem !important;
+    font-weight: 400 !important;
+    letter-spacing: 0.5px !important;
+    background: none !important;
+    -webkit-background-clip: unset !important;
+    -webkit-text-fill-color: var(--ig-primary-text) !important;
+    background-clip: unset !important;
+    color: var(--ig-primary-text) !important;
+    margin-bottom: var(--ig-spacing-lg) !important;
+}
+
+/* Thông báo thành công (sau khi đăng ký) */
+.success-message {
+    background-color: rgba(0, 186, 124, 0.1); /* Màu nền nhạt hơn */
+    color: var(--ig-success-color);
+    padding: var(--ig-spacing-md);
+    border-radius: var(--ig-radius-md);
+    border: 1px solid rgba(0, 186, 124, 0.2);
+    text-align: center;
+    font-size: var(--ig-font-size-sm);
+}
+
+/* ===================================
+   FORM ELEMENTS
+   ================================== */
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ig-spacing-md); /* Khoảng cách giữa các input group */
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ig-spacing-xs);
+}
+
+.form-group:has(> .form-input:only-child) {
+    gap: 0;
+}
+
+.form-label {
+    font-size: var(--ig-font-size-sm);
+    font-weight: 600;
+    color: var(--ig-secondary-text);
+}
+
+.form-input {
+    width: 100%;
+    padding: var(--ig-spacing-sm) var(--ig-spacing-md);
+    border: 1px solid var(--ig-border-color);
+    border-radius: var(--ig-radius-md);
+    background-color: var(--ig-background);
+    font-size: var(--ig-font-size-base);
+    color: var(--ig-primary-text);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--ig-link-color);
+    box-shadow: 0 0 0 1px var(--ig-link-color);
+}
+
+.form-input::placeholder {
+    color: #c7c7c7;
+}
+
+.form-input.error {
+    border-color: var(--ig-error-color);
+}
+
+.form-input:disabled {
+    background-color: #efefef;
+    cursor: not-allowed;
+}
+
+/* Wrapper cho input password và icon */
+.password-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input-wrapper .form-input {
+    padding-right: 45px; /* Tạo không gian cho icon */
+}
+
+/* Nút bật/tắt hiển thị mật khẩu */
+.password-toggle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 45px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ig-secondary-text);
+}
+
+.password-toggle .w-5 {
+    width: 1.25rem;
+}
+
+.password-toggle .h-5 {
+    height: 1.25rem;
+}
+
+/* ===================================
+   MESSAGES & HELPERS
+   ================================== */
+.error-message {
+    color: var(--ig-error-color);
+    font-size: var(--ig-font-size-sm);
+    margin-top: var(--ig-spacing-xs);
+}
+
+.submit-error {
+    background-color: rgba(237, 73, 86, 0.1);
+    padding: var(--ig-spacing-md);
+    border-radius: var(--ig-radius-md);
+    text-align: center;
+}
+
+.help-text {
+    font-size: var(--ig-font-size-xs);
+    color: var(--ig-secondary-text);
+    margin-top: var(--ig-spacing-xs);
+}
+
+.success-text {
+    color: var(--ig-success-color);
+    font-weight: 500;
+}
+
+.warning-text {
+    color: #f39c12;
+    font-weight: 500;
+}
+
+/* ===================================
+   SUBMIT BUTTON & FOOTER
+   ================================== */
+.submit-btn {
+    background-color: #0095f6;
+    color: var(--ig-surface);
+    border: none;
+    border-radius: var(--ig-radius-md);
+    padding: var(--ig-spacing-sm);
+    font-size: var(--ig-font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ig-spacing-sm);
+    min-height: 36px;
+    margin-top: var(--ig-spacing-sm);
+}
+
+.submit-btn:hover:not(:disabled) {
+    background-color: #1877f2;
+}
+
+.submit-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.loading-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.auth-footer {
+    text-align: center;
+    font-size: var(--ig-font-size-sm);
+    color: var(--ig-primary-text);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ig-spacing-md);
+}
+
+.auth-footer p {
+    margin: 0;
+}
+
+/* OR Divider */
+.or-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: var(--ig-spacing-lg) 0;
+    position: relative;
+}
+
+.or-divider::before,
+.or-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--ig-border-color);
+}
+
+.or-text {
+    padding: 0 var(--ig-spacing-md);
+    color: var(--ig-secondary-text);
+    font-size: var(--ig-font-size-sm);
+    font-weight: 600;
+}
+
+/* Google Login Button */
+.google-login-btn {
+    width: 100%;
+    background: transparent;
+    color: #385185;
+    border: none;
+    border-radius: var(--ig-radius-md);
+    padding: var(--ig-spacing-sm);
+    font-size: var(--ig-font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ig-spacing-sm);
+    min-height: 36px;
+    transition: opacity 0.2s;
+}
+
+.google-login-btn:hover:not(:disabled) {
+    opacity: 0.7;
+}
+
+.google-login-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.google-icon {
+    width: 18px;
+    height: 18px;
+}
+
+/* Forgot Password Link */
+.forgot-password-link {
+    text-align: center;
+    margin-top: var(--ig-spacing-md);
+    font-size: var(--ig-font-size-xs);
+}
+
+/* Sign Up Card - Separate card below login */
+.auth-signup-card {
+    background: var(--ig-surface);
+    padding: var(--ig-spacing-lg);
+    border: 1px solid var(--ig-border-color);
+    border-radius: var(--ig-radius-sm);
+    text-align: center;
+    margin-top: var(--ig-spacing-md);
+    font-size: var(--ig-font-size-sm);
+}
+
+.auth-signup-card p {
+    margin: 0;
+    color: var(--ig-primary-text);
+}
+
+.auth-link {
+    color: var(--ig-link-color);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-link:hover {
+    text-decoration: underline;
+}
+
+.terms-text {
+    font-size: var(--ig-font-size-xs);
+    color: var(--ig-secondary-text);
+    line-height: 1.4;
+}
+
+/* ===================================
+   PASSWORD STRENGTH INDICATOR
+   ================================== */
+.password-strength {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ig-spacing-xs);
+    margin-top: var(--ig-spacing-sm);
+}
+
+.strength-text {
+    font-size: var(--ig-font-size-sm);
+    font-weight: 500;
+}
+
+.strength-bar {
+    width: 100%;
+    height: 5px;
+    background-color: #efefef;
+    border-radius: var(--ig-radius-full);
+    overflow: hidden;
+}
+
+.strength-fill {
+    height: 100%;
+    border-radius: var(--ig-radius-full);
+    transition: width 0.3s ease, background-color 0.3s ease;
+    width: 0;
+}
+
+.strength-weak {
+    width: 25%;
+}
+
+.strength-fair {
+    width: 50%;
+}
+
+.strength-good {
+    width: 75%;
+}
+
+.strength-strong {
+    width: 100%;
+}
+
+/* ===================================
+   FORGOT PASSWORD PAGE
+   ================================== */
+.forgot-password-icon,
+.reset-password-icon {
+    text-align: center;
+    padding: var(--ig-spacing-md) 0;
+}
+
+.forgot-password-text,
+.reset-password-text {
+    text-align: center;
+    margin-bottom: var(--ig-spacing-sm);
+}
+
+.forgot-password-text h2,
+.reset-password-text h2 {
+    font-size: var(--ig-font-size-lg);
+    font-weight: 600;
+    color: var(--ig-primary-text);
+    margin: 0 0 var(--ig-spacing-sm) 0;
+}
+
+.forgot-password-text p,
+.reset-password-text p {
+    font-size: var(--ig-font-size-sm);
+    color: var(--ig-secondary-text);
+    margin: 0;
+    line-height: 1.5;
+}
+
+.forgot-password-create {
+    text-align: center;
+}
+
+.create-account-link {
+    font-size: var(--ig-font-size-sm);
+    font-weight: 600;
+}
+
+/* Forgot Password Success State */
+.forgot-password-success,
+.reset-password-success,
+.reset-password-invalid,
+.reset-password-loading {
+    text-align: center;
+    padding: var(--ig-spacing-md) 0;
+}
+
+.forgot-password-success .success-icon,
+.reset-password-success .success-icon,
+.reset-password-invalid .invalid-icon {
+    margin-bottom: var(--ig-spacing-lg);
+}
+
+.forgot-password-success h2,
+.reset-password-success h2,
+.reset-password-invalid h2 {
+    font-size: var(--ig-font-size-lg);
+    font-weight: 600;
+    color: var(--ig-primary-text);
+    margin: 0 0 var(--ig-spacing-sm) 0;
+}
+
+.forgot-password-success p,
+.reset-password-success p,
+.reset-password-invalid p {
+    font-size: var(--ig-font-size-sm);
+    color: var(--ig-secondary-text);
+    margin: 0 0 var(--ig-spacing-sm) 0;
+    line-height: 1.5;
+}
+
+.reset-password-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--ig-spacing-md);
+}
+
+.reset-password-loading p {
+    font-size: var(--ig-font-size-sm);
+    color: var(--ig-secondary-text);
+}
+
+.oauth-redirect-loader {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 20px;
+}

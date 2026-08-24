@@ -1,0 +1,198 @@
+// Common API types
+export interface ApiResponse<T = unknown> {
+  data: T;
+  message?: string;
+  status?: number;
+}
+
+export interface PaginationParams {
+  page?: number;
+  size?: number;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  content?: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+// Auth types
+export interface LoginCredentials {
+  identifier: string; // Can be email, username, or phone number
+  password: string;
+}
+
+export interface RegisterData {
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword?: string;
+}
+
+export interface AuthResponse {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+}
+
+// User types
+export interface User {
+  id: number | string;
+  username: string;
+  email?: string;
+  bio?: string;
+  imageUrl?: string;
+  createdAt?: string;
+  followerCount?: number;
+  followingCount?: number;
+  followingByCurrentUser?: boolean;
+  stats?: {
+    posts?: number;
+    followers?: number;
+    following?: number;
+  };
+}
+
+export interface UpdateProfileData {
+  username?: string;
+  bio?: string;
+  profilePicture?: File;
+}
+
+// Photo types
+export interface Photo {
+  id: number | string;
+  userId?: string;
+  username?: string;
+  userImageUrl?: string;
+  imageUrl: string;
+  caption?: string;
+  createdAt: string;
+  likeCount: number;
+  commentCount: number;
+  isLikedByCurrentUser: boolean;
+  tags?: string[];
+}
+
+export interface CreatePhotoData {
+  caption?: string;
+  image: File;
+}
+
+// Search types
+export interface SearchUsersResponse {
+  items: User[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+// Validation types
+export interface ValidationErrors {
+  [key: string]: string;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  errors: ValidationErrors;
+}
+
+// ==================== AI Types ====================
+export interface EngagementAnalysisRequest {
+  recentPostCount?: number;
+}
+
+export interface PostInsight {
+  photoId: string;
+  caption: string;
+  imageUrl: string;
+  likeCount: number;
+  commentCount: number;
+  engagementScore: number;
+}
+
+export interface EngagementAnalysisResponse {
+  averageLikes: number;
+  averageComments: number;
+  engagementRate: number;
+  trend: string;
+  topPosts: PostInsight[];
+  aiSummary: string;
+}
+
+export interface TimingSlot {
+  dayOfWeek: string;
+  timeRange: string;
+  score: number;
+  reason: string;
+}
+
+export interface PostTimingSuggestionResponse {
+  bestTimes: TimingSlot[];
+  aiSummary: string;
+}
+
+export interface ImageAnalysisRequest {
+  imageBase64: string;
+  mimeType?: string;
+  userId?: string;
+}
+
+export interface ImageAnalysisResponse {
+  imageDescription: string;
+  sceneType: string;
+  mood: string;
+  colors: string[];
+  objects: string[];
+  suggestedTags: string[];
+  captionSuggestions: string[];
+}
+
+// ==================== Recommendation Types ====================
+export interface RecommendedUser {
+  id: string;
+  username: string;
+  imageUrl: string;
+  bio?: string;
+  followerCount: number;
+  photoCount: number;
+  similarityScore: number;
+  reason: string;
+}
+
+// ==================== Unified Post Types ====================
+export type PostType = 'PHOTO' | 'SHARE';
+
+export interface UnifiedPost {
+  id: string;
+  type: PostType;
+  createdAt: string;
+  userId: string;
+  username: string;
+  userImageUrl?: string;
+  // For PHOTO type
+  imageUrl?: string;
+  caption?: string;
+  likeCount: number;
+  commentCount: number;
+  shareCount: number;
+  isLikedByCurrentUser: boolean;
+  isSavedByCurrentUser: boolean;
+  // For SHARE type
+  shareCaption?: string;
+  // Original photo info (for SHARE type)
+  originalPhotoId?: string;
+  originalImageUrl?: string;
+  originalCaption?: string;
+  originalUsername?: string;
+  originalUserImageUrl?: string;
+  originalCreatedAt?: string;
+  originalLikeCount?: number;
+  originalCommentCount?: number;
+  originalShareCount?: number;
+}

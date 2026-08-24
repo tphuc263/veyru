@@ -1,0 +1,198 @@
+.post-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    animation: postBackdropFadeIn 0.2s ease;
+}
+
+@keyframes postBackdropFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.post-modal {
+    background: var(--ig-surface);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    animation: postModalSlideUp 0.25s ease;
+}
+
+@keyframes postModalSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.post-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--ig-border-color);
+}
+
+.post-modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ig-primary-text);
+}
+
+.post-modal-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: var(--ig-secondary-text);
+    padding: 4px;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.post-modal-close:hover {
+    color: var(--ig-primary-text);
+}
+
+.post-modal-body {
+    padding: 16px;
+}
+
+.post-preview {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+.post-preview-image {
+    max-width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--ig-border-color);
+}
+
+.post-caption-section {
+    position: relative;
+}
+
+.post-caption-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--ig-border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: none;
+    background: var(--ig-surface);
+    color: var(--ig-primary-text);
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.post-caption-input:focus {
+    outline: none;
+    border-color: var(--ig-link-color);
+}
+
+.post-caption-input::placeholder {
+    color: var(--ig-secondary-text);
+}
+
+.post-caption-count {
+    display: block;
+    text-align: right;
+    font-size: 12px;
+    color: var(--ig-secondary-text);
+    margin-top: 4px;
+}
+
+.post-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--ig-border-color);
+}
+
+.post-btn-cancel {
+    padding: 8px 20px;
+    border: 1px solid var(--ig-border-color);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ig-primary-text);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.post-btn-cancel:hover {
+    background: var(--ig-hover-bg);
+}
+
+.post-btn-confirm {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 8px;
+    background: var(--ig-link-color);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: opacity 0.2s;
+}
+
+.post-btn-confirm:hover:not(:disabled) {
+    opacity: 0.85;
+}
+
+.post-btn-confirm:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.post-btn-loading {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.post-spinner {
+    animation: postSpinRotate 0.8s linear infinite;
+}
+
+@keyframes postSpinRotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Post count display in PhotoCard */
+.photo-card-post-count {
+    padding: 0 16px 4px;
+    font-size: 14px;
+    color: var(--ig-primary-text);
+}
+
+/* Post button styling (active state) */
+.action-btn.posted {
+    color: var(--ig-link-color);
+}

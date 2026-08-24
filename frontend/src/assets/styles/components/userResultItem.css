@@ -1,0 +1,32 @@
+.user-result-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    border-radius: 8px;
+}
+
+.user-result-item:hover {
+    background-color: #fafafa;
+}
+
+.user-result-item .avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 12px;
+    border: 1px solid #dbdbdb;
+}
+
+.user-result-item .user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-result-item .username {
+    font-weight: 600;
+    font-size: 14px;
+}

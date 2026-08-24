@@ -1,0 +1,234 @@
+.edit-profile-container {
+    max-width: 935px;
+    margin: 32px auto;
+    background-color: var(--ig-surface);
+    border: 1px solid var(--ig-border-color);
+    border-radius: var(--ig-radius-sm);
+    display: flex;
+}
+
+.edit-profile-form {
+    width: 100%;
+    padding: 32px 0;
+}
+
+.form-row {
+    display: flex;
+    margin: 0 40px 16px 40px; /* Thêm khoảng trống hai bên */
+    align-items: flex-start;
+}
+
+.form-row aside {
+    width: 150px; /* Độ rộng cố định cho label */
+    padding-right: 32px;
+    text-align: right;
+    margin-top: 6px; /* Căn chỉnh với input */
+}
+
+.form-row label {
+    font-size: var(--ig-font-size-base);
+    font-weight: 600;
+    color: var(--ig-primary-text);
+}
+
+.form-row .input-wrapper {
+    flex: 1;
+}
+
+.form-row input[type="text"],
+.form-row textarea {
+    width: 100%;
+    max-width: 355px; /* Giống Instagram */
+    padding: var(--ig-spacing-sm);
+    font-size: var(--ig-font-size-base);
+    border: 1px solid var(--ig-border-color);
+    border-radius: var(--ig-radius-sm);
+    background-color: var(--ig-background);
+}
+
+.form-row textarea {
+    resize: vertical;
+}
+
+/* --- Avatar Section --- */
+.form-row-avatar {
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.form-row-avatar .avatar-preview-wrapper {
+    width: 38px;
+    height: 38px;
+}
+.form-row-avatar .avatar-preview {
+    width: 100%;
+    height: 100%;
+    border-radius: var(--ig-radius-full);
+    object-fit: cover;
+}
+
+/* Căn chỉnh lại phần label của avatar cho thẳng hàng */
+.form-row-avatar aside {
+    align-self: center;
+    padding-left: 26px; /* Thêm padding để đẩy avatar-preview-wrapper sang phải */
+    width: 188px; /* Tăng width để bù lại padding */
+    box-sizing: content-box;
+}
+
+.avatar-actions {
+    display: flex;
+    flex-direction: column;
+}
+
+.current-username {
+    font-size: var(--ig-font-size-xl);
+    font-weight: 400;
+    margin-bottom: var(--ig-spacing-xs);
+    padding-left: var(--ig-spacing-sm);
+}
+
+.change-photo-button {
+    background: none;
+    border: none;
+    color: var(--ig-link-color);
+    font-weight: 600;
+    font-size: var(--ig-font-size-sm);
+    cursor: pointer;
+    padding: 0;
+}
+
+/* --- Submit Button --- */
+.submit-button {
+    background-color: var(--ig-button-primary);
+    color: white;
+    border: none;
+    border-radius: var(--ig-radius-md);
+    padding: var(--ig-spacing-sm) var(--ig-spacing-md);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.submit-button:hover {
+    background-color: var(--ig-button-primary-hover);
+}
+
+.submit-button:disabled {
+    background-color: #b2dffc; /* Màu xanh nhạt hơn khi bị vô hiệu hóa */
+    cursor: not-allowed;
+}
+
+/* --- Crop Modal --- */
+.crop-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.crop-modal {
+    background: #fff;
+    border-radius: 12px;
+    width: 480px;
+    max-width: 95vw;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.crop-modal-title {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 16px 0;
+    border-bottom: 1px solid #dbdbdb;
+    margin: 0;
+}
+
+.crop-container {
+    position: relative;
+    width: 100%;
+    height: 360px;
+    background: #000;
+}
+
+.crop-zoom-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 24px;
+    font-size: 13px;
+    color: #555;
+}
+
+.crop-zoom-slider {
+    flex: 1;
+    accent-color: #0095f6;
+}
+
+.crop-modal-actions {
+    display: flex;
+    border-top: 1px solid #dbdbdb;
+}
+
+.crop-btn {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    background: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.crop-btn-cancel {
+    color: #262626;
+    border-right: 1px solid #dbdbdb;
+}
+
+.crop-btn-cancel:hover {
+    background: #f5f5f5;
+}
+
+.crop-btn-confirm {
+    color: #0095f6;
+}
+
+.crop-btn-confirm:hover {
+    background: #e8f4fe;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .form-row {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-left: 20px;
+        margin-right: 20px;
+    }
+
+    .form-row aside {
+        text-align: left;
+        width: auto;
+        margin-bottom: 8px;
+        margin-top: 0;
+    }
+
+    .form-row-avatar {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    /* Ẩn label "avatar" trống trên mobile */
+    .form-row-avatar aside {
+        display: none;
+    }
+
+    .form-row-avatar .avatar-preview-wrapper {
+        margin-right: 16px;
+    }
+}
