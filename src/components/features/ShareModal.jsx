@@ -11,10 +11,10 @@ const ShareModal = ({ photoId, photoSrc, onClose, onShareSuccess }) => {
         if (isPosting) return;
         setIsPosting(true);
         try {
-            const response = await sharePhoto(photoId, caption.trim() || null);
+            await sharePhoto(photoId, caption.trim() || null);
             showToast('success', 'Đã đăng về trang cá nhân!');
             if (onShareSuccess) {
-                onShareSuccess(response.data || response);
+                onShareSuccess();
             }
             onClose();
         } catch (err) {

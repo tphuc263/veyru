@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { login, register } from "../services/authService";
-import { clearAuthData, setAuthData } from "../utils/storage";
+import axios from "axios";
+import { login, logout, register } from "../services/authService";
 
 interface LoginCredentials {
-  username: string;
+  identifier?: string;
+  username?: string;
   password: string;
 }
 
@@ -11,6 +12,7 @@ interface RegisterData {
   username: string;
   email: string;
   password: string;
+  confirmPassword?: string;
 }
 
 export const useAuth = () => {
@@ -20,22 +22,21 @@ export const useAuth = () => {
     setLoading(true);
 
     try {
-      const response = await login(credentials);
-      const { jwt, id, username, email, role } = response;
-      const userData = { id, username, email, role };
-      setAuthData(jwt, userData);
+      const payload = {
+        identifier: credentials.identifier || credentials.username || "",
+        password: credentials.password
+      };
+      const response = await login(payload);
       return {
         success: true,
-        token: jwt,
-        data: userData,
+        data: response,
       };
-    } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || "Login failed";
+    } catch (error: unknown) {
+      const errorMessage = axios.isAxiosError(error) ? error.response?.data?.message : undefined;
       return {
         success: false,
-        error: errorMessage,
+        error: errorMessage || "Login failed",
         data: null,
-        token: null,
       };
     } finally {
       setLoading(false);
@@ -51,8 +52,8 @@ export const useAuth = () => {
         data: apiResponse,
         message: "Registration successful",
       };
-    } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || "Registration failed";
+    } catch (error: unknown) {
+      const errorMessage = axios.isAxiosError(error) ? error.response?.data?.message : undefined;
       console.error("Registration operation failed:", error);
       return {
         success: false,
@@ -64,11 +65,11 @@ export const useAuth = () => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     try {
-      clearAuthData();
+      await logout();
       return { success: true, message: "Đăng xuất thành công" };
-    } catch (error) {
+    } catch {
       return { success: false, message: "Lỗi khi đăng xuất" };
     }
   };

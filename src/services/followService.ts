@@ -11,40 +11,39 @@ export interface FollowUser {
     followedByCurrentUser: boolean;
 }
 
-export const follow = async (targetUserId: number): Promise<any> => {
-    try {
-        return await api.post(`/follows/follow/${targetUserId}`);
-    } catch (e: any) {
-        throw new Error(`Fail to follow: ${e.message}`);
-    }
+type FollowResponse = Omit<FollowUser, 'followedByCurrentUser'> & {
+    isFollowedByCurrentUser: boolean;
 };
 
-export const unfollow = async (targetUserId: number): Promise<any> => {
-    try {
-        return await api.post(`follows/unfollow/${targetUserId}`);
-    } catch (e: any) {
-        throw new Error(`Fail to unfollow: ${e.message}`);
-    }
+const normalizeUsers = (users: FollowResponse[]): FollowUser[] =>
+    users.map(user => ({
+        ...user,
+        followedByCurrentUser: user.isFollowedByCurrentUser
+    }));
+
+export const follow = async (targetUserId: string | number): Promise<void> => {
+    await api.put(`/users/me/following/${targetUserId}`);
+};
+
+export const unfollow = async (targetUserId: string | number): Promise<void> => {
+    await api.delete(`/users/me/following/${targetUserId}`);
 };
 
 export const getFollowers = async (userId: string | number, page: number = 0, size: number = 20): Promise<FollowUser[]> => {
-    try {
-        const response = await api.get(`/follows/${userId}/followers`, {
+        const response = await api.get<FollowResponse[]>(`/users/${userId}/followers`, {
             params: { page, size }
         });
-        return response.data as FollowUser[];
-    } catch (e: any) {
-        throw new Error(`Failed to get followers: ${e.message}`);
-    }
+        return normalizeUsers(response.data);
 };
 
 export const getFollowing = async (userId: string | number, page: number = 0, size: number = 20): Promise<FollowUser[]> => {
-    try {
-        const response = await api.get(`/follows/${userId}/following`, {
+        const response = await api.get<FollowResponse[]>(`/users/${userId}/following`, {
             params: { page, size }
         });
-        return response.data as FollowUser[];
-    } catch (e: any) {
-        throw new Error(`Failed to get following: ${e.message}`);
-    }
+        return normalizeUsers(response.data);
+};
+
+export const checkFollowStatus = async (followingId: string | number): Promise<boolean> => {
+    const response = await api.get<boolean>(`/users/me/following/${followingId}`);
+    return response.data;
 };

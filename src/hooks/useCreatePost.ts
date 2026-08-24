@@ -8,7 +8,7 @@ export interface CreatePostFormData {
     tags: string;
 }
 
-interface CreatePostResponse {
+export interface CreatePostResponse {
     success: boolean;
     error?: string;
 }

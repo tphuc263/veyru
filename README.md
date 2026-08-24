@@ -28,7 +28,7 @@
 - 🔍 **Search & Explore** - Discover users and trending content
 - 💬 **Real-time Messaging** - Direct messages with WebSocket (STOMP)
 - 👤 **User Profiles** - View profiles, followers, and following lists
-- 🔐 **Authentication** - JWT-based auth with OAuth2 (Google)
+- 🔐 **Authentication** - HttpOnly cookie sessions, CSRF, refresh rotation and OAuth2 one-time-code exchange
 - 🏷️ **Tags** - Tag and discover photos by tags
 - 🔔 **Notifications** - Real-time notifications for likes, comments, follows
 
@@ -236,6 +236,10 @@ SEND:      /app/chat.markRead          → mark messages as read
 ---
 
 ## 📖 Documentation
+
+### API contract
+
+`openapi/openapi.json` is copied from the backend release contract. Run `npm run api:generate` after an intentional contract update and `npm run api:check` in CI to reject generated-type drift.
 
 ### State Machine Diagrams
 

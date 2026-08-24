@@ -1,5 +1,5 @@
 // Common API types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data: T;
   message?: string;
   status?: number;
@@ -11,7 +11,8 @@ export interface PaginationParams {
 }
 
 export interface PaginatedResponse<T> {
-  content: T[];
+  items: T[];
+  content?: T[];
   page: number;
   size: number;
   totalElements: number;
@@ -32,18 +33,17 @@ export interface RegisterData {
 }
 
 export interface AuthResponse {
-  jwt: string;
-  id: number;
+  id: string;
   username: string;
   email: string;
-  role?: string;
+  role: string;
 }
 
 // User types
 export interface User {
   id: number | string;
   username: string;
-  email: string;
+  email?: string;
   bio?: string;
   imageUrl?: string;
   createdAt?: string;
@@ -85,7 +85,7 @@ export interface CreatePhotoData {
 
 // Search types
 export interface SearchUsersResponse {
-  content: User[];
+  items: User[];
   page: number;
   size: number;
   totalElements: number;

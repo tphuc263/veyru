@@ -58,7 +58,7 @@ const Home = () => {
             setError(null);
 
             const response = await getNewsfeed(pageNum, 20);
-            const newPosts = response.content || [];
+            const newPosts = response.items || response.content || [];
 
             if (isRefresh) {
                 setFeed(newPosts);

@@ -2,6 +2,7 @@ import {useEffect, useState} from 'react';
 import {useParams} from 'react-router-dom';
 import {getCurrentUserProfile, getUserProfileById} from '../services/userService';
 import {getUserPosts} from '../services/postService';
+import type {UnifiedPost} from '../types/api';
 
 interface UserProfile {
     id: string | number;
@@ -18,25 +19,13 @@ interface UserProfile {
     followingByCurrentUser?: boolean;
 }
 
-interface Photo {
-    id: string | number;
-    imageUrl: string;
-    caption?: string;
-    createdAt: string;
-    userId?: string | number;
-    username?: string;
-    userImageUrl?: string;
-    likeCount?: number;
-    commentCount?: number;
-    isLikedByCurrentUser?: boolean;
-    tags?: string[];
-}
-
 interface PaginatedResponse<T> {
-    content: T[];
+    items?: T[];
+    content?: T[];
     totalPages: number;
     totalElements: number;
-    currentPage: number;
+    page?: number;
+    currentPage?: number;
     size: number;
 }
 
@@ -46,8 +35,8 @@ interface AsyncState<T> {
     error: string | null;
 }
 
-interface PostsState extends AsyncState<Photo[]> {
-    data: Photo[];
+interface PostsState extends AsyncState<UnifiedPost[]> {
+    data: UnifiedPost[];
     currentPage: number;
     totalPages: number;
 }
@@ -101,15 +90,16 @@ export const useUserProfile = (): UseUserProfileReturn => {
         const fetchPosts = async (): Promise<void> => {
             setPosts(prev => ({...prev, loading: true, error: null}));
             try {
-                const postResponse: PaginatedResponse<any> = await getUserPosts(
+                const postResponse: PaginatedResponse<UnifiedPost> = await getUserPosts(
                     String(currUser.id),
                     posts.currentPage
                 );
+                const postItems = postResponse.items || postResponse.content || [];
                 setPosts(prev => ({
                     ...prev,
                     data: posts.currentPage === 0
-                        ? postResponse.content
-                        : [...prev.data, ...postResponse.content],
+                        ? postItems
+                        : [...prev.data, ...postItems],
                     totalPages: postResponse.totalPages,
                     loading: false,
                 }));

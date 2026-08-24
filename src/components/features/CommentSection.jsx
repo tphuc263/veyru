@@ -29,7 +29,7 @@ const CommentItem = ({
     setLocalLikeCount(prev => wasLiked ? prev - 1 : prev + 1);
     
     try {
-      await onLike(comment.id);
+      await onLike(comment.id, wasLiked);
     } catch (error) {
       // Revert on error
       setLocalIsLiked(wasLiked);
@@ -144,8 +144,8 @@ const CommentSection = ({
     }
   };
 
-  const handleLike = async (commentId) => {
-    await toggleCommentLike(commentId);
+  const handleLike = async (commentId, currentlyLiked) => {
+    await toggleCommentLike(commentId, currentlyLiked);
   };
 
   // Recursive helper to add reply to nested comments

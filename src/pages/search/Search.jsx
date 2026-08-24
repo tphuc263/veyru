@@ -73,7 +73,8 @@ const Search = () => {
         setSearchLoading(true)
         setHasSearched(true)
         try {
-            const users = (await searchUsers(searchText)).content || []
+            const userResponse = await searchUsers(searchText)
+            const users = userResponse.items || userResponse.content || []
             setSearchResults(users)
         } catch (error) {
             console.error('Failed to fetch users:', error)
@@ -105,7 +106,7 @@ const Search = () => {
             setExploreError(null)
 
             const response = await getExploreFeed(pageNum, 21)
-            const newPhotos = response.content || []
+            const newPhotos = response.items || response.content || []
 
             if (isRefresh) {
                 setExplorePhotos(newPhotos)

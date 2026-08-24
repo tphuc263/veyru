@@ -1,47 +1,43 @@
-import axios from "axios";
+import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { API_BASE_URL } from "../utils/constants";
-import { clearAuthData, getToken } from "../utils/storage";
+
+type RetryableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
+
+const noRefreshPaths = new Set(['/sessions', '/sessions/refresh', '/sessions/oauth2']);
+let refreshPromise: Promise<void> | null = null;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
+  withCredentials: true,
+  withXSRFToken: true,
+  xsrfCookieName: 'XSRF-TOKEN',
+  xsrfHeaderName: 'X-XSRF-TOKEN',
   headers: {
     "Content-Type": "application/json",
   },
-}); 
-
-api.interceptors.request.use(
-  (config) => {
-    const token = getToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+});
 
 api.interceptors.response.use(
-  (response) => {
-    return response.data;
-  },
-  (error) => {
-    if (error.response) {
-      const { status, config } = error.response;
-      if (
-        status === 401 &&
-        config.url !== "/auth/login" &&
-        config.url !== "/auth/register"
-      ) {
-        clearAuthData();
-        window.location.href =
-          "/login?message=Your+session+has+expired.+Please+log+in+again.";
-        return new Promise(() => {});
-      }
+  response => response,
+  async (error: AxiosError) => {
+    const request = error.config as RetryableRequest | undefined;
+    const path = request?.url?.split('?')[0];
+    if (error.response?.status !== 401 || !request || request._retry || (path && noRefreshPaths.has(path))) {
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
+
+    request._retry = true;
+    refreshPromise ??= api.post<void>('/sessions/refresh').then(() => undefined);
+    try {
+      await refreshPromise;
+      return api(request);
+    } catch (refreshError) {
+      window.dispatchEvent(new Event('auth:expired'));
+      return Promise.reject(refreshError);
+    } finally {
+      refreshPromise = null;
+    }
   }
 );
 

@@ -1,7 +1,9 @@
 name: Build & Deploy Frontend
 
 on:
-  push:
+  workflow_run:
+    workflows: [Frontend Quality]
+    types: [completed]
     branches: [main]
 
 env:
@@ -10,6 +12,7 @@ env:
 
 jobs:
   build-and-deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -17,6 +20,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Log in to GHCR
         uses: docker/login-action@v3

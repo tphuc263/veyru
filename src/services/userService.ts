@@ -1,33 +1,28 @@
 import api from "../config/ApiConfig";
 import { User } from "../types/api";
 
+type UserProfileResponse = User & { isFollowingByCurrentUser?: boolean };
+
+const normalizeProfile = (profile: UserProfileResponse): User => ({
+    ...profile,
+    followingByCurrentUser: profile.isFollowingByCurrentUser
+});
+
 export const getCurrentUserProfile = async (): Promise<User> => {
-    try {
-        const response = await api.get("/users/me");
-        return response.data as User;
-    } catch (e: any) {
-        throw new Error(`Fail to get current user profile: ${e.message}`);
-    }
+    const response = await api.get<UserProfileResponse>("/users/me");
+    return normalizeProfile(response.data);
 };
 
-export const getUserProfileById = async (userId: number): Promise<User> => {
-    try {
-        const response = await api.get(`/users/${userId}`);
-        return response.data as User;
-    } catch (e: any) {
-        throw new Error(`Fail to get user profile by id: ${e.message}`);
-    }
+export const getUserProfileById = async (userId: string | number): Promise<User> => {
+    const response = await api.get<UserProfileResponse>(`/users/${userId}`);
+    return normalizeProfile(response.data);
 };
 
 export const updateUserProfile = async (formData: FormData): Promise<User> => {
-    try {
-        const response = await api.put("/users/me", formData, {
+        const response = await api.patch<UserProfileResponse>("/users/me", formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
             }
         });
-        return response.data as User;
-    } catch (e: any) {
-        throw new Error(`Fail to update user profile: ${e.message}`);
-    }
+        return normalizeProfile(response.data);
 };

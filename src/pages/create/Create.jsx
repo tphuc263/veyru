@@ -2,7 +2,7 @@ import {useEffect, useState, useCallback} from 'react'
 import {useNavigate} from 'react-router-dom'
 import {useCreatePost} from '../../hooks/useCreatePost.js'
 import {toastSuccess, toastError} from '../../utils/toastService.js'
-import {getTrendingHashtags} from '../../services/aiService.js'
+import {analyzeImage, getTrendingHashtags} from '../../services/aiService.js'
 import '../../assets/styles/pages/createPage.css'
 
 const Create = () => {
