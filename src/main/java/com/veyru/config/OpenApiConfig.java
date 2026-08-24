@@ -22,7 +22,7 @@ public class OpenApiConfig {
       @Value("${open.api.description}") String description,
       @Value("${open.api.serverUrl}") String serverUrl) {
 
-    final String securitySchemeName = "bearerAuth";
+    final String securitySchemeName = "cookieAuth";
 
     return new OpenAPI()
         .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
@@ -31,10 +31,9 @@ public class OpenApiConfig {
                 .addSecuritySchemes(
                     securitySchemeName,
                     new SecurityScheme()
-                        .name(securitySchemeName)
-                        .type(SecurityScheme.Type.HTTP)
-                        .scheme("bearer")
-                        .bearerFormat("JWT")))
+                        .name("veyru_access")
+                        .in(SecurityScheme.In.COOKIE)
+                        .type(SecurityScheme.Type.APIKEY)))
         .info(
             new Info()
                 .title(title)

@@ -42,10 +42,10 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
     User user = userStore.findByEmail(email).orElse(null);
     if (user == null) {
       user = createUser(attributes, email, provider);
-      log.info("Created new OAuth2 user from {}: {}", provider, email);
+      log.info("Created new OAuth2 user from {}", provider);
     }
     return new CustomOAuth2User(
-        user, attributes, Set.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
+        user, attributes, Set.of(new SimpleGrantedAuthority(user.getRole().name())));
   }
 
   private String extractEmail(Map<String, Object> attributes, String provider) {

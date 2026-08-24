@@ -95,8 +95,17 @@ class CommentServiceTest {
   @Test
   void authenticatedCommentReadUsesPersonalizedFlag() {
     Comment comment =
-        Comment.create(
-            "photo", "owner", "owner", "text", java.util.List.of(), java.time.Instant.EPOCH);
+        new Comment(
+            "comment",
+            "photo",
+            "owner",
+            "text",
+            java.time.Instant.EPOCH,
+            new Comment.EmbeddedUser("owner", "owner"),
+            null,
+            0,
+            0,
+            java.util.List.of());
     User actor =
         new User(
             "actor",

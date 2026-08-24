@@ -1,7 +1,7 @@
 package com.veyru.application.port.out;
 
-import com.veyru.application.identity.LoginResult;
+import com.veyru.application.identity.AuthenticatedUser;
 
 public interface AuthenticationGateway {
-  LoginResult authenticate(String identifier, String password);
+  AuthenticatedUser authenticate(String identifier, String password);
 }

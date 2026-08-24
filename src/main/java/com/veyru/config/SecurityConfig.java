@@ -5,24 +5,20 @@ import com.veyru.adapter.in.security.jwt.JwtAccessDeniedHandler;
 import com.veyru.adapter.in.security.jwt.JwtEntryPoint;
 import com.veyru.adapter.in.security.oauth2.OAuth2FailureHandler;
 import com.veyru.adapter.in.security.oauth2.OAuth2SuccessHandler;
-import com.veyru.adapter.in.security.userdetails.AppUserDetailsService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 @Configuration
 @EnableWebSecurity
@@ -30,31 +26,23 @@ public class SecurityConfig {
   @Value("${api.prefix}")
   private String API;
 
-  private final AppUserDetailsService userDetailsService;
   private final JwtEntryPoint authEntryPoint;
   private final JwtAccessDeniedHandler accessDeniedHandler;
   private final AuthTokenFilter authTokenFilter;
-  private final PasswordEncoder passwordEncoder;
+  private final DaoAuthenticationProvider authenticationProvider;
   private final OAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService;
   private final OAuth2SuccessHandler oAuth2SuccessHandler;
   private final OAuth2FailureHandler oAuth2FailureHandler;
 
   @Bean
-  public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig)
-      throws Exception {
-    return authConfig.getAuthenticationManager();
-  }
-
-  @Bean
-  public DaoAuthenticationProvider authenticationProvider() {
-    var authProvider = new DaoAuthenticationProvider(userDetailsService);
-    authProvider.setPasswordEncoder(passwordEncoder);
-    return authProvider;
-  }
-
-  @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    http.csrf(AbstractHttpConfigurer::disable)
+    var csrfRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+    csrfRepository.setCookieName("XSRF-TOKEN");
+    csrfRepository.setHeaderName("X-XSRF-TOKEN");
+    http.csrf(
+            csrf ->
+                csrf.csrfTokenRepository(csrfRepository)
+                    .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))
         .exceptionHandling(
             exception ->
                 exception
@@ -67,14 +55,22 @@ public class SecurityConfig {
                 auth.requestMatchers(HttpMethod.OPTIONS)
                     .permitAll()
                     .requestMatchers(
-                        API + "/sessions",
+                        API + "/csrf",
                         API + "/password-reset-requests",
                         API + "/password-resets",
                         "/login/**",
                         "/oauth2/**",
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
-                        "/actuator/health")
+                        "/actuator/health/**")
+                    .permitAll()
+                    .requestMatchers(
+                        HttpMethod.POST,
+                        API + "/sessions",
+                        API + "/sessions/refresh",
+                        API + "/sessions/oauth2")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.DELETE, API + "/sessions/current")
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, API + "/users")
                     .permitAll()
@@ -93,7 +89,7 @@ public class SecurityConfig {
                     .permitAll()
                     .anyRequest()
                     .authenticated())
-        .authenticationProvider(authenticationProvider())
+        .authenticationProvider(authenticationProvider)
         .oauth2Login(
             oauth2 ->
                 oauth2
@@ -105,19 +101,17 @@ public class SecurityConfig {
   }
 
   public SecurityConfig(
-      final AppUserDetailsService userDetailsService,
       final JwtEntryPoint authEntryPoint,
       final JwtAccessDeniedHandler accessDeniedHandler,
       final AuthTokenFilter authTokenFilter,
-      final PasswordEncoder passwordEncoder,
+      final DaoAuthenticationProvider authenticationProvider,
       final OAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService,
       final OAuth2SuccessHandler oAuth2SuccessHandler,
       final OAuth2FailureHandler oAuth2FailureHandler) {
-    this.userDetailsService = userDetailsService;
     this.authEntryPoint = authEntryPoint;
     this.accessDeniedHandler = accessDeniedHandler;
     this.authTokenFilter = authTokenFilter;
-    this.passwordEncoder = passwordEncoder;
+    this.authenticationProvider = authenticationProvider;
     this.oAuth2UserService = oAuth2UserService;
     this.oAuth2SuccessHandler = oAuth2SuccessHandler;
     this.oAuth2FailureHandler = oAuth2FailureHandler;

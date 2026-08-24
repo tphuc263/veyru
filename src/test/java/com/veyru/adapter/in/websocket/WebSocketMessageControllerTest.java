@@ -37,7 +37,7 @@ class WebSocketMessageControllerTest {
     controller.sendMessage(
         WsEventEnvelope.<SendMessageRequest>builder()
             .clientMessageId("client-1")
-            .payload(new SendMessageRequest("recipient-1", "hello"))
+            .payload(new SendMessageRequest("conversation-1", "recipient-1", "hello"))
             .build(),
         () -> "sender-1");
 

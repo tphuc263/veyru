@@ -30,9 +30,8 @@ public class MessagingConfig {
       MessagingUserLookup userLookup,
       MessageIdempotency idempotency,
       MessageNotifier notifier,
-      ConversationService conversations,
       Clock clock) {
     return new SendMessageUseCase(
-        messageStore, conversationStore, userLookup, idempotency, notifier, conversations, clock);
+        messageStore, conversationStore, userLookup, idempotency, notifier, clock);
   }
 }

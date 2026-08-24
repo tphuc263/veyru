@@ -1,9 +1,12 @@
 package com.veyru.adapter.in.security.jwt;
 
 import com.veyru.adapter.in.security.userdetails.AppUserDetailsService;
+import com.veyru.adapter.security.AppUserDetails;
 import com.veyru.adapter.security.JwtUtils;
+import com.veyru.adapter.security.UserIdAuthenticationToken;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -11,11 +14,8 @@ import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
@@ -33,7 +33,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
       throws ServletException, IOException {
     try {
       String jwt = parseJwt(request);
-      if (StringUtils.hasText(jwt) && jwtUtils.validateToken(jwt)) {
+      if (jwt != null && jwtUtils.validateToken(jwt)) {
         authenticateUser(jwt);
       }
     } catch (RuntimeException e) {
@@ -46,16 +46,16 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 
   private void authenticateUser(String jwt) {
     String username = jwtUtils.getEmailFromToken(jwt);
-    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-    var authentication =
-        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-    SecurityContextHolder.getContext().setAuthentication(authentication);
+    AppUserDetails userDetails = (AppUserDetails) userDetailsService.loadUserByUsername(username);
+    SecurityContextHolder.getContext()
+        .setAuthentication(new UserIdAuthenticationToken(userDetails));
   }
 
   public String parseJwt(HttpServletRequest request) {
-    String headerAuth = request.getHeader("Authorization");
-    if (StringUtils.hasText(headerAuth) && headerAuth.startsWith("Bearer ")) {
-      return headerAuth.substring(7);
+    Cookie[] cookies = request.getCookies();
+    if (cookies == null) return null;
+    for (Cookie cookie : cookies) {
+      if ("veyru_access".equals(cookie.getName())) return cookie.getValue();
     }
     return null;
   }

@@ -74,7 +74,9 @@ cloudinary:
 auth:
   token:
     jwtSecret: ${JWT_SECRET}
-    accessExpirationInMils: 3600000
+    accessExpirationInMils: 900000
+  cookie:
+    secure: ${AUTH_COOKIE_SECURE:true}
 
 app:
   frontend:

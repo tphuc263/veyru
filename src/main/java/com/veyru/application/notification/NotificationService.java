@@ -131,6 +131,10 @@ public class NotificationService {
     return notificationStore.countUnread(userId);
   }
 
+  public long getUnreadCount() {
+    return getUnreadCount(requireActorId());
+  }
+
   public void markAsRead(String notificationId, String recipientId) {
     notificationStore
         .findById(notificationId)

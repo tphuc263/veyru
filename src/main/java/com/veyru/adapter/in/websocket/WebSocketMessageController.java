@@ -40,19 +40,26 @@ public class WebSocketMessageController {
 
     String senderId = principal.getName();
     SendMessageRequest request = envelope.getPayload();
-    if (request == null || request.receiverId() == null || request.text() == null) {
+    if (request == null
+        || request.conversationId() == null
+        || request.receiverId() == null
+        || request.text() == null) {
       sendError(
           senderId,
           envelope.getClientMessageId(),
           ErrorCode.VALIDATION_FAILED,
-          "Message receiver and text are required.");
+          "Conversation, receiver and text are required.");
       return;
     }
 
     try {
       sendMessage.execute(
           new SendMessageCommand(
-              senderId, request.receiverId(), request.text(), envelope.getClientMessageId()));
+              request.conversationId(),
+              senderId,
+              request.receiverId(),
+              request.text(),
+              envelope.getClientMessageId()));
     } catch (UseCaseException exception) {
       ErrorCode code = ErrorCode.valueOf(exception.code().name());
       sendError(senderId, envelope.getClientMessageId(), code, code.detail());

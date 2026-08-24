@@ -18,7 +18,6 @@ public final class SendMessageUseCase {
   private final MessagingUserLookup userLookup;
   private final MessageIdempotency idempotency;
   private final MessageNotifier notifier;
-  private final ConversationService conversations;
   private final Clock clock;
 
   public SendMessageUseCase(
@@ -27,33 +26,48 @@ public final class SendMessageUseCase {
       MessagingUserLookup userLookup,
       MessageIdempotency idempotency,
       MessageNotifier notifier,
-      ConversationService conversations,
       Clock clock) {
     this.messageStore = messageStore;
     this.conversationStore = conversationStore;
     this.userLookup = userLookup;
     this.idempotency = idempotency;
     this.notifier = notifier;
-    this.conversations = conversations;
     this.clock = clock;
   }
 
   public MessageResult execute(SendMessageCommand command) {
-    Instant now = clock.instant();
-    if (hasClientMessageId(command) && !idempotency.claim(command.clientMessageId())) {
-      return new MessageResult(
-          null, null, command.senderId(), command.receiverId(), command.text(), false, now);
-    }
-
     requireUser(command.senderId());
     requireUser(command.receiverId());
-
     Conversation conversation =
-        conversations.getOrCreateConversation(command.senderId(), command.receiverId());
+        conversationStore
+            .findById(command.conversationId())
+            .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
+    if (!conversation.hasParticipant(command.senderId())
+        || !conversation.hasParticipant(command.receiverId())
+        || command.senderId().equals(command.receiverId())) {
+      throw new UseCaseException(UseCaseError.ACCESS_DENIED);
+    }
+
+    Instant now = clock.instant();
+    if (hasClientMessageId(command)
+        && !idempotency.claim(command.senderId(), command.clientMessageId())) {
+      return new MessageResult(
+          null,
+          command.conversationId(),
+          command.senderId(),
+          command.receiverId(),
+          command.text(),
+          false,
+          now);
+    }
     Message saved =
         messageStore.save(
             Message.create(
-                conversation.id(), command.senderId(), command.receiverId(), command.text(), now));
+                command.conversationId(),
+                command.senderId(),
+                command.receiverId(),
+                command.text(),
+                now));
     conversationStore.save(conversation.recordLastMessage(command.text(), command.senderId(), now));
 
     MessageResult result = MessageResult.from(saved);

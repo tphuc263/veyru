@@ -15,10 +15,13 @@ public class RedisMessageIdempotency implements MessageIdempotency {
   }
 
   @Override
-  public boolean claim(String clientMessageId) {
+  public boolean claim(String senderId, String clientMessageId) {
     return Boolean.TRUE.equals(
         redisTemplate
             .opsForValue()
-            .setIfAbsent("msg_idempotency:" + clientMessageId, "1", Duration.ofHours(TTL_HOURS)));
+            .setIfAbsent(
+                "msg_idempotency:" + senderId + ":" + clientMessageId,
+                "1",
+                Duration.ofHours(TTL_HOURS)));
   }
 }

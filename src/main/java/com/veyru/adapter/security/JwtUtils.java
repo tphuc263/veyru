@@ -6,12 +6,9 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import java.util.Date;
-import java.util.List;
 import java.util.UUID;
 import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -27,28 +24,11 @@ public class JwtUtils {
     return Keys.hmacShaKeyFor(keyBytes);
   }
 
-  public String generateAccessToken(Authentication authentication) {
-    AppUserDetails userPrincipal = (AppUserDetails) authentication.getPrincipal();
-
-    List<String> roles =
-        userPrincipal.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
-
-    return Jwts.builder()
-        .subject(userPrincipal.getEmail())
-        .claim("id", userPrincipal.getId())
-        .claim("roles", roles)
-        .issuedAt(new Date())
-        .expiration(new Date(System.currentTimeMillis() + expireTime))
-        .id(UUID.randomUUID().toString())
-        .signWith(getSigningKey())
-        .compact();
-  }
-
   public String generateToken(String email, String userId, String role) {
     return Jwts.builder()
         .subject(email)
         .claim("id", userId)
-        .claim("roles", List.of("ROLE_" + role))
+        .claim("roles", java.util.List.of(role))
         .issuedAt(new Date())
         .expiration(new Date(System.currentTimeMillis() + expireTime))
         .id(UUID.randomUUID().toString())

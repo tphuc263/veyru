@@ -1,6 +1,7 @@
 package com.veyru.adapter.in.web;
 
 import com.veyru.adapter.in.dto.response.notification.NotificationResponse;
+import com.veyru.adapter.in.dto.response.notification.NotificationSummaryResponse;
 import com.veyru.application.notification.NotificationService;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,11 @@ public class NotificationController {
             .map(NotificationResponse::from)
             .toList();
     return ResponseEntity.ok(notifications);
+  }
+
+  @GetMapping("/summary")
+  public ResponseEntity<NotificationSummaryResponse> getSummary() {
+    return ResponseEntity.ok(new NotificationSummaryResponse(notificationService.getUnreadCount()));
   }
 
   @PatchMapping("/{notificationId}")

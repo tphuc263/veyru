@@ -3,7 +3,6 @@ package com.veyru.config.websocket;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -13,8 +12,6 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
-  private final WebSocketAuthInterceptor webSocketAuthInterceptor;
-
   @Value("${cors.allowed-origins}")
   private List<String> allowedOrigins;
 
@@ -35,14 +32,5 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         .setTaskScheduler(taskScheduler);
     registry.setApplicationDestinationPrefixes("/app");
     registry.setUserDestinationPrefix("/user");
-  }
-
-  @Override
-  public void configureClientInboundChannel(ChannelRegistration registration) {
-    registration.interceptors(webSocketAuthInterceptor);
-  }
-
-  public WebSocketConfig(final WebSocketAuthInterceptor webSocketAuthInterceptor) {
-    this.webSocketAuthInterceptor = webSocketAuthInterceptor;
   }
 }

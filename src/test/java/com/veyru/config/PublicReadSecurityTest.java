@@ -1,5 +1,7 @@
 package com.veyru.config;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -22,10 +24,12 @@ import com.veyru.application.social.FollowService;
 import com.veyru.application.social.ShareService;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
@@ -54,10 +58,24 @@ class PublicReadSecurityTest {
   @MockitoBean private AppUserDetailsService userDetailsService;
   @MockitoBean private AuthTokenFilter authTokenFilter;
   @MockitoBean private PasswordEncoder passwordEncoder;
+  @MockitoBean private DaoAuthenticationProvider authenticationProvider;
   @MockitoBean private OAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService;
   @MockitoBean private OAuth2SuccessHandler oAuth2SuccessHandler;
   @MockitoBean private OAuth2FailureHandler oAuth2FailureHandler;
   @MockitoBean private ClientRegistrationRepository clientRegistrationRepository;
+
+  @BeforeEach
+  void passRequestsThroughTheMockedJwtFilter() throws Exception {
+    doAnswer(
+            invocation -> {
+              invocation
+                  .<jakarta.servlet.FilterChain>getArgument(2)
+                  .doFilter(invocation.getArgument(0), invocation.getArgument(1));
+              return null;
+            })
+        .when(authTokenFilter)
+        .doFilter(any(), any(), any());
+  }
 
   @Test
   void anonymousCanReadPublicRoutesButNotMeRoutes() throws Exception {

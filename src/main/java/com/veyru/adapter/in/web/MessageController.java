@@ -66,9 +66,13 @@ public class MessageController {
       @AuthenticationPrincipal AppUserDetails user,
       @PathVariable String conversationId,
       @Valid @RequestBody SendMessageRequest request) {
+    if (!conversationId.equals(request.conversationId())) {
+      throw new IllegalArgumentException("Conversation ID does not match the request path.");
+    }
     var result =
         sendMessage.execute(
-            new SendMessageCommand(user.getId(), request.receiverId(), request.text(), null));
+            new SendMessageCommand(
+                conversationId, user.getId(), request.receiverId(), request.text(), null));
     return ResponseEntity.status(201).body(MessageResponse.from(result));
   }
 

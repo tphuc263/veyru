@@ -22,7 +22,7 @@
 ## ✨ Features
 
 ### Core Features
-- 🔐 **Authentication** - JWT + OAuth2 (Google) authentication with role-based access
+- 🔐 **Authentication** - HttpOnly cookie sessions, rotating refresh tokens, CSRF and OAuth2 one-time codes
 - 📷 **Photo Management** - Upload, CRUD operations with Cloudinary integration
 - ❤️ **Social Features** - Likes, comments, shares, favorites
 - 👥 **User Relations** - Follow/unfollow system with follower/following counts
@@ -107,9 +107,9 @@ REDIS_PORT=6379
 # Neo4j
 NEO4J_PASSWORD=your-local-password
 
-# JWT
+# Session signing and local cookie policy
 JWT_SECRET=your-secret-key
-JWT_EXPIRATION=86400000
+AUTH_COOKIE_SECURE=false
 
 # Cloudinary
 CLOUDINARY_CLOUD_NAME=your-cloud-name
@@ -138,7 +138,9 @@ FRONTEND_URL=http://localhost:5173
 
 When running locally, access Swagger UI at:
 - **Swagger UI**: http://localhost:8080/swagger-ui.html
-- **OpenAPI JSON**: http://localhost:8080/api-docs
+- **OpenAPI JSON**: http://localhost:8080/v3/api-docs
+
+The committed contract is `openapi/openapi.json`. `VeyruApplicationTests` compares it semantically with the spec produced by the running application.
 
 ### API Endpoints Overview
 
@@ -146,11 +148,15 @@ When running locally, access Swagger UI at:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/v1/auth/register` | Register new user |
-| `POST` | `/api/v1/auth/login` | Login and get JWT |
-| `POST` | `/api/v1/auth/forgot-password` | Request password reset |
-| `POST` | `/api/v1/auth/reset-password` | Reset password with token |
-| `GET` | `/api/v1/auth/validate-reset-token` | Validate reset token |
+| `POST` | `/api/v1/users` | Register new user |
+| `POST` | `/api/v1/sessions` | Login and set access/refresh cookies |
+| `GET` | `/api/v1/sessions/current` | Get the authenticated session user |
+| `POST` | `/api/v1/sessions/refresh` | Atomically rotate the refresh session |
+| `DELETE` | `/api/v1/sessions/current` | Revoke the current device session |
+| `POST` | `/api/v1/sessions/oauth2` | Exchange a one-time OAuth code |
+| `GET` | `/api/v1/csrf` | Initialize the CSRF cookie |
+| `POST` | `/api/v1/password-reset-requests` | Request password reset |
+| `POST` | `/api/v1/password-resets` | Submit and validate a reset token |
 | `GET` | `/oauth2/authorization/google` | OAuth2 Google login |
 
 #### Users

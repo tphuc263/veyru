@@ -1,6 +1,7 @@
 package com.veyru.adapter.in.security.oauth2;
 
-import com.veyru.adapter.security.JwtUtils;
+import com.veyru.application.identity.AuthenticatedUser;
+import com.veyru.application.identity.SessionService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -18,7 +19,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Component
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
   private static final Logger log = LoggerFactory.getLogger(OAuth2SuccessHandler.class);
-  private final JwtUtils jwtUtils;
+  private final SessionService sessions;
 
   @Value("${app.oauth2.redirectUri}")
   private String defaultRedirectUri;
@@ -40,15 +41,19 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
       sendErrorRedirect(response, "email_not_found");
       return;
     }
-    String accessToken =
-        jwtUtils.generateToken(
-            email, customUser.getUser().getId(), customUser.getUser().getRole().name());
+    String code =
+        sessions.issueOAuthCode(
+            new AuthenticatedUser(
+                customUser.getUser().getId(),
+                customUser.getUser().getUsername(),
+                email,
+                customUser.getUser().getRole().name()));
     String redirectUrl =
         UriComponentsBuilder.fromUriString(defaultRedirectUri)
-            .queryParam("token", accessToken)
+            .queryParam("code", code)
             .build()
             .toUriString();
-    log.info("OAuth2 login success for {}, redirect to {}", email, redirectUrl);
+    log.info("OAuth2 login succeeded");
     getRedirectStrategy().sendRedirect(request, response, redirectUrl);
   }
 
@@ -62,7 +67,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     response.sendRedirect(redirectUrl);
   }
 
-  public OAuth2SuccessHandler(final JwtUtils jwtUtils) {
-    this.jwtUtils = jwtUtils;
+  public OAuth2SuccessHandler(final SessionService sessions) {
+    this.sessions = sessions;
   }
 }
