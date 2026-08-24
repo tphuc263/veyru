@@ -1,0 +1,17 @@
+version: "3"
+
+tasks:
+  infra:
+    desc: Start local development infrastructure (Redis and Neo4j).
+    cmds:
+      - docker compose up -d redis neo4j
+
+  format:
+    desc: Format Java sources with Spotless.
+    cmds:
+      - ./mvnw spotless:apply
+
+  format-check:
+    desc: Verify Java source formatting.
+    cmds:
+      - ./mvnw spotless:check

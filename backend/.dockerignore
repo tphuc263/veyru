@@ -1,0 +1,32 @@
+# Maven build output
+target/
+
+# Environment files
+.env
+.env.local
+
+# IDE
+.idea
+.vscode
+*.iml
+*.iws
+*.ipr
+
+# OS
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# Docker files (don't need to copy into build context)
+docker-compose.yml
+Dockerfile

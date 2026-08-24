@@ -1,0 +1,119 @@
+server:
+  forward-headers-strategy: framework
+
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  application:
+    name: veyru-backend
+  mongodb:
+    uri: ${MONGODB_URI}
+  data:
+    mongodb:
+      auto-index-creation: false
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+      repositories:
+        enabled: false
+    neo4j:
+      uri: ${NEO4J_URI:bolt://localhost:7687}
+      authentication:
+        username: ${NEO4J_USERNAME:neo4j}
+        password: ${NEO4J_PASSWORD:password}
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+  task:
+    execution:
+      pool:
+        core-size: 4
+        max-size: 8
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+api:
+  prefix: /api/v1
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174}
+
+cloudinary:
+  cloudName: ${CLOUDINARY_CLOUD_NAME}
+  apiKey: ${CLOUDINARY_API_KEY}
+  apiSecret: ${CLOUDINARY_API_SECRET}
+  apiSecure: true
+
+auth:
+  token:
+    jwtSecret: ${JWT_SECRET}
+    accessExpirationInMils: 900000
+  cookie:
+    secure: ${AUTH_COOKIE_SECURE:true}
+
+app:
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:5173}
+  oauth2:
+    redirectUri: ${OAUTH2_REDIRECT_URI:http://localhost:5173/auth/oauth2/redirect}
+    failureRedirectUri: ${OAUTH2_FAILURE_REDIRECT_URI:http://localhost:5173/login?error=true}
+
+ai:
+  # Local AI services - no external API required
+
+newsfeed:
+  cache:
+    ttl-hours: 2
+    max-items: 200
+  relevance:
+    window-days: 7
+  batch:
+    size: 50
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when-authorized
+  health:
+    mongodb:
+      enabled: false
+
+open:
+  api:
+    title: Veyru API
+    version: v1.0.0
+    description: The flow of moments we see, live, and share.
+    serverUrl: http://localhost:8080
