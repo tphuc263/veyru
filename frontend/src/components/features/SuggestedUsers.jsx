@@ -147,7 +147,7 @@ const SuggestedUsers = () => {
 
             {/* Footer */}
             <div className="suggested-footer">
-                <p>© 2026 SHARE APP</p>
+                <p>© 2026 VEYRU</p>
             </div>
         </div>
     );

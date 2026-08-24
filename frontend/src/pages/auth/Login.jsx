@@ -73,7 +73,7 @@ const Login = () => {
             <div className="auth-card">
                 {/* Header Section */}
                 <div className="auth-header">
-                    <h1 className="instagram-title">Share App</h1>
+                    <h1 className="instagram-title">Veyru</h1>
                     {location.state?.message && (
                         <div className="success-message">
                             {location.state.message}

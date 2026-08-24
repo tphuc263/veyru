@@ -72,7 +72,7 @@ const ResetPassword = () => {
             <div className="auth-container">
                 <div className="auth-card">
                     <div className="auth-header">
-                        <h1 className="instagram-title">Share App</h1>
+                        <h1 className="instagram-title">Veyru</h1>
                     </div>
                     <div className="reset-password-success">
                         <div className="success-icon">
@@ -100,7 +100,7 @@ const ResetPassword = () => {
         <div className="auth-container">
             <div className="auth-card">
                 <div className="auth-header">
-                    <h1 className="instagram-title">Share App</h1>
+                    <h1 className="instagram-title">Veyru</h1>
                 </div>
 
                 <div className="reset-password-icon">

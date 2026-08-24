@@ -44,7 +44,7 @@ const ForgotPassword = () => {
             <div className="auth-container">
                 <div className="auth-card">
                     <div className="auth-header">
-                        <h1 className="instagram-title">Share App</h1>
+                        <h1 className="instagram-title">Veyru</h1>
                     </div>
 
                     <div className="forgot-password-success">
@@ -82,7 +82,7 @@ const ForgotPassword = () => {
         <div className="auth-container">
             <div className="auth-card">
                 <div className="auth-header">
-                    <h1 className="instagram-title">Share App</h1>
+                    <h1 className="instagram-title">Veyru</h1>
                 </div>
 
                 <div className="forgot-password-icon">

@@ -2,9 +2,9 @@ version: "3"
 
 tasks:
   infra:
-    desc: Start local development infrastructure (Redis and Neo4j).
+    desc: Start local development infrastructure.
     cmds:
-      - docker compose up -d redis neo4j
+      - docker compose -f ../compose.yml up -d mongodb redis neo4j
 
   format:
     desc: Format Java sources with Spotless.

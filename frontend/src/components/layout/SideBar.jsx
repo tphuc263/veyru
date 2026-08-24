@@ -67,7 +67,7 @@ const SideBar = () => {
         <aside className="sidebar">
             {/* Logo/Brand */}
             <div className="sidebar-brand">
-                <h2>Share App</h2>
+                <h2>Veyru</h2>
             </div>
 
             {/* Navigation Links - Instagram order: Home, Search, Messages, Notifications, Create, Profile */}

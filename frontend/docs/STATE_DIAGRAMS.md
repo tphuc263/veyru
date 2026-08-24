@@ -1,6 +1,6 @@
 # State Machine Diagrams
 
-> Visual documentation of state transitions in the Photo Share application
+> Visual documentation of state transitions in Veyru
 
 ## Table of Contents
 
