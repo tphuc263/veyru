@@ -836,22 +836,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/feed/weighted": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getWeightedPathFeed"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/feed/unified": {
         parameters: {
             query?: never;
@@ -868,22 +852,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/feed/suggestions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getSuggestedUsers_1"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/feed/realtime": {
         parameters: {
             query?: never;
@@ -892,38 +860,6 @@ export interface paths {
             cookie?: never;
         };
         get: operations["getRealtimeNewsfeed"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/feed/hybrid": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getHybridFeed"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/feed/graph": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getGraphFeed"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1292,17 +1228,6 @@ export interface components {
             similarityScore?: number;
             reason?: string;
         };
-        PageResponseUnifiedPostResponse: {
-            items?: components["schemas"]["UnifiedPostResponse"][];
-            /** Format: int32 */
-            page?: number;
-            /** Format: int32 */
-            size?: number;
-            /** Format: int64 */
-            totalElements?: number;
-            /** Format: int32 */
-            totalPages?: number;
-        };
         UnifiedPostResponse: {
             id?: string;
             /** @enum {string} */
@@ -1417,6 +1342,22 @@ export interface components {
             /** Format: double */
             score?: number;
             reason?: string;
+        };
+        CursorPageResponseUnifiedPostResponse: {
+            items?: components["schemas"]["UnifiedPostResponse"][];
+            nextCursor?: string;
+            hasMore?: boolean;
+        };
+        PageResponseUnifiedPostResponse: {
+            items?: components["schemas"]["UnifiedPostResponse"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
         };
     };
     responses: never;
@@ -3002,33 +2943,10 @@ export interface operations {
             };
         };
     };
-    getWeightedPathFeed: {
-        parameters: {
-            query?: {
-                limit?: number;
-                daysBack?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["PhotoResponse"][];
-                };
-            };
-        };
-    };
     getUnifiedNewsfeed: {
         parameters: {
             query?: {
-                page?: number;
+                cursor?: string;
                 size?: number;
             };
             header?: never;
@@ -3043,29 +2961,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["PageResponseUnifiedPostResponse"];
-                };
-            };
-        };
-    };
-    getSuggestedUsers_1: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": string[];
+                    "*/*": components["schemas"]["CursorPageResponseUnifiedPostResponse"];
                 };
             };
         };
@@ -3089,51 +2985,6 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PageResponsePhotoResponse"];
-                };
-            };
-        };
-    };
-    getHybridFeed: {
-        parameters: {
-            query?: {
-                limit?: number;
-                alpha?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["PhotoResponse"][];
-                };
-            };
-        };
-    };
-    getGraphFeed: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["PhotoResponse"][];
                 };
             };
         };

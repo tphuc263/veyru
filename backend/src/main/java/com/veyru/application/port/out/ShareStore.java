@@ -1,6 +1,7 @@
 package com.veyru.application.port.out;
 
 import com.veyru.domain.model.Share;
+import java.time.Instant;
 import java.util.List;
 
 public interface ShareStore {
@@ -17,6 +18,10 @@ public interface ShareStore {
   long countByUserId(String userId);
 
   List<Share> findByUserIds(List<String> userIds);
+
+  List<Share> findByUsersBetween(List<String> userIds, Instant after, Instant before, int limit);
+
+  List<Share> findByUsersBefore(List<String> userIds, Instant before, int limit);
 
   void deleteAllByPhotoId(String photoId);
 }

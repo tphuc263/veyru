@@ -13,7 +13,7 @@ const Home = () => {
     const [feed, setFeed] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [page, setPage] = useState(0);
+    const [nextCursor, setNextCursor] = useState(null);
     const [hasMore, setHasMore] = useState(true);
     const [selectedPhotoId, setSelectedPhotoId] = useState(null);
     const [showScrollTop, setShowScrollTop] = useState(false);
@@ -52,13 +52,17 @@ const Home = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const loadFeed = async (pageNum = 0, isRefresh = false) => {
+    const loadFeed = async (cursor = null, isRefresh = false) => {
         try {
             setLoading(true);
             setError(null);
+            if (isRefresh) {
+                setNextCursor(null);
+                setHasMore(true);
+            }
 
-            const response = await getNewsfeed(pageNum, 20);
-            const newPosts = response.items || response.content || [];
+            const response = await getNewsfeed(cursor || undefined, 20);
+            const newPosts = response.items || [];
 
             if (isRefresh) {
                 setFeed(newPosts);
@@ -66,9 +70,13 @@ const Home = () => {
                 setFeed(prev => [...prev, ...newPosts]);
             }
 
-            setHasMore(response.page < response.totalPages - 1);
-            setPage(pageNum);
+            setNextCursor(response.nextCursor || null);
+            setHasMore(response.hasMore);
         } catch (err) {
+            if (!isRefresh && err.response?.data?.code === 'INVALID_REQUEST_VALUE') {
+                await loadFeed(null, true);
+                return;
+            }
             setError(err.message);
         } finally {
             setLoading(false);
@@ -76,19 +84,19 @@ const Home = () => {
     };
 
     const loadMore = () => {
-        if (!loading && hasMore) {
-            loadFeed(page + 1, false);
+        if (!loading && hasMore && nextCursor) {
+            loadFeed(nextCursor, false);
         }
     };
 
     const refreshFeed = () => {
-        loadFeed(0, true).catch(err => {
+        loadFeed(null, true).catch(err => {
             console.error('Failed to load initial feed:', err);
         });
     };
 
     useEffect(() => {
-        loadFeed(0, true).catch(err => {
+        loadFeed(null, true).catch(err => {
             console.error('Failed to load initial feed:', err);
         });
     }, []);

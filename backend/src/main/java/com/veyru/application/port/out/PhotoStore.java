@@ -28,6 +28,10 @@ public interface PhotoStore {
 
   List<Photo> findByUsersAfter(List<String> userIds, Instant after);
 
+  List<Photo> findByUsersBetween(List<String> userIds, Instant after, Instant before, int limit);
+
+  List<Photo> findByUsersBefore(List<String> userIds, Instant before, int limit);
+
   List<Photo> findByUsers(List<String> userIds);
 
   List<Photo> findByUser(String userId);

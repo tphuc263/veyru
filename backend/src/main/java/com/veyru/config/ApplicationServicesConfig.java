@@ -8,13 +8,15 @@ import com.veyru.application.media.PhotoConversionService;
 import com.veyru.application.media.PhotoService;
 import com.veyru.application.notification.NotificationService;
 import com.veyru.application.social.*;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @Configuration
+@EnableConfigurationProperties(NewsfeedProperties.class)
 @Import({
   ExploreService.class,
-  GraphFeedService.class,
+  FeedCursorCodec.class,
   GraphSyncService.class,
   NewsfeedService.class,
   RecommendationService.class,

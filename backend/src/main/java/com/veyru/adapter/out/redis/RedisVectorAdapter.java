@@ -14,8 +14,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 /**
- * Manages Redis Search vector indexes for photo and user embeddings. Uses Redis Stack RediSearch
- * FT.CREATE with HNSW algorithm for fast ANN queries.
+ * Manages the Redis Search vector index for photo embeddings. Uses Redis Stack RediSearch FT.CREATE
+ * with HNSW algorithm for fast ANN queries.
  */
 @Service
 public class RedisVectorAdapter implements VectorIndex {
@@ -23,20 +23,21 @@ public class RedisVectorAdapter implements VectorIndex {
   private final RedisTemplate<String, Object> redisTemplate;
   // Redis key prefixes
   public static final String PHOTO_PREFIX = "photo_vec:";
-  public static final String USER_PREFIX = "user_vec:";
   // Index names
   public static final String PHOTO_INDEX = "photo_vec_idx";
-  public static final String USER_INDEX = "user_vec_idx";
-  private static final int VECTOR_DIM = EmbeddingService.EMBEDDING_DIMENSION; // 768
+  private static final int VECTOR_DIM = EmbeddingService.EMBEDDING_DIMENSION;
 
   @PostConstruct
   public void initializeIndexes() {
-
-    createIndexIfNotExists(
-        PHOTO_INDEX, PHOTO_PREFIX, new String[] {"caption", "TAG", "userId", "TAG", "tags", "TAG"});
-    createIndexIfNotExists(
-        USER_INDEX, USER_PREFIX, new String[] {"username", "TAG", "bio", "TEXT"});
-    log.info("Redis vector indexes initialized successfully");
+    try {
+      createIndexIfNotExists(
+          PHOTO_INDEX,
+          PHOTO_PREFIX,
+          new String[] {"caption", "TAG", "userId", "TAG", "tags", "TAG"});
+      log.info("Redis photo vector index initialized successfully");
+    } catch (RuntimeException exception) {
+      log.warn("Redis Search unavailable; related photos will use tag matching", exception);
+    }
   }
 
   /** Create a vector search index if it doesn't exist. */
@@ -61,7 +62,7 @@ public class RedisVectorAdapter implements VectorIndex {
       RedisConnection connection, String indexName, String prefix, String[] extraFields) {
     // Build FT.CREATE command
     // FT.CREATE {idx} ON HASH PREFIX 1 {prefix} SCHEMA
-    //   embedding VECTOR HNSW 6 TYPE FLOAT32 DIM 768 DISTANCE_METRIC COSINE
+    //   embedding VECTOR HNSW 6 TYPE FLOAT32 DIM {VECTOR_DIM} DISTANCE_METRIC COSINE
     //   {extra fields...}
     List<byte[]> args = new ArrayList<>();
     args.add(indexName.getBytes(StandardCharsets.UTF_8));
@@ -117,31 +118,6 @@ public class RedisVectorAdapter implements VectorIndex {
     log.debug("Stored photo embedding for photoId: {}", photoId);
   }
 
-  /** Store a user profile embedding in Redis. */
-  public void storeUserEmbedding(
-      String visitorUserId, float[] embedding, String username, String bio) {
-    String key = USER_PREFIX + visitorUserId;
-
-    Map<byte[], byte[]> hash = new HashMap<>();
-    hash.put(
-        "embedding".getBytes(StandardCharsets.UTF_8),
-        EmbeddingService.floatArrayToBytes(embedding));
-    hash.put(
-        "username".getBytes(StandardCharsets.UTF_8),
-        (username != null ? username : "").getBytes(StandardCharsets.UTF_8));
-    hash.put(
-        "bio".getBytes(StandardCharsets.UTF_8),
-        (bio != null ? bio : "").getBytes(StandardCharsets.UTF_8));
-    hash.put(
-        "userId".getBytes(StandardCharsets.UTF_8), visitorUserId.getBytes(StandardCharsets.UTF_8));
-    redisTemplate.execute(
-        (RedisConnection connection) -> {
-          connection.hashCommands().hMSet(key.getBytes(StandardCharsets.UTF_8), hash);
-          return null;
-        });
-    log.debug("Stored user embedding for userId: {}", visitorUserId);
-  }
-
   /**
    * Search for similar photos using KNN vector search.
    *
@@ -178,61 +154,15 @@ public class RedisVectorAdapter implements VectorIndex {
     return parseSearchResults(rawResult, "photoId", excludePhotoId, topK);
   }
 
-  /**
-   * Search for similar users using KNN vector search.
-   *
-   * @param queryEmbedding the query vector
-   * @param topK number of results
-   * @param excludeUserId user ID to exclude (the current user)
-   * @return list of {userId, score} maps ordered by similarity
-   */
-  @SuppressWarnings("unchecked")
-  public List<Map<String, Object>> searchSimilarUsers(
-      float[] queryEmbedding, int topK, String excludeUserId) {
-
-    byte[] vectorBytes = EmbeddingService.floatArrayToBytes(queryEmbedding);
-    int searchK = topK + 5;
-    String queryStr = String.format("*=>[KNN %d @embedding $query_vec AS score]", searchK);
-    List<byte[]> args = new ArrayList<>();
-    args.add(USER_INDEX.getBytes(StandardCharsets.UTF_8));
-    args.add(queryStr.getBytes(StandardCharsets.UTF_8));
-    args.add("PARAMS".getBytes(StandardCharsets.UTF_8));
-    args.add("2".getBytes(StandardCharsets.UTF_8));
-    args.add("query_vec".getBytes(StandardCharsets.UTF_8));
-    args.add(vectorBytes);
-    args.add("SORTBY".getBytes(StandardCharsets.UTF_8));
-    args.add("score".getBytes(StandardCharsets.UTF_8));
-    args.add("DIALECT".getBytes(StandardCharsets.UTF_8));
-    args.add("2".getBytes(StandardCharsets.UTF_8));
-    List<Object> rawResult =
-        (List<Object>)
-            redisTemplate.execute(
-                (RedisConnection connection) ->
-                    connection.execute("FT.SEARCH", args.toArray(new byte[0][])));
-    return parseSearchResults(rawResult, "userId", excludeUserId, topK);
-  }
-
   /** Delete a photo embedding from Redis. */
   public void deletePhotoEmbedding(String photoId) {
 
     redisTemplate.delete(PHOTO_PREFIX + photoId);
   }
 
-  /** Delete a user embedding from Redis. */
-  public void deleteUserEmbedding(String userId) {
-
-    redisTemplate.delete(USER_PREFIX + userId);
-  }
-
   /** Check if a photo embedding exists. */
   public boolean hasPhotoEmbedding(String photoId) {
     Boolean exists = redisTemplate.hasKey(PHOTO_PREFIX + photoId);
-    return Boolean.TRUE.equals(exists);
-  }
-
-  /** Check if a user embedding exists. */
-  public boolean hasUserEmbedding(String userId) {
-    Boolean exists = redisTemplate.hasKey(USER_PREFIX + userId);
     return Boolean.TRUE.equals(exists);
   }
 
@@ -262,7 +192,7 @@ public class RedisVectorAdapter implements VectorIndex {
       // Extract the entity ID
       String entityId = (String) doc.get(idField);
       if (entityId == null) {
-        // Fallback: extract from Redis key (photo_vec:xxx or user_vec:xxx)
+        // Fallback: extract from Redis key (photo_vec:xxx)
         if (redisKey.contains(":")) {
           entityId = redisKey.substring(redisKey.indexOf(":") + 1);
         }

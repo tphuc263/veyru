@@ -12,7 +12,8 @@
     "api:generate": "openapi-typescript openapi/openapi.json -o src/types/generated-api.ts",
     "api:check": "openapi-typescript openapi/openapi.json -o src/types/generated-api.ts --check",
     "preview": "vite preview",
-    "seed": "node scripts/seed-via-api.cjs"
+    "seed": "node scripts/seed-via-api.cjs",
+    "benchmark:feed": "node scripts/benchmark-feed.cjs"
   },
   "dependencies": {
     "@stomp/stompjs": "^7.3.0",

@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.veyru.application.notification.NotificationService;
+import com.veyru.application.port.out.AffinityCache;
 import com.veyru.application.port.out.AvatarCache;
 import com.veyru.application.port.out.CurrentActor;
 import com.veyru.application.port.out.FollowStore;
@@ -24,13 +25,16 @@ class FollowServiceTest {
   private final FollowStore followStore = mock(FollowStore.class);
   private final UserStore userStore = mock(UserStore.class);
   private final CurrentActor currentActor = mock(CurrentActor.class);
+  private final AffinityCache affinityCache = mock(AffinityCache.class);
+  private final GraphProjection graph = mock(GraphProjection.class);
   private final FollowService service =
       new FollowService(
           followStore,
           userStore,
           mock(NotificationService.class),
           mock(AvatarCache.class),
-          mock(GraphProjection.class),
+          graph,
+          affinityCache,
           currentActor,
           Clock.systemUTC());
 
@@ -58,6 +62,36 @@ class FollowServiceTest {
         .thenReturn(List.of(Follow.create("actor", "follower", Instant.EPOCH)));
 
     assertThat(service.getFollowers("target", 0, 20).getFirst().isFollowedByCurrentUser()).isTrue();
+  }
+
+  @Test
+  void followEvictsOnlyTheViewersAffinity() {
+    when(currentActor.id()).thenReturn(Optional.of("viewer"));
+    when(userStore.findById("viewer")).thenReturn(Optional.of(user("viewer")));
+    User updatedTarget =
+        new User(
+            "target",
+            "target",
+            "target@example.com",
+            null,
+            "hash",
+            null,
+            null,
+            null,
+            Instant.EPOCH,
+            3,
+            8,
+            99,
+            null,
+            null);
+    when(userStore.findById("target"))
+        .thenReturn(Optional.of(user("target")), Optional.of(updatedTarget));
+    when(followStore.find("viewer", "target")).thenReturn(Optional.empty());
+
+    service.follow("target");
+
+    verify(affinityCache).evict("viewer");
+    verify(graph).upsertUser("target", "target", null, 8, 3, null);
   }
 
   private User user(String id) {

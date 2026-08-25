@@ -1,6 +1,7 @@
 package com.veyru.application.common.error;
 
 public enum UseCaseError {
+  INVALID_REQUEST_VALUE("A request value has an invalid type."),
   AUTHENTICATION_REQUIRED("Authentication is required."),
   ACCESS_DENIED("You do not have permission to perform this action."),
   RESOURCE_NOT_FOUND("The requested resource was not found."),

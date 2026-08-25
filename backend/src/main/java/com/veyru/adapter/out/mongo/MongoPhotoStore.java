@@ -61,6 +61,18 @@ public class MongoPhotoStore implements PhotoStore {
     return sorted(Query.query(Criteria.where("user.userId").in(ids).and("createdAt").gt(after)));
   }
 
+  public List<Photo> findByUsersBetween(
+      List<String> ids, Instant after, Instant before, int limit) {
+    Query query =
+        Query.query(Criteria.where("user.userId").in(ids).and("createdAt").gte(after).lte(before));
+    return sorted(query.limit(limit));
+  }
+
+  public List<Photo> findByUsersBefore(List<String> ids, Instant before, int limit) {
+    Query query = Query.query(Criteria.where("user.userId").in(ids).and("createdAt").lt(before));
+    return sorted(query.limit(limit));
+  }
+
   public List<Photo> findByUsers(List<String> ids) {
     return sorted(Query.query(Criteria.where("user.userId").in(ids)));
   }

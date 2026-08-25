@@ -1,5 +1,6 @@
 package com.veyru.adapter.in.web;
 
+import com.veyru.adapter.in.dto.response.CursorPageResponse;
 import com.veyru.adapter.in.dto.response.PageResponse;
 import com.veyru.adapter.in.dto.response.photo.PhotoResponse;
 import com.veyru.adapter.in.dto.response.post.UnifiedPostResponse;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("${api.prefix}/feed")
+@org.springframework.validation.annotation.Validated
 public class NewsfeedController {
   private static final Logger log = LoggerFactory.getLogger(NewsfeedController.class);
   private final NewsfeedService newsfeedService;
@@ -34,12 +36,15 @@ public class NewsfeedController {
 
   /** Get unified newsfeed (photos + shares) */
   @GetMapping("/unified")
-  public ResponseEntity<PageResponse<UnifiedPostResponse>> getUnifiedNewsfeed(
-      @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-    log.info("Fetching unified newsfeed for page: {}, size: {}", page, size);
-    var newsfeed = newsfeedService.getUnifiedNewsfeed(page, size);
+  public ResponseEntity<CursorPageResponse<UnifiedPostResponse>> getUnifiedNewsfeed(
+      @RequestParam(required = false) String cursor,
+      @RequestParam(defaultValue = "20")
+          @jakarta.validation.constraints.Min(1)
+          @jakarta.validation.constraints.Max(100)
+          int size) {
+    var newsfeed = newsfeedService.getUnifiedNewsfeed(cursor, size);
     log.info("Successfully fetched {} items for unified newsfeed", newsfeed.items().size());
-    return ResponseEntity.ok(PageResponse.from(newsfeed, UnifiedPostResponse::from));
+    return ResponseEntity.ok(CursorPageResponse.from(newsfeed, UnifiedPostResponse::from));
   }
 
   public NewsfeedController(final NewsfeedService newsfeedService) {

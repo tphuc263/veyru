@@ -26,6 +26,7 @@ public class MongoIndexConfig {
       createLikeIndexes();
       createCommentIndexes();
       createFollowIndexes();
+      createShareIndexes();
       log.info("MongoDB indexes synchronized successfully!");
     };
   }
@@ -74,6 +75,12 @@ public class MongoIndexConfig {
         new CompoundIndexDefinition(new Document("followerId", 1).append("followingId", 1))
             .unique());
     log.info("✓ Follow indexes synchronized");
+  }
+
+  private void createShareIndexes() {
+    ensureIndex(
+        "shares", new CompoundIndexDefinition(new Document("userId", 1).append("createdAt", -1)));
+    log.info("✓ Share indexes synchronized");
   }
 
   /** Helper method to safely create indexes */

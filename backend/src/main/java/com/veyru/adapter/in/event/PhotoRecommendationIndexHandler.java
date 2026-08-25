@@ -18,6 +18,5 @@ public class PhotoRecommendationIndexHandler {
   @EventListener
   public void handle(PhotoCreatedEvent event) {
     recommendations.indexNewPhoto(event.photoId());
-    recommendations.reindexUser(event.authorId());
   }
 }

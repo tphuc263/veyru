@@ -69,18 +69,20 @@ public class GraphSyncService {
       photoStore
           .findById(photoId)
           .ifPresent(
-              photo ->
-                  neo4jGraphService.upsertPhoto(
-                      photo.getId(),
-                      photo.getUser().getUserId(),
-                      photo.getUser().getUsername(),
-                      photo.getImageUrl(),
-                      photo.getCaption(),
-                      photo.getTags(),
-                      photo.getLikeCount(),
-                      photo.getCommentCount(),
-                      photo.getShareCount(),
-                      photo.getCreatedAt()));
+              photo -> {
+                syncUser(photo.getUser().getUserId());
+                neo4jGraphService.upsertPhoto(
+                    photo.getId(),
+                    photo.getUser().getUserId(),
+                    photo.getUser().getUsername(),
+                    photo.getImageUrl(),
+                    photo.getCaption(),
+                    photo.getTags(),
+                    photo.getLikeCount(),
+                    photo.getCommentCount(),
+                    photo.getShareCount(),
+                    photo.getCreatedAt());
+              });
     } catch (RuntimeException ex) {
       // ponytail: in-process projection is best-effort; use an outbox when guaranteed delivery
       // matters.

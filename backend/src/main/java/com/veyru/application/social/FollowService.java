@@ -3,6 +3,7 @@ package com.veyru.application.social;
 import com.veyru.application.common.error.UseCaseError;
 import com.veyru.application.common.error.UseCaseException;
 import com.veyru.application.notification.NotificationService;
+import com.veyru.application.port.out.AffinityCache;
 import com.veyru.application.port.out.AvatarCache;
 import com.veyru.application.port.out.CurrentActor;
 import com.veyru.application.port.out.FollowStore;
@@ -27,6 +28,7 @@ public class FollowService {
   private final NotificationService notificationService;
   private final AvatarCache userAvatarCacheService;
   private final GraphProjection neo4jGraphService;
+  private final AffinityCache affinityCache;
   private final CurrentActor currentActor;
   private final Clock clock;
 
@@ -37,13 +39,13 @@ public class FollowService {
     Follow follow = Follow.create(currentUser.getId(), targetUserId, clock.instant());
     followStore.save(follow);
     log.info("User {} followed user {}", currentUser.getId(), targetUserId);
-    // Sync to Neo4j graph
-
+    userStore.incrementFollowingCount(currentUser.getId(), 1);
+    userStore.incrementFollowerCount(targetUserId, 1);
     neo4jGraphService.upsertUser(
         currentUser.getId(),
         currentUser.getUsername(),
         currentUser.getImageUrl(),
-        currentUser.getFollowingCount(),
+        currentUser.getFollowerCount(),
         currentUser.getPhotoCount(),
         currentUser.getBio());
     User targetUser = userStore.findById(targetUserId).orElse(null);
@@ -52,23 +54,16 @@ public class FollowService {
           targetUser.getId(),
           targetUser.getUsername(),
           targetUser.getImageUrl(),
-          targetUser.getFollowingCount(),
+          targetUser.getFollowerCount(),
           targetUser.getPhotoCount(),
           targetUser.getBio());
     }
     neo4jGraphService.createFollowRelationship(currentUser.getId(), targetUserId);
     log.debug("Synced follow relationship to Neo4j: {} -> {}", currentUser.getId(), targetUserId);
-
-    userStore.incrementFollowingCount(currentUser.getId(), 1);
-    userStore.incrementFollowerCount(targetUserId, 1);
+    evictAffinity(currentUser.getId());
     // Send notification to the user being followed
     notificationService.sendNewFollowerNotification(targetUserId, currentUser);
     log.info("User {} followed user {}", currentUser.getId(), targetUserId);
-    //
-    // newsfeedService.generateNewsfeedCache(currentUser.getId());
-    // log.info("Regenerated newsfeed cache after follow for user: {}",
-    // currentUser.getId());
-    //
   }
 
   public void unfollow(String targetUserId) {
@@ -79,11 +74,19 @@ public class FollowService {
     log.info("User {} unfollowed user {}", currentUser.getId(), targetUserId);
     userStore.incrementFollowingCount(currentUser.getId(), -1);
     userStore.incrementFollowerCount(targetUserId, -1);
-    //
-    // newsfeedService.generateNewsfeedCache(currentUser.getId());
-    // log.info("Regenerated newsfeed cache after unfollow for user: {}",
-    // currentUser.getId());
-    //
+    neo4jGraphService.removeFollowRelationship(currentUser.getId(), targetUserId);
+    userStore
+        .findById(targetUserId)
+        .ifPresent(
+            targetUser ->
+                neo4jGraphService.upsertUser(
+                    targetUser.getId(),
+                    targetUser.getUsername(),
+                    targetUser.getImageUrl(),
+                    targetUser.getFollowerCount(),
+                    targetUser.getPhotoCount(),
+                    targetUser.getBio()));
+    evictAffinity(currentUser.getId());
   }
 
   public List<FollowResult> getFollowers(String userId, int page, int size) {
@@ -181,12 +184,21 @@ public class FollowService {
             });
   }
 
+  private void evictAffinity(String userId) {
+    try {
+      affinityCache.evict(userId);
+    } catch (RuntimeException exception) {
+      log.warn("Could not evict affinity cache for user {}", userId, exception);
+    }
+  }
+
   public FollowService(
       final FollowStore followStore,
       final UserStore userStore,
       final NotificationService notificationService,
       final AvatarCache userAvatarCacheService,
       final GraphProjection neo4jGraphService,
+      final AffinityCache affinityCache,
       final CurrentActor currentActor,
       final Clock clock) {
     this.followStore = followStore;
@@ -194,6 +206,7 @@ public class FollowService {
     this.notificationService = notificationService;
     this.userAvatarCacheService = userAvatarCacheService;
     this.neo4jGraphService = neo4jGraphService;
+    this.affinityCache = affinityCache;
     this.currentActor = currentActor;
     this.clock = clock;
   }

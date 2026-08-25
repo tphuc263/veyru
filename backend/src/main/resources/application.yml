@@ -89,13 +89,25 @@ ai:
   # Local AI services - no external API required
 
 newsfeed:
+  # Heuristic portfolio defaults; these have not been offline-tuned.
   cache:
-    ttl-hours: 2
-    max-items: 200
-  relevance:
-    window-days: 7
-  batch:
-    size: 50
+    affinity-ttl: 5m
+    cursor-ttl: 5m
+  ranking:
+    candidate-limit: 200
+    lookback-days: 30
+    graph-weight: 0.5
+    direct-follow-weight: 0.4
+    interaction-weight: 0.35
+    mutual-weight: 0.25
+    recency-weight: 0.6
+    engagement-weight: 0.3
+    quality-weight: 0.1
+    recency-decay-hours: 72
+    engagement-scale: 50
+
+graph:
+  reconcile-on-startup: ${GRAPH_RECONCILE_ON_STARTUP:false}
 
 management:
   endpoints:

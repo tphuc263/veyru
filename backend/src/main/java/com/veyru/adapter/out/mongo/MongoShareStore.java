@@ -2,6 +2,7 @@ package com.veyru.adapter.out.mongo;
 
 import com.veyru.application.port.out.ShareStore;
 import com.veyru.domain.model.Share;
+import java.time.Instant;
 import java.util.List;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -46,6 +47,18 @@ public class MongoShareStore implements ShareStore {
 
   public List<Share> findByUserIds(List<String> ids) {
     return sorted(Query.query(Criteria.where("userId").in(ids)));
+  }
+
+  public List<Share> findByUsersBetween(
+      List<String> ids, Instant after, Instant before, int limit) {
+    Query query =
+        Query.query(Criteria.where("userId").in(ids).and("createdAt").gte(after).lte(before));
+    return sorted(query.limit(limit));
+  }
+
+  public List<Share> findByUsersBefore(List<String> ids, Instant before, int limit) {
+    Query query = Query.query(Criteria.where("userId").in(ids).and("createdAt").lt(before));
+    return sorted(query.limit(limit));
   }
 
   public void deleteAllByPhotoId(String photoId) {

@@ -1,3 +1,3 @@
 package com.veyru.application.discovery;
 
-public record GraphFeedItem(String photoId, double relevanceScore) {}
+public record GraphFeedItem(String id, double score) {}

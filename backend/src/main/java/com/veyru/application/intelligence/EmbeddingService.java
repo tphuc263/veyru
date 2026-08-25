@@ -35,15 +35,6 @@ public class EmbeddingService {
     return normalize(embedding);
   }
 
-  public float[] generateEmbeddingFromTexts(List<String> texts) {
-    if (texts == null || texts.isEmpty()) {
-      return new float[EMBEDDING_DIMENSION];
-    }
-    String combined = String.join(" ", texts);
-    float[] embedding = generateEmbedding(combined);
-    return embedding != null ? embedding : new float[EMBEDDING_DIMENSION];
-  }
-
   public String buildPhotoText(String caption, List<String> tags) {
     StringBuilder sb = new StringBuilder();
     if (caption != null && !caption.isBlank()) {
@@ -53,40 +44,6 @@ public class EmbeddingService {
       sb.append(String.join(" ", tags));
     }
     return sb.toString().trim();
-  }
-
-  public String buildUserProfileText(
-      String bio, List<String> topTags, List<String> recentCaptions) {
-    StringBuilder sb = new StringBuilder();
-    if (bio != null && !bio.isBlank()) {
-      sb.append(bio).append(" ");
-    }
-    if (topTags != null && !topTags.isEmpty()) {
-      sb.append(String.join(" ", topTags)).append(" ");
-    }
-    if (recentCaptions != null && !recentCaptions.isEmpty()) {
-      recentCaptions.stream().limit(5).forEach(c -> sb.append(c).append(" "));
-    }
-    return sb.toString().trim();
-  }
-
-  public float cosineSimilarity(float[] a, float[] b) {
-    if (a == null || b == null || a.length != b.length) {
-      return 0.0F;
-    }
-    float dotProduct = 0.0F;
-    float normA = 0.0F;
-    float normB = 0.0F;
-    for (int i = 0; i < a.length; i++) {
-      dotProduct += a[i] * b[i];
-      normA += a[i] * a[i];
-      normB += b[i] * b[i];
-    }
-    float denominator = (float) Math.sqrt(normA) * (float) Math.sqrt(normB);
-    if (denominator == 0) {
-      return 0.0F;
-    }
-    return dotProduct / denominator;
   }
 
   public static byte[] floatArrayToBytes(float[] floats) {

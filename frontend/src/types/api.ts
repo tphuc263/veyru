@@ -19,6 +19,12 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
+export interface CursorPageResponse<T> {
+  items: T[];
+  nextCursor?: string | null;
+  hasMore: boolean;
+}
+
 // Auth types
 export interface LoginCredentials {
   identifier: string; // Can be email, username, or phone number

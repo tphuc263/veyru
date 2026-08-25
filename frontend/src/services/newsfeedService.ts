@@ -1,9 +1,9 @@
 import api from '../config/ApiConfig';
-import { PaginatedResponse, UnifiedPost } from '../types/api';
+import { CursorPageResponse, UnifiedPost } from '../types/api';
 
-export const getNewsfeed = async (page: number = 0, size: number = 20): Promise<PaginatedResponse<UnifiedPost>> => {
-        const response = await api.get<PaginatedResponse<UnifiedPost>>('/feed/unified', {
-            params: { page, size }
+export const getNewsfeed = async (cursor?: string, size: number = 20): Promise<CursorPageResponse<UnifiedPost>> => {
+        const response = await api.get<CursorPageResponse<UnifiedPost>>('/feed/unified', {
+            params: { cursor, size }
         });
         return response.data;
 };
