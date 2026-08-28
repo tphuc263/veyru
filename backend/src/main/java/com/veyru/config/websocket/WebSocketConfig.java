@@ -1,7 +1,6 @@
 package com.veyru.config.websocket;
 
-import java.util.List;
-import org.springframework.beans.factory.annotation.Value;
+import com.veyru.config.CorsProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -12,12 +11,13 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
-  @Value("${cors.allowed-origins}")
-  private List<String> allowedOrigins;
+  private final CorsProperties properties;
 
   @Override
   public void registerStompEndpoints(StompEndpointRegistry registry) {
-    registry.addEndpoint("/ws").setAllowedOriginPatterns(allowedOrigins.toArray(new String[0]));
+    registry
+        .addEndpoint("/ws")
+        .setAllowedOriginPatterns(properties.allowedOrigins().toArray(new String[0]));
   }
 
   @Override
@@ -32,5 +32,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         .setTaskScheduler(taskScheduler);
     registry.setApplicationDestinationPrefixes("/app");
     registry.setUserDestinationPrefix("/user");
+  }
+
+  public WebSocketConfig(CorsProperties properties) {
+    this.properties = properties;
   }
 }

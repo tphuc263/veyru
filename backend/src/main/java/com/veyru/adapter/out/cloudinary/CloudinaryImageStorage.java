@@ -10,9 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 
-@Service
 public class CloudinaryImageStorage implements ImageStorage {
   private static final Logger log = LoggerFactory.getLogger(CloudinaryImageStorage.class);
   private static final String UPLOAD_FOLDER = "veyru";

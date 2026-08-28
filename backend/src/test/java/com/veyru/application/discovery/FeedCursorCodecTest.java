@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.veyru.application.common.error.UseCaseError;
 import com.veyru.application.common.error.UseCaseException;
 import com.veyru.application.discovery.FeedCursorCodec.FeedCursor;
+import com.veyru.config.AuthProperties;
 import com.veyru.config.NewsfeedProperties;
 import java.time.Clock;
 import java.time.Duration;
@@ -15,6 +16,11 @@ import org.junit.jupiter.api.Test;
 
 class FeedCursorCodecTest {
   private static final Instant NOW = Instant.parse("2026-08-25T00:00:00Z");
+  private static final AuthProperties AUTH =
+      new AuthProperties(
+          new AuthProperties.Token(
+              "VGhpcy1pcy1hLXRlc3Qtc2VjcmV0LWtleS0zMi1ieXRlcw==", Duration.ofMinutes(15)),
+          new AuthProperties.Cookie(false));
   private final NewsfeedProperties properties =
       new NewsfeedProperties(
           new NewsfeedProperties.Ranking(200, 30, .5, .4, .35, .25, .6, .3, .1, 72, 50),
@@ -37,7 +43,7 @@ class FeedCursorCodecTest {
     assertInvalid(
         cursor,
         new FeedCursorCodec(
-            "secret", Clock.fixed(NOW.plusSeconds(301), ZoneOffset.UTC), properties));
+            AUTH, Clock.fixed(NOW.plusSeconds(301), ZoneOffset.UTC), properties));
     assertThatThrownBy(() -> codec.decode("someone-else", cursor))
         .isInstanceOfSatisfying(
             UseCaseException.class,
@@ -54,6 +60,6 @@ class FeedCursorCodecTest {
   }
 
   private FeedCursorCodec codecAt(Instant instant) {
-    return new FeedCursorCodec("secret", Clock.fixed(instant, ZoneOffset.UTC), properties);
+    return new FeedCursorCodec(AUTH, Clock.fixed(instant, ZoneOffset.UTC), properties);
   }
 }

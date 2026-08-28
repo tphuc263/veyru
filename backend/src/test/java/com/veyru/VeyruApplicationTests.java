@@ -31,15 +31,22 @@ import tools.jackson.databind.ObjectMapper;
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
-      "cloudinary.cloudName=test",
-      "cloudinary.apiKey=test",
-      "cloudinary.apiSecret=test",
-      "auth.token.jwtSecret=VGhpcy1pcy1hLXRlc3Qtc2VjcmV0LWtleS0zMi1ieXRlcw==",
+      "auth.token.jwt-secret=VGhpcy1pcy1hLXRlc3Qtc2VjcmV0LWtleS0zMi1ieXRlcw==",
       "auth.cookie.secure=false",
-      "spring.security.oauth2.client.registration.google.client-id=test",
-      "spring.security.oauth2.client.registration.google.client-secret=test",
-      "spring.mail.host=localhost",
-      "spring.mail.port=2525"
+      "cors.allowed-origins=http://localhost:5173",
+      "app.frontend.url=http://localhost:5173",
+      "app.oauth2.redirect-uri=http://localhost:5173/auth/oauth2/redirect",
+      "app.oauth2.failure-redirect-uri=http://localhost:5173/login?error=true",
+      "cloudinary.cloud-name=test-cloud",
+      "cloudinary.api-key=test-key",
+      "cloudinary.api-secret=test-secret",
+      "spring.security.oauth2.client.registration.google.client-id=test-client",
+      "spring.security.oauth2.client.registration.google.client-secret=test-secret",
+      "spring.mail.host=smtp.example.com",
+      "spring.mail.port=587",
+      "spring.mail.username=mailer@example.com",
+      "spring.mail.password=test-password",
+      "open.api.server-url=http://localhost:8080"
     })
 class VeyruApplicationTests {
   @Container @ServiceConnection
@@ -57,9 +64,9 @@ class VeyruApplicationTests {
 
   @DynamicPropertySource
   static void neo4jProperties(DynamicPropertyRegistry properties) {
-    properties.add("NEO4J_URI", neo4j::getBoltUrl);
-    properties.add("NEO4J_USERNAME", () -> "neo4j");
-    properties.add("NEO4J_PASSWORD", () -> "test-password");
+    properties.add("spring.neo4j.uri", neo4j::getBoltUrl);
+    properties.add("spring.neo4j.authentication.username", () -> "neo4j");
+    properties.add("spring.neo4j.authentication.password", () -> "test-password");
   }
 
   @Autowired AuthorizationCodeStore authorizationCodes;
@@ -74,7 +81,7 @@ class VeyruApplicationTests {
   void contextLoads() {}
 
   @Test
-  void livenessIsAvailableWithoutExternalProductionServices() throws Exception {
+  void livenessIsAvailableAfterContextStartup() throws Exception {
     var response = get("/actuator/health/liveness");
 
     assertThat(response.statusCode()).isEqualTo(200);

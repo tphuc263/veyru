@@ -1,5 +1,6 @@
 package com.veyru.adapter.in.security.oauth2;
 
+import com.veyru.config.ApplicationProperties;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -8,7 +9,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
@@ -18,8 +18,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler {
   private static final Logger log = LoggerFactory.getLogger(OAuth2FailureHandler.class);
 
-  @Value("${app.oauth2.failureRedirectUri}")
-  private String defaultFailureRedirectUri;
+  private final String defaultFailureRedirectUri;
 
   @Override
   public void onAuthenticationFailure(
@@ -40,5 +39,7 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
     getRedirectStrategy().sendRedirect(request, response, redirectUrl);
   }
 
-  public OAuth2FailureHandler() {}
+  public OAuth2FailureHandler(ApplicationProperties properties) {
+    this.defaultFailureRedirectUri = properties.oauth2().failureRedirectUri().toString();
+  }
 }

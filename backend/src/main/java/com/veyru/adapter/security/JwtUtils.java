@@ -1,27 +1,25 @@
 package com.veyru.adapter.security;
 
+import com.veyru.config.AuthProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import java.time.Clock;
 import java.util.Date;
 import java.util.UUID;
 import javax.crypto.SecretKey;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public class JwtUtils {
-  @Value("${auth.token.jwtSecret}")
-  private String jwtSecret;
-
-  @Value("${auth.token.accessExpirationInMils:86400000}")
-  private Long expireTime;
+  private final SecretKey signingKey;
+  private final long expireTime;
+  private final Clock clock;
 
   private SecretKey getSigningKey() {
-    byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
-    return Keys.hmacShaKeyFor(keyBytes);
+    return signingKey;
   }
 
   public String generateToken(String email, String userId, String role) {
@@ -29,8 +27,8 @@ public class JwtUtils {
         .subject(email)
         .claim("id", userId)
         .claim("roles", java.util.List.of(role))
-        .issuedAt(new Date())
-        .expiration(new Date(System.currentTimeMillis() + expireTime))
+        .issuedAt(Date.from(clock.instant()))
+        .expiration(Date.from(clock.instant().plusMillis(expireTime)))
         .id(UUID.randomUUID().toString())
         .signWith(getSigningKey())
         .compact();
@@ -63,5 +61,11 @@ public class JwtUtils {
     } catch (JwtException e) {
       return false;
     }
+  }
+
+  public JwtUtils(AuthProperties properties, Clock clock) {
+    this.signingKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(properties.token().jwtSecret()));
+    this.expireTime = properties.token().accessExpiration().toMillis();
+    this.clock = clock;
   }
 }

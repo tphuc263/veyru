@@ -1,6 +1,7 @@
 package com.veyru.adapter.in.web;
 
 import com.veyru.application.identity.SessionTokens;
+import com.veyru.config.AuthProperties;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -15,10 +16,8 @@ public class SessionCookieManager {
   private final boolean secure;
   private final String refreshPath;
 
-  public SessionCookieManager(
-      @Value("${auth.cookie.secure:true}") boolean secure,
-      @Value("${api.prefix}") String apiPrefix) {
-    this.secure = secure;
+  public SessionCookieManager(AuthProperties properties, @Value("${api.prefix}") String apiPrefix) {
+    this.secure = properties.cookie().secure();
     this.refreshPath = apiPrefix + "/sessions";
   }
 

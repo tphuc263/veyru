@@ -1,3 +1,28 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
   mongodb:
-    uri: mongodb://localhost:27017/veyru
+    uri: ${MONGODB_URI:mongodb://localhost:27017/veyru}
+  neo4j:
+    uri: ${NEO4J_URI:bolt://localhost:7687}
+    authentication:
+      username: ${NEO4J_USERNAME:neo4j}
+      password: ${NEO4J_PASSWORD:veyru-local}
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174}
+
+auth:
+  cookie:
+    secure: false
+
+app:
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:5173}
+  oauth2:
+    redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:5173/auth/oauth2/redirect}
+    failure-redirect-uri: ${OAUTH2_FAILURE_REDIRECT_URI:http://localhost:5173/login?error=true}
+
+open:
+  api:
+    server-url: ${OPENAPI_SERVER_URL:http://localhost:8080}

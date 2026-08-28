@@ -23,9 +23,7 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-  @Value("${api.prefix}")
-  private String API;
-
+  private final String api;
   private final JwtEntryPoint authEntryPoint;
   private final JwtAccessDeniedHandler accessDeniedHandler;
   private final AuthTokenFilter authTokenFilter;
@@ -55,9 +53,9 @@ public class SecurityConfig {
                 auth.requestMatchers(HttpMethod.OPTIONS)
                     .permitAll()
                     .requestMatchers(
-                        API + "/csrf",
-                        API + "/password-reset-requests",
-                        API + "/password-resets",
+                        api + "/csrf",
+                        api + "/password-reset-requests",
+                        api + "/password-resets",
                         "/login/**",
                         "/oauth2/**",
                         "/v3/api-docs/**",
@@ -66,37 +64,37 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers(
                         HttpMethod.POST,
-                        API + "/sessions",
-                        API + "/sessions/refresh",
-                        API + "/sessions/oauth2")
+                        api + "/sessions",
+                        api + "/sessions/refresh",
+                        api + "/sessions/oauth2")
                     .permitAll()
-                    .requestMatchers(HttpMethod.DELETE, API + "/sessions/current")
+                    .requestMatchers(HttpMethod.DELETE, api + "/sessions/current")
                     .permitAll()
-                    .requestMatchers(HttpMethod.POST, API + "/users")
+                    .requestMatchers(HttpMethod.POST, api + "/users")
                     .permitAll()
-                    .requestMatchers(API + "/users/me/**")
+                    .requestMatchers(api + "/users/me/**")
                     .authenticated()
-                    .requestMatchers(HttpMethod.GET, API + "/photos/*/shares/me")
+                    .requestMatchers(HttpMethod.GET, api + "/photos/*/shares/me")
                     .authenticated()
                     .requestMatchers(
                         HttpMethod.GET,
-                        API + "/photos/**",
-                        API + "/comments/**",
-                        API + "/users/**",
-                        API + "/tags/**",
-                        API + "/search-suggestions/**",
-                        API + "/recommendations/photos/**")
+                        api + "/photos/**",
+                        api + "/comments/**",
+                        api + "/users/**",
+                        api + "/tags/**",
+                        api + "/search-suggestions/**",
+                        api + "/recommendations/photos/**")
                     .permitAll()
                     .anyRequest()
                     .authenticated())
         .authenticationProvider(authenticationProvider)
+        .addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class)
         .oauth2Login(
             oauth2 ->
                 oauth2
                     .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserService))
                     .successHandler(oAuth2SuccessHandler)
-                    .failureHandler(oAuth2FailureHandler))
-        .addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class);
+                    .failureHandler(oAuth2FailureHandler));
     return http.build();
   }
 
@@ -105,9 +103,10 @@ public class SecurityConfig {
       final JwtAccessDeniedHandler accessDeniedHandler,
       final AuthTokenFilter authTokenFilter,
       final DaoAuthenticationProvider authenticationProvider,
-      final OAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService,
-      final OAuth2SuccessHandler oAuth2SuccessHandler,
-      final OAuth2FailureHandler oAuth2FailureHandler) {
+      OAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService,
+      OAuth2SuccessHandler oAuth2SuccessHandler,
+      OAuth2FailureHandler oAuth2FailureHandler,
+      @Value("${api.prefix}") String api) {
     this.authEntryPoint = authEntryPoint;
     this.accessDeniedHandler = accessDeniedHandler;
     this.authTokenFilter = authTokenFilter;
@@ -115,5 +114,6 @@ public class SecurityConfig {
     this.oAuth2UserService = oAuth2UserService;
     this.oAuth2SuccessHandler = oAuth2SuccessHandler;
     this.oAuth2FailureHandler = oAuth2FailureHandler;
+    this.api = api;
   }
 }

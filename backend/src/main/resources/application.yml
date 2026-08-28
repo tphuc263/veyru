@@ -2,8 +2,6 @@ server:
   forward-headers-strategy: framework
 
 spring:
-  config:
-    import: optional:file:.env[.properties]
   application:
     name: veyru-backend
   mongodb:
@@ -17,11 +15,11 @@ spring:
       timeout: 2000ms
       repositories:
         enabled: false
-    neo4j:
-      uri: ${NEO4J_URI:bolt://localhost:7687}
-      authentication:
-        username: ${NEO4J_USERNAME:neo4j}
-        password: ${NEO4J_PASSWORD:password}
+  neo4j:
+    uri: ${NEO4J_URI:bolt://localhost:7687}
+    authentication:
+      username: ${NEO4J_USERNAME:neo4j}
+      password: ${NEO4J_PASSWORD}
   servlet:
     multipart:
       enabled: true
@@ -37,17 +35,17 @@ spring:
       client:
         registration:
           google:
-            client-id: ${GOOGLE_CLIENT_ID}
-            client-secret: ${GOOGLE_CLIENT_SECRET}
+            client-id: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENTID}
+            client-secret: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENTSECRET}
             scope:
               - email
               - profile
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
   mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
+    host: ${SPRING_MAIL_HOST}
+    port: ${SPRING_MAIL_PORT}
+    username: ${SPRING_MAIL_USERNAME}
+    password: ${SPRING_MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -63,27 +61,27 @@ api:
   prefix: /api/v1
 
 cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174}
+  allowed-origins: ${CORS_ALLOWED_ORIGINS}
 
 cloudinary:
-  cloudName: ${CLOUDINARY_CLOUD_NAME}
-  apiKey: ${CLOUDINARY_API_KEY}
-  apiSecret: ${CLOUDINARY_API_SECRET}
-  apiSecure: true
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
+  secure: true
 
 auth:
   token:
-    jwtSecret: ${JWT_SECRET}
-    accessExpirationInMils: 900000
+    jwt-secret: ${JWT_SECRET}
+    access-expiration: 15m
   cookie:
     secure: ${AUTH_COOKIE_SECURE:true}
 
 app:
   frontend:
-    url: ${FRONTEND_URL:http://localhost:5173}
+    url: ${FRONTEND_URL}
   oauth2:
-    redirectUri: ${OAUTH2_REDIRECT_URI:http://localhost:5173/auth/oauth2/redirect}
-    failureRedirectUri: ${OAUTH2_FAILURE_REDIRECT_URI:http://localhost:5173/login?error=true}
+    redirect-uri: ${OAUTH2_REDIRECT_URI}
+    failure-redirect-uri: ${OAUTH2_FAILURE_REDIRECT_URI}
 
 ai:
   # Local AI services - no external API required
@@ -128,4 +126,4 @@ open:
     title: Veyru API
     version: v1.0.0
     description: The flow of moments we see, live, and share.
-    serverUrl: http://localhost:8080
+    server-url: ${OPENAPI_SERVER_URL}
