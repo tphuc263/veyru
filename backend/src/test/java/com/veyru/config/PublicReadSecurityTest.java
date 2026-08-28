@@ -27,7 +27,9 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -46,7 +48,12 @@ import org.springframework.test.web.servlet.MockMvc;
       ShareController.class,
       UserController.class
     })
-@Import({SecurityConfig.class, JwtEntryPoint.class, JwtAccessDeniedHandler.class})
+@Import({
+  SecurityConfig.class,
+  JwtEntryPoint.class,
+  JwtAccessDeniedHandler.class,
+  PublicReadSecurityTest.TestConfig.class
+})
 @TestPropertySource(properties = "api.prefix=/api/v1")
 class PublicReadSecurityTest {
   @Autowired private MockMvc mvc;
@@ -63,6 +70,14 @@ class PublicReadSecurityTest {
   @MockitoBean private OAuth2SuccessHandler oAuth2SuccessHandler;
   @MockitoBean private OAuth2FailureHandler oAuth2FailureHandler;
   @MockitoBean private ClientRegistrationRepository clientRegistrationRepository;
+
+  @TestConfiguration(proxyBeanMethods = false)
+  static class TestConfig {
+    @Bean
+    CorsProperties corsProperties() {
+      return new CorsProperties(List.of("http://localhost:5173"));
+    }
+  }
 
   @BeforeEach
   void passRequestsThroughTheMockedJwtFilter() throws Exception {
