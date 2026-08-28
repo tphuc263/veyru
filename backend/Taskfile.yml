@@ -1,10 +1,25 @@
 version: "3"
 
 tasks:
+  dev:
+    desc: Start local infrastructure and run the backend.
+    deps:
+      - infra
+    env:
+      MONGODB_URI: mongodb://localhost:27017/veyru
+      SPRING_PROFILES_ACTIVE: local
+    cmds:
+      - ./mvnw spring-boot:run
+
   infra:
     desc: Start local development infrastructure.
     cmds:
-      - docker compose -f ../compose.yml up -d mongodb redis neo4j
+      - docker compose -f ../compose.yml --env-file .env up -d mongodb redis neo4j
+
+  infra:stop:
+    desc: Stop local development infrastructure.
+    cmds:
+      - docker compose -f ../compose.yml --env-file .env stop mongodb redis neo4j
 
   format:
     desc: Format Java sources with Spotless.

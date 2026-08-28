@@ -50,28 +50,24 @@ services:
     build: ./backend
     ports:
       - "127.0.0.1:8080:8080"
+    env_file:
+      - path: .env
+        required: true
     environment:
+      SPRING_PROFILES_ACTIVE: local
       MONGODB_URI: mongodb://mongodb:27017/veyru
       REDIS_HOST: redis
       REDIS_PORT: 6379
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_USERNAME: neo4j
       NEO4J_PASSWORD: "${NEO4J_PASSWORD:-veyru-local}"
-      JWT_SECRET: "${JWT_SECRET:-veyru-local-development-secret-change-before-deploying}"
+      JWT_SECRET: "${JWT_SECRET:-dmV5cnUtbG9jYWwtZGV2ZWxvcG1lbnQtc2VjcmV0LTEyMzQ=}"
       AUTH_COOKIE_SECURE: "false"
       CORS_ALLOWED_ORIGINS: http://localhost:5173
       FRONTEND_URL: http://localhost:5173
       OAUTH2_REDIRECT_URI: http://localhost:5173/auth/oauth2/redirect
       OAUTH2_FAILURE_REDIRECT_URI: http://localhost:5173/login?error=true
-      CLOUDINARY_CLOUD_NAME: "${CLOUDINARY_CLOUD_NAME:-local-disabled}"
-      CLOUDINARY_API_KEY: "${CLOUDINARY_API_KEY:-local-disabled}"
-      CLOUDINARY_API_SECRET: "${CLOUDINARY_API_SECRET:-local-disabled}"
-      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-local-disabled}"
-      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:-local-disabled}"
-      MAIL_HOST: "${MAIL_HOST:-smtp.gmail.com}"
-      MAIL_PORT: "${MAIL_PORT:-587}"
-      MAIL_USERNAME: "${MAIL_USERNAME:-}"
-      MAIL_PASSWORD: "${MAIL_PASSWORD:-}"
+      OPENAPI_SERVER_URL: http://localhost:8080
     depends_on:
       mongodb:
         condition: service_healthy
