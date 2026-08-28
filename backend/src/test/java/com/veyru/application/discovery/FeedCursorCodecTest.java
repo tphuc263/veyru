@@ -42,8 +42,7 @@ class FeedCursorCodecTest {
     assertInvalid(tampered, codec);
     assertInvalid(
         cursor,
-        new FeedCursorCodec(
-            AUTH, Clock.fixed(NOW.plusSeconds(301), ZoneOffset.UTC), properties));
+        new FeedCursorCodec(AUTH, Clock.fixed(NOW.plusSeconds(301), ZoneOffset.UTC), properties));
     assertThatThrownBy(() -> codec.decode("someone-else", cursor))
         .isInstanceOfSatisfying(
             UseCaseException.class,

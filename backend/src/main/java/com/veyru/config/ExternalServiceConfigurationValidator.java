@@ -13,8 +13,7 @@ public class ExternalServiceConfigurationValidator implements InitializingBean {
   private final OAuth2ClientProperties oauth2;
   private final MailProperties mail;
 
-  public ExternalServiceConfigurationValidator(
-      OAuth2ClientProperties oauth2, MailProperties mail) {
+  public ExternalServiceConfigurationValidator(OAuth2ClientProperties oauth2, MailProperties mail) {
     this.oauth2 = oauth2;
     this.mail = mail;
   }
@@ -26,14 +25,12 @@ public class ExternalServiceConfigurationValidator implements InitializingBean {
   }
 
   private void validateGoogleOAuth() {
-    OAuth2ClientProperties.Registration google =
-        oauth2.getRegistration().get(GOOGLE_REGISTRATION);
+    OAuth2ClientProperties.Registration google = oauth2.getRegistration().get(GOOGLE_REGISTRATION);
     if (google == null) {
       throw missing("spring.security.oauth2.client.registration.google");
     }
     requireText(
-        google.getClientId(),
-        "spring.security.oauth2.client.registration.google.client-id");
+        google.getClientId(), "spring.security.oauth2.client.registration.google.client-id");
     requireText(
         google.getClientSecret(),
         "spring.security.oauth2.client.registration.google.client-secret");

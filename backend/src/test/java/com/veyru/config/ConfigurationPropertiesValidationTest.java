@@ -67,12 +67,7 @@ class ConfigurationPropertiesValidationTest {
   }
 
   @ParameterizedTest
-  @ValueSource(
-      strings = {
-        "cloudinary.cloud-name",
-        "cloudinary.api-key",
-        "cloudinary.api-secret"
-      })
+  @ValueSource(strings = {"cloudinary.cloud-name", "cloudinary.api-key", "cloudinary.api-secret"})
   void cloudinaryRequiresEveryCredential(String omittedProperty) {
     new ApplicationContextRunner()
         .withUserConfiguration(CloudinaryIntegrationConfig.class)
