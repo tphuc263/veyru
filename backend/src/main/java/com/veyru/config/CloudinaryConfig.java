@@ -1,34 +1,27 @@
 package com.veyru.config;
 
 import com.cloudinary.Cloudinary;
+import com.veyru.adapter.out.cloudinary.CloudinaryImageStorage;
+import com.veyru.application.port.out.ImageStorage;
 import java.util.HashMap;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 public class CloudinaryConfig {
-
-  @Value("${cloudinary.cloudName}")
-  private String cloudName;
-
-  @Value("${cloudinary.apiKey}")
-  private String apiKey;
-
-  @Value("${cloudinary.apiSecret}")
-  private String apiSecret;
-
-  @Value("${cloudinary.apiSecure}")
-  private boolean apiSecure;
+  @Bean
+  public Cloudinary cloudinary(CloudinaryProperties properties) {
+    Map<String, Object> config = new HashMap<>();
+    config.put("cloud_name", properties.cloudName());
+    config.put("api_key", properties.apiKey());
+    config.put("api_secret", properties.apiSecret());
+    config.put("secure", properties.secure());
+    return new Cloudinary(config);
+  }
 
   @Bean
-  public Cloudinary cloudinary() {
-    Map<String, Object> config = new HashMap<>();
-    config.put("cloud_name", cloudName);
-    config.put("api_key", apiKey);
-    config.put("api_secret", apiSecret);
-    config.put("secure", apiSecure);
-    return new Cloudinary(config);
+  public ImageStorage cloudinaryImageStorage(Cloudinary cloudinary) {
+    return new CloudinaryImageStorage(cloudinary);
   }
 }

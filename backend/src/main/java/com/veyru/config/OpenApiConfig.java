@@ -8,7 +8,6 @@ import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -16,11 +15,7 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
 
   @Bean
-  public OpenAPI openApi(
-      @Value("${open.api.title}") String title,
-      @Value("${open.api.version}") String version,
-      @Value("${open.api.description}") String description,
-      @Value("${open.api.serverUrl}") String serverUrl) {
+  public OpenAPI openApi(OpenApiProperties properties) {
 
     final String securitySchemeName = "cookieAuth";
 
@@ -36,10 +31,14 @@ public class OpenApiConfig {
                         .type(SecurityScheme.Type.APIKEY)))
         .info(
             new Info()
-                .title(title)
-                .version(version)
-                .description(description)
+                .title(properties.title())
+                .version(properties.version())
+                .description(properties.description())
                 .license(new License().name("Proprietary")))
-        .servers(List.of(new Server().url(serverUrl).description("Veyru API server")));
+        .servers(
+            List.of(
+                new Server()
+                    .url(properties.serverUrl().toString())
+                    .description("Veyru API server")));
   }
 }

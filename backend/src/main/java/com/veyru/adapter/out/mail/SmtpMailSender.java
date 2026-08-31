@@ -3,9 +3,11 @@ package com.veyru.adapter.out.mail;
 import com.veyru.application.common.error.UseCaseError;
 import com.veyru.application.common.error.UseCaseException;
 import com.veyru.application.port.out.MailSender;
+import com.veyru.config.ApplicationProperties;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.mail.autoconfigure.MailProperties;
+import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -13,12 +15,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class SmtpMailSender implements MailSender {
   private final JavaMailSender mailSender;
-
-  @Value("${spring.mail.username:noreply@veyru.com}")
-  private String fromEmail;
-
-  @Value("${app.frontend.url:http://localhost:5173}")
-  private String frontendUrl;
+  private final String fromEmail;
+  private final String frontendUrl;
 
   public void sendPasswordResetEmail(String toEmail, String token, String username) {
     try {
@@ -31,7 +29,7 @@ public class SmtpMailSender implements MailSender {
       String htmlContent = buildPasswordResetEmail(username, resetLink);
       helper.setText(htmlContent, true);
       mailSender.send(message);
-    } catch (MessagingException e) {
+    } catch (MessagingException | MailException e) {
       throw new UseCaseException(UseCaseError.EXTERNAL_SERVICE_FAILURE, e);
     }
   }
@@ -82,7 +80,12 @@ public class SmtpMailSender implements MailSender {
         .formatted(username, resetLink);
   }
 
-  public SmtpMailSender(final JavaMailSender mailSender) {
+  public SmtpMailSender(
+      JavaMailSender mailSender,
+      MailProperties mailProperties,
+      ApplicationProperties applicationProperties) {
     this.mailSender = mailSender;
+    this.fromEmail = mailProperties.getUsername();
+    this.frontendUrl = applicationProperties.frontend().url().toString();
   }
 }

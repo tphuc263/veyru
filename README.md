@@ -23,9 +23,9 @@ flowchart LR
     API --> MongoDB
     API --> Redis
     API --> Neo4j
-    API -. optional .-> Cloudinary
-    API -. optional .-> Google[Google OAuth]
-    API -. optional .-> SMTP
+    API --> Cloudinary
+    API --> Google[Google OAuth]
+    API --> SMTP
 ```
 
 | Area | Technology |
@@ -43,6 +43,8 @@ Requirements: Docker with Docker Compose.
 ```bash
 git clone https://github.com/tphuc263/veyru.git
 cd veyru
+cp .env.example .env
+# Fill in the required Cloudinary, Google OAuth and SMTP credentials.
 docker compose up --build
 ```
 
@@ -52,13 +54,10 @@ Open:
 - Swagger UI: http://localhost:8080/swagger-ui.html
 - Neo4j Browser: http://localhost:7474
 
-The local stack starts without third-party credentials. Photo uploads, Google login and email delivery remain unavailable until their credentials are configured:
-
-```bash
-cp .env.example .env
-# Edit .env, then restart the stack.
-docker compose up --build
-```
+The root `.env` is used by Docker Compose. Direct backend development uses
+`backend/.env`; the two files are intentionally separate and are never committed. Cloudinary,
+Google OAuth and SMTP are required application dependencies, so startup fails with the missing
+property name when any required configuration is absent.
 
 Stop the stack with `docker compose down`. Add `--volumes` only when you also want to delete local database data.
 
@@ -95,6 +94,18 @@ compose.yml Full local stack
 ```
 
 More detail is available in the [backend guide](backend/README.md) and [frontend guide](frontend/README.md).
+
+## Deployment configuration
+
+For a public backend deployment, provide configuration through the platform's environment-variable
+or secret dashboard. Do not deploy a `.env` file. Startup fails before receiving traffic when
+required credentials, URLs or the JWT signing key are missing. Use a Base64-encoded JWT key
+containing at least 32 random bytes; Base64 is an encoding, not encryption.
+
+Spring Boot applies profile files first and lets OS environment variables override them. This
+repository keeps production-safe defaults in `application.yml` and localhost-only overrides in
+`application-local.yml`. Only the local profile imports `backend/.env`. The application does not
+expose Actuator's `env` or `configprops` endpoints.
 
 ## Quality checks
 

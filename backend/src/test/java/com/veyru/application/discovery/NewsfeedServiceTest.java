@@ -22,6 +22,7 @@ import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.port.out.ShareStore;
 import com.veyru.application.port.out.UserStore;
 import com.veyru.application.result.post.UnifiedPostResult.PostType;
+import com.veyru.config.AuthProperties;
 import com.veyru.config.NewsfeedProperties;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.Share;
@@ -39,6 +40,11 @@ import org.junit.jupiter.api.Test;
 
 class NewsfeedServiceTest {
   private static final Instant NOW = Instant.parse("2026-08-25T00:00:00Z");
+  private static final AuthProperties AUTH =
+      new AuthProperties(
+          new AuthProperties.Token(
+              "VGhpcy1pcy1hLXRlc3Qtc2VjcmV0LWtleS0zMi1ieXRlcw==", Duration.ofMinutes(15)),
+          new AuthProperties.Cookie(false));
   private final FollowStore follows = mock(FollowStore.class);
   private final PhotoStore photos = mock(PhotoStore.class);
   private final ShareStore shares = mock(ShareStore.class);
@@ -63,7 +69,7 @@ class NewsfeedServiceTest {
           mock(AvatarCache.class),
           mock(LikeStore.class),
           mock(FavoriteStore.class),
-          new FeedCursorCodec("secret", Clock.fixed(NOW, ZoneOffset.UTC), properties),
+          new FeedCursorCodec(AUTH, Clock.fixed(NOW, ZoneOffset.UTC), properties),
           properties,
           new SimpleMeterRegistry(),
           Clock.fixed(NOW, ZoneOffset.UTC));

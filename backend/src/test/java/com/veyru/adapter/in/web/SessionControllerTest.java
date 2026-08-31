@@ -10,6 +10,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.veyru.application.identity.AuthenticatedUser;
 import com.veyru.application.identity.SessionService;
 import com.veyru.application.identity.SessionTokens;
+import com.veyru.config.AuthProperties;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -25,7 +27,15 @@ class SessionControllerTest {
         .thenReturn(new SessionTokens(user, "access", "refresh", 900));
     MockMvc mvc =
         MockMvcBuilders.standaloneSetup(
-                new SessionController(sessions, new SessionCookieManager(false, "/api/v1")))
+                new SessionController(
+                    sessions,
+                    new SessionCookieManager(
+                        new AuthProperties(
+                            new AuthProperties.Token(
+                                "VGhpcy1pcy1hLXRlc3Qtc2VjcmV0LWtleS0zMi1ieXRlcw==",
+                                Duration.ofMinutes(15)),
+                            new AuthProperties.Cookie(false)),
+                        "/api/v1")))
             .addPlaceholderValue("api.prefix", "/api/v1")
             .build();
 

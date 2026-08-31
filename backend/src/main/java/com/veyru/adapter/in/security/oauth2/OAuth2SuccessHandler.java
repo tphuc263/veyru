@@ -2,6 +2,7 @@ package com.veyru.adapter.in.security.oauth2;
 
 import com.veyru.application.identity.AuthenticatedUser;
 import com.veyru.application.identity.SessionService;
+import com.veyru.config.ApplicationProperties;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -10,7 +11,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -21,11 +21,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
   private static final Logger log = LoggerFactory.getLogger(OAuth2SuccessHandler.class);
   private final SessionService sessions;
 
-  @Value("${app.oauth2.redirectUri}")
-  private String defaultRedirectUri;
-
-  @Value("${app.oauth2.failureRedirectUri}")
-  private String defaultFailureRedirectUri;
+  private final String defaultRedirectUri;
+  private final String defaultFailureRedirectUri;
 
   @Override
   public void onAuthenticationSuccess(
@@ -67,7 +64,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     response.sendRedirect(redirectUrl);
   }
 
-  public OAuth2SuccessHandler(final SessionService sessions) {
+  public OAuth2SuccessHandler(SessionService sessions, ApplicationProperties properties) {
     this.sessions = sessions;
+    this.defaultRedirectUri = properties.oauth2().redirectUri().toString();
+    this.defaultFailureRedirectUri = properties.oauth2().failureRedirectUri().toString();
   }
 }

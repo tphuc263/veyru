@@ -2,6 +2,7 @@ package com.veyru.application.discovery;
 
 import com.veyru.application.common.error.UseCaseError;
 import com.veyru.application.common.error.UseCaseException;
+import com.veyru.config.AuthProperties;
 import com.veyru.config.NewsfeedProperties;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -10,7 +11,6 @@ import java.time.Instant;
 import java.util.Base64;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import org.springframework.beans.factory.annotation.Value;
 
 public class FeedCursorCodec {
   private static final String VERSION = "v1";
@@ -75,9 +75,9 @@ public class FeedCursorCodec {
     return new UseCaseException(UseCaseError.INVALID_REQUEST_VALUE);
   }
 
-  public FeedCursorCodec(
-      @Value("${auth.token.jwtSecret}") String secret, Clock clock, NewsfeedProperties properties) {
-    this.secret = ("veyru-feed-cursor:" + secret).getBytes(StandardCharsets.UTF_8);
+  public FeedCursorCodec(AuthProperties auth, Clock clock, NewsfeedProperties properties) {
+    this.secret =
+        ("veyru-feed-cursor:" + auth.token().jwtSecret()).getBytes(StandardCharsets.UTF_8);
     this.clock = clock;
     this.properties = properties;
   }
