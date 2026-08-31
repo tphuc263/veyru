@@ -10,9 +10,9 @@ import com.veyru.application.port.out.FavoriteStore;
 import com.veyru.application.port.out.LikeStore;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
+import com.veyru.support.DomainFixtures;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class PhotoConversionServiceTest {
@@ -24,7 +24,7 @@ class PhotoConversionServiceTest {
         new PhotoConversionService(likes, favorites, mock(AvatarCache.class));
     Photo photo = Photo.create("user", "alice", "image", null, List.of(), Instant.EPOCH);
 
-    var result = service.convertToPhotoResponse(photo, Optional.empty());
+    var result = service.convertToPhotoResponse(photo, PhotoViewer.anonymous());
 
     assertThat(result.isLikedByCurrentUser()).isFalse();
     assertThat(result.isSavedByCurrentUser()).isFalse();
@@ -38,26 +38,11 @@ class PhotoConversionServiceTest {
     PhotoConversionService service =
         new PhotoConversionService(likes, favorites, mock(AvatarCache.class));
     Photo photo = Photo.create("owner", "alice", "image", null, List.of(), Instant.EPOCH);
-    User actor =
-        new User(
-            "actor",
-            "bob",
-            "bob@example.com",
-            null,
-            "hash",
-            null,
-            null,
-            null,
-            Instant.EPOCH,
-            0,
-            0,
-            0,
-            null,
-            null);
-    when(likes.exists(photo.getId(), actor.getId())).thenReturn(true);
-    when(favorites.exists(actor.getId(), photo.getId())).thenReturn(true);
+    User actor = DomainFixtures.user("actor");
+    when(likes.exists(photo.id(), actor.id())).thenReturn(true);
+    when(favorites.exists(actor.id(), photo.id())).thenReturn(true);
 
-    var result = service.convertToPhotoResponse(photo, Optional.of(actor));
+    var result = service.convertToPhotoResponse(photo, PhotoViewer.authenticated(actor));
 
     assertThat(result.isLikedByCurrentUser()).isTrue();
     assertThat(result.isSavedByCurrentUser()).isTrue();

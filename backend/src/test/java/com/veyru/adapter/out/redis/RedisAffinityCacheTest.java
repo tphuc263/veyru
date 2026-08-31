@@ -9,6 +9,7 @@ import com.veyru.application.common.PageResult;
 import com.veyru.application.discovery.RecommendationService;
 import com.veyru.application.intelligence.EmbeddingService;
 import com.veyru.application.media.PhotoConversionService;
+import com.veyru.application.media.PhotoViewer;
 import com.veyru.application.port.out.CurrentActor;
 import com.veyru.application.port.out.FollowStore;
 import com.veyru.application.port.out.GraphFeedQuery;
@@ -17,6 +18,7 @@ import com.veyru.application.port.out.UserStore;
 import com.veyru.application.result.photo.PhotoResult;
 import com.veyru.config.RedisConfig;
 import com.veyru.domain.model.Photo;
+import com.veyru.support.DomainFixtures;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -76,7 +78,8 @@ class RedisAffinityCacheTest {
     when(photos.findById("source")).thenReturn(Optional.of(source));
     when(photos.findByTags(any(), any()))
         .thenReturn(new PageResult<>(List.of(source, candidate), 0, 3, 2, 1));
-    when(conversion.convertToPhotoResponse(candidate, Optional.empty())).thenReturn(expected);
+    when(conversion.convertToPhotoResponse(candidate, PhotoViewer.anonymous()))
+        .thenReturn(expected);
     RecommendationService recommendations =
         new RecommendationService(
             new EmbeddingService(),
@@ -88,21 +91,11 @@ class RedisAffinityCacheTest {
             conversion,
             mock(CurrentActor.class));
 
-    assertThat(recommendations.getRelatedPhotos("source", 2, Optional.empty()))
+    assertThat(recommendations.getRelatedPhotos("source", 2, PhotoViewer.anonymous()))
         .containsExactly(expected);
   }
 
   private Photo photo(String id) {
-    return new Photo(
-        id,
-        "https://example.test/photo.png",
-        "caption",
-        Instant.EPOCH,
-        List.of("tag"),
-        new Photo.EmbeddedUser("author", "author"),
-        0,
-        0,
-        0,
-        List.of());
+    return DomainFixtures.photo(id, "author", Instant.EPOCH);
   }
 }

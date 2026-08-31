@@ -4,6 +4,7 @@ import com.veyru.application.common.PageQuery;
 import com.veyru.application.common.PageResult;
 import com.veyru.application.identity.UserProfileService;
 import com.veyru.application.media.PhotoConversionService;
+import com.veyru.application.media.PhotoViewer;
 import com.veyru.application.port.out.FollowStore;
 import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.result.photo.PhotoResult;
@@ -24,32 +25,36 @@ public class ExploreService {
   public PageResult<PhotoResult> getExploreFeed(String userId, int page, int size) {
     var actor = users.findCurrentUser();
     List<String> excluded = new ArrayList<>();
-    actor.ifPresent(user -> excluded.add(user.getId()));
+    actor.ifPresent(user -> excluded.add(user.id()));
     actor.ifPresent(
         user ->
             excluded.addAll(
-                follows.findByFollowerId(user.getId()).stream()
-                    .map(Follow::getFollowingId)
-                    .toList()));
+                follows.findByFollowerId(user.id()).stream().map(Follow::followingId).toList()));
     PageResult<Photo> result =
         photos.explore(
             excluded, clock.instant().minus(Duration.ofDays(30)), new PageQuery(page, size));
     if (result.items().isEmpty() && page == 0) return getPopularPhotos(page, size);
-    return result.map(photo -> conversion.convertToPhotoResponse(photo, actor));
+    PhotoViewer viewer =
+        actor.<PhotoViewer>map(PhotoViewer::authenticated).orElseGet(PhotoViewer::anonymous);
+    return result.map(photo -> conversion.convertToPhotoResponse(photo, viewer));
   }
 
   public PageResult<PhotoResult> getPopularPhotos(int page, int size) {
     var actor = users.findCurrentUser();
+    PhotoViewer viewer =
+        actor.<PhotoViewer>map(PhotoViewer::authenticated).orElseGet(PhotoViewer::anonymous);
     return photos
         .popular(new PageQuery(page, size))
-        .map(photo -> conversion.convertToPhotoResponse(photo, actor));
+        .map(photo -> conversion.convertToPhotoResponse(photo, viewer));
   }
 
   public PageResult<PhotoResult> getPhotosByTag(String tag, int page, int size) {
     var actor = users.findCurrentUser();
+    PhotoViewer viewer =
+        actor.<PhotoViewer>map(PhotoViewer::authenticated).orElseGet(PhotoViewer::anonymous);
     return photos
         .findByTags(List.of(tag.toLowerCase()), new PageQuery(page, size))
-        .map(photo -> conversion.convertToPhotoResponse(photo, actor));
+        .map(photo -> conversion.convertToPhotoResponse(photo, viewer));
   }
 
   public ExploreService(

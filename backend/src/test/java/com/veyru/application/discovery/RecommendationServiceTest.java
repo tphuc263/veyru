@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.veyru.application.common.PageResult;
 import com.veyru.application.intelligence.EmbeddingService;
 import com.veyru.application.media.PhotoConversionService;
+import com.veyru.application.media.PhotoViewer;
 import com.veyru.application.port.out.CurrentActor;
 import com.veyru.application.port.out.FollowStore;
 import com.veyru.application.port.out.GraphFeedQuery;
@@ -18,6 +19,7 @@ import com.veyru.application.port.out.VectorIndex;
 import com.veyru.application.result.photo.PhotoResult;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
+import com.veyru.support.DomainFixtures;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -45,9 +47,11 @@ class RecommendationServiceTest {
     when(vectors.hasPhotoEmbedding("source")).thenThrow(new IllegalStateException("redis down"));
     when(photos.findByTags(any(), any()))
         .thenReturn(new PageResult<>(List.of(source, candidate), 0, 3, 2, 1));
-    when(conversion.convertToPhotoResponse(candidate, Optional.empty())).thenReturn(expected);
+    when(conversion.convertToPhotoResponse(candidate, PhotoViewer.anonymous()))
+        .thenReturn(expected);
 
-    assertThat(service.getRelatedPhotos("source", 2, Optional.empty())).containsExactly(expected);
+    assertThat(service.getRelatedPhotos("source", 2, PhotoViewer.anonymous()))
+        .containsExactly(expected);
   }
 
   @Test
@@ -67,34 +71,10 @@ class RecommendationServiceTest {
   }
 
   private Photo photo(String id, String author) {
-    return new Photo(
-        id,
-        "https://example.test/photo.png",
-        "caption",
-        Instant.EPOCH,
-        List.of("tag"),
-        new Photo.EmbeddedUser(author, author),
-        0,
-        0,
-        0,
-        List.of());
+    return DomainFixtures.photo(id, author, Instant.EPOCH);
   }
 
   private User user(String id, long followers) {
-    return new User(
-        id,
-        id,
-        id + "@example.test",
-        null,
-        "hash",
-        null,
-        null,
-        null,
-        Instant.EPOCH,
-        0,
-        followers,
-        0,
-        null,
-        null);
+    return DomainFixtures.user(id, 0, followers, 0);
   }
 }

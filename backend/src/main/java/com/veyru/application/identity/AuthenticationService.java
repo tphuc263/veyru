@@ -51,10 +51,10 @@ public final class AuthenticationService {
             user -> {
               String token = resetTokens.get();
               User updated =
-                  user.requestPasswordReset(
+                  user.withPasswordResetRequested(
                       token, clock.instant().plus(RESET_TOKEN_EXPIRY_MINUTES, ChronoUnit.MINUTES));
               users.save(updated);
-              mail.sendPasswordReset(updated.getEmail(), token, updated.getUsername());
+              mail.sendPasswordReset(updated.email(), token, updated.username());
             });
   }
 
@@ -67,6 +67,6 @@ public final class AuthenticationService {
             .findByResetToken(command.token())
             .filter(account -> account.hasValidResetToken(clock.instant()))
             .orElseThrow(() -> new UseCaseException(UseCaseError.VALIDATION_FAILED));
-    users.save(user.resetPassword(passwords.hash(command.newPassword())));
+    users.save(user.withResetPassword(passwords.hash(command.newPassword())));
   }
 }

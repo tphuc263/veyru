@@ -17,7 +17,7 @@ public class MongoNotificationStore implements NotificationStore {
   private final MongoTemplate mongo;
 
   public Notification save(Notification value) {
-    return mongo.save(value, COLLECTION);
+    return mongo.save(NotificationDocument.fromDomain(value), COLLECTION).toDomain();
   }
 
   public void saveAll(List<Notification> values) {
@@ -25,26 +25,31 @@ public class MongoNotificationStore implements NotificationStore {
   }
 
   public Optional<Notification> findById(String id) {
-    return Optional.ofNullable(mongo.findById(id, Notification.class, COLLECTION));
+    return Optional.ofNullable(mongo.findById(id, NotificationDocument.class, COLLECTION))
+        .map(NotificationDocument::toDomain);
   }
 
   public List<Notification> findByRecipient(String id, int page, int size) {
     Query query = Query.query(Criteria.where("recipientId").is(id));
     query.with(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
-    return mongo.find(query, Notification.class, COLLECTION);
+    return map(mongo.find(query, NotificationDocument.class, COLLECTION));
   }
 
   public List<Notification> findUnread(String id) {
     Query query = Query.query(Criteria.where("recipientId").is(id).and("read").is(false));
     query.with(Sort.by(Sort.Direction.DESC, "createdAt"));
-    return mongo.find(query, Notification.class, COLLECTION);
+    return map(mongo.find(query, NotificationDocument.class, COLLECTION));
   }
 
   public long countUnread(String id) {
     return mongo.count(
         Query.query(Criteria.where("recipientId").is(id).and("read").is(false)),
-        Notification.class,
+        NotificationDocument.class,
         COLLECTION);
+  }
+
+  private List<Notification> map(List<NotificationDocument> documents) {
+    return documents.stream().map(NotificationDocument::toDomain).toList();
   }
 
   public MongoNotificationStore(MongoTemplate mongo) {

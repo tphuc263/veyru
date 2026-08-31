@@ -22,11 +22,9 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class CommentService {
-  private static final Logger log = LoggerFactory.getLogger(CommentService.class);
+  private static final Pattern MENTION_PATTERN = Pattern.compile("@(\\w+)");
   private final CommentStore commentStore;
   private final CommentLikeStore commentLikeStore;
   private final PhotoStore photoStore;
@@ -36,17 +34,13 @@ public class CommentService {
   private final AvatarCache userAvatarCacheService;
   private final GraphProjection neo4jGraphService;
   private final Clock clock;
-  // Pattern to match @username mentions
-  private static final Pattern MENTION_PATTERN = Pattern.compile("@(\\w+)");
 
   public CommentResult createComment(String photoId, CreateCommentCommand request) {
-    // Validate photo exists
     Photo photo =
         photoStore
             .findById(photoId)
             .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     User currentUser = userService.requireCurrentUser();
-    // Handle nested comments (replies)
     String parentCommentId = request.parentCommentId();
     Comment parentComment = null;
     if (parentCommentId != null && !parentCommentId.isEmpty()) {
@@ -55,53 +49,34 @@ public class CommentService {
               .findById(parentCommentId)
               .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     }
-    // Extract mentioned users from text
     List<String> mentionedUserIds = extractMentionedUserIds(request.text());
     Comment comment =
         Comment.create(
             photoId,
-            currentUser.getId(),
-            currentUser.getUsername(),
+            currentUser.id(),
+            currentUser.username(),
             request.text(),
             mentionedUserIds,
             clock.instant());
-    if (parentComment != null) comment.replyTo(parentComment);
+    if (parentComment != null) comment = comment.asReplyTo(parentComment);
     Comment savedComment = commentStore.save(comment);
-    // Update parent comment reply count if this is a reply
     if (parentComment != null) {
       commentStore.incrementReplyCount(parentCommentId, 1);
-      // Send notification for reply
       notificationService.sendReplyCommentNotification(
-          parentComment.getUserId(),
-          currentUser,
-          photoId,
-          savedComment.getId(),
-          photo.getImageUrl());
+          parentComment.userId(), currentUser, photoId, savedComment.id(), photo.imageUrl());
     } else {
-      // Only increment photo comment count for top-level comments
       photoStore.incrementCommentCount(photoId, 1);
     }
-    // Send notification to photo owner for new comment (only for top-level
-    // comments)
-    if (parentComment == null && photo.getUser() != null) {
+    if (parentComment == null) {
       notificationService.sendCommentPhotoNotification(
-          photo.getUser().getUserId(),
-          currentUser,
-          photoId,
-          savedComment.getId(),
-          photo.getImageUrl());
+          photo.author().userId(), currentUser, photoId, savedComment.id(), photo.imageUrl());
     }
-    // Send notifications to mentioned users
     for (String mentionedUserId : mentionedUserIds) {
       notificationService.sendMentionNotification(
-          mentionedUserId, currentUser, photoId, savedComment.getId(), photo.getImageUrl());
+          mentionedUserId, currentUser, photoId, savedComment.id(), photo.imageUrl());
     }
-    // Sync to Neo4j graph - create comment relationship
-
-    neo4jGraphService.createCommentRelationship(currentUser.getId(), photoId);
-
-    log.info("Comment created successfully by user {} on photo {}", currentUser.getId(), photoId);
-    return convertToCommentResponse(savedComment, currentUser.getId());
+    neo4jGraphService.createCommentRelationship(currentUser.id(), photoId);
+    return convertToCommentResponse(savedComment, currentUser.id());
   }
 
   public CommentResult updateComment(String commentId, UpdateCommentCommand request) {
@@ -110,15 +85,13 @@ public class CommentService {
             .findById(commentId)
             .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     User currentUser = userService.requireCurrentUser();
-    // Check if current user is the owner of the comment
-    if (!comment.getUserId().equals(currentUser.getId())) {
+    if (!comment.userId().equals(currentUser.id())) {
       throw new UseCaseException(UseCaseError.ACCESS_DENIED);
     }
     List<String> mentionedUserIds = extractMentionedUserIds(request.text());
-    comment.edit(currentUser.getId(), request.text(), mentionedUserIds);
-    Comment updatedComment = commentStore.save(comment);
-    log.info("Comment {} updated successfully by user {}", commentId, currentUser.getId());
-    return convertToCommentResponse(updatedComment, currentUser.getId());
+    Comment updatedComment =
+        commentStore.save(comment.editedBy(currentUser.id(), request.text(), mentionedUserIds));
+    return convertToCommentResponse(updatedComment, currentUser.id());
   }
 
   public void deleteComment(String commentId) {
@@ -127,39 +100,28 @@ public class CommentService {
             .findById(commentId)
             .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     User currentUser = userService.requireCurrentUser();
-    // Check if current user is the owner of the comment
-    if (!comment.getUserId().equals(currentUser.getId())) {
+    if (!comment.userId().equals(currentUser.id())) {
       throw new UseCaseException(UseCaseError.ACCESS_DENIED);
     }
-    // Delete all replies if this is a parent comment
-    if (comment.getParentCommentId() == null) {
+    if (comment.parentCommentId() == null) {
       commentStore.deleteAllReplies(commentId);
     }
-    // Delete comment likes
     commentLikeStore.deleteAllByCommentId(commentId);
     commentStore.delete(comment);
-    // Update counts
-    if (comment.getParentCommentId() != null) {
-      // This is a reply, decrement parent's reply count
-      commentStore.incrementReplyCount(comment.getParentCommentId(), -1);
+    if (comment.parentCommentId() != null) {
+      commentStore.incrementReplyCount(comment.parentCommentId(), -1);
     } else {
-      // This is a top-level comment, decrement photo's comment count
-      photoStore.incrementCommentCount(comment.getPhotoId(), -1);
+      photoStore.incrementCommentCount(comment.photoId(), -1);
     }
-    log.info("Comment {} deleted successfully by user {}", commentId, currentUser.getId());
   }
 
   public List<CommentResult> getPhotoComments(String photoId) {
-    // Validate photo exists
     photoStore
         .findById(photoId)
         .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
-    String currentUserId = userService.findCurrentUser().map(User::getId).orElse(null);
-    // Get only top-level comments (no parent)
+    String currentUserId = userService.findCurrentUser().map(User::id).orElse(null);
     List<Comment> topLevelComments = commentStore.findTopLevelByPhotoId(photoId);
-    return
-    // Load all nested replies recursively
-    topLevelComments.stream()
+    return topLevelComments.stream()
         .map(
             comment -> {
               CommentResult response = convertToCommentResponse(comment, currentUserId);
@@ -169,11 +131,9 @@ public class CommentService {
         .toList();
   }
 
-  // Recursive method to load all nested replies
   private void loadNestedReplies(CommentResult parentResponse, String currentUserId) {
     List<Comment> replies = commentStore.findReplies(parentResponse.getId());
     List<CommentResult> replyResponses =
-        // Recursively load nested replies
         replies.stream()
             .map(
                 reply -> {
@@ -186,11 +146,10 @@ public class CommentService {
   }
 
   public List<CommentResult> getCommentReplies(String commentId, int page, int size) {
-    Comment parentComment =
-        commentStore
-            .findById(commentId)
-            .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
-    String currentUserId = userService.findCurrentUser().map(User::getId).orElse(null);
+    commentStore
+        .findById(commentId)
+        .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
+    String currentUserId = userService.findCurrentUser().map(User::id).orElse(null);
     List<Comment> replies = commentStore.findReplies(commentId, page, size);
     return replies.stream().map(reply -> convertToCommentResponse(reply, currentUserId)).toList();
   }
@@ -204,7 +163,7 @@ public class CommentService {
         commentStore
             .findById(commentId)
             .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
-    String currentUserId = userService.findCurrentUser().map(User::getId).orElse(null);
+    String currentUserId = userService.findCurrentUser().map(User::id).orElse(null);
     return convertToCommentResponse(comment, currentUserId);
   }
 
@@ -214,20 +173,14 @@ public class CommentService {
             .findById(commentId)
             .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     User currentUser = userService.requireCurrentUser();
-    if (!commentLikeStore.exists(commentId, currentUser.getId())) {
-      CommentLike like = new CommentLike();
-      like.setCommentId(commentId);
-      like.setUserId(currentUser.getId());
-      like.setCreatedAt(clock.instant());
-      commentLikeStore.save(like);
+    if (!commentLikeStore.exists(commentId, currentUser.id())) {
+      commentLikeStore.save(CommentLike.create(commentId, currentUser.id(), clock.instant()));
       commentStore.incrementLikeCount(commentId, 1);
-      comment.recordLike();
-      // Send notification
+      comment = comment.withRecordedLike();
       notificationService.sendLikeCommentNotification(
-          comment.getUserId(), currentUser, comment.getPhotoId(), commentId);
-      log.info("User {} liked comment {}", currentUser.getId(), commentId);
+          comment.userId(), currentUser, comment.photoId(), commentId);
     }
-    return convertToCommentResponse(comment, currentUser.getId());
+    return convertToCommentResponse(comment, currentUser.id());
   }
 
   public void unlikeComment(String commentId) {
@@ -237,7 +190,7 @@ public class CommentService {
             .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     User currentUser = userService.requireCurrentUser();
     commentLikeStore
-        .find(commentId, currentUser.getId())
+        .find(commentId, currentUser.id())
         .ifPresent(
             like -> {
               commentLikeStore.delete(like);
@@ -245,60 +198,48 @@ public class CommentService {
             });
   }
 
-  // Helper methods
   private List<String> extractMentionedUserIds(String text) {
     List<String> mentionedUserIds = new ArrayList<>();
     Matcher matcher = MENTION_PATTERN.matcher(text);
     Set<String> usernames =
         matcher.results().map(result -> result.group(1)).collect(Collectors.toSet());
     for (String username : usernames) {
-      userStore.findByUsername(username).ifPresent(user -> mentionedUserIds.add(user.getId()));
+      userStore.findByUsername(username).ifPresent(user -> mentionedUserIds.add(user.id()));
     }
     return mentionedUserIds;
   }
 
   private CommentResult convertToCommentResponse(Comment comment, String currentUserId) {
     CommentResult response = new CommentResult();
-    response.setId(comment.getId());
-    response.setPhotoId(comment.getPhotoId());
-    response.setUserId(comment.getUserId());
-    response.setText(comment.getText());
-    response.setCreatedAt(comment.getCreatedAt());
-    response.setParentCommentId(comment.getParentCommentId());
-    response.setLikeCount(comment.getLikeCount());
-    response.setReplyCount(comment.getReplyCount());
-    if (comment.getUser() != null) {
-      response.setUsername(comment.getUser().getUsername());
-      response.setUserImageUrl(userAvatarCacheService.getAvatar(comment.getUser().getUserId()));
-    }
-    // Check if current user liked this comment
+    response.setId(comment.id());
+    response.setPhotoId(comment.photoId());
+    response.setUserId(comment.userId());
+    response.setText(comment.text());
+    response.setCreatedAt(comment.createdAt());
+    response.setParentCommentId(comment.parentCommentId());
+    response.setLikeCount(comment.likeCount());
+    response.setReplyCount(comment.replyCount());
+    response.setUsername(comment.author().username());
+    response.setUserImageUrl(userAvatarCacheService.getAvatar(comment.author().userId()));
     if (currentUserId != null) {
-      response.setLikedByCurrentUser(commentLikeStore.exists(comment.getId(), currentUserId));
+      response.setLikedByCurrentUser(commentLikeStore.exists(comment.id(), currentUserId));
     }
-    // Convert mentioned user IDs to response format
-    if (comment.getMentionedUserIds() != null && !comment.getMentionedUserIds().isEmpty()) {
+    if (!comment.mentionedUserIds().isEmpty()) {
       List<CommentResult.MentionedUser> mentionedUsers = new ArrayList<>();
-      for (String userId : comment.getMentionedUserIds()) {
+      for (String userId : comment.mentionedUserIds()) {
         userStore
             .findById(userId)
             .ifPresent(
                 user -> {
                   CommentResult.MentionedUser mu = new CommentResult.MentionedUser();
-                  mu.setUserId(user.getId());
-                  mu.setUsername(user.getUsername());
+                  mu.setUserId(user.id());
+                  mu.setUsername(user.username());
                   mentionedUsers.add(mu);
                 });
       }
       response.setMentionedUsers(mentionedUsers);
     }
     return response;
-  }
-
-  private List<CommentResult> convertToCommentResponses(List<Comment> comments) {
-    String currentUserId = userService.findCurrentUser().map(User::getId).orElse(null);
-    return comments.stream()
-        .map(comment -> convertToCommentResponse(comment, currentUserId))
-        .toList();
   }
 
   public CommentService(

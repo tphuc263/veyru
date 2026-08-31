@@ -27,6 +27,7 @@ import com.veyru.config.NewsfeedProperties;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.Share;
 import com.veyru.domain.model.User;
+import com.veyru.support.DomainFixtures;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Clock;
 import java.time.Duration;
@@ -117,8 +118,8 @@ class NewsfeedServiceTest {
 
     assertThat(result.getType()).isEqualTo(PostType.SHARE);
     assertThat(result.getId()).isEqualTo("share_share");
-    assertThat(result.getCreatedAt()).isEqualTo(share.getCreatedAt());
-    assertThat(result.getOriginalPhotoId()).isEqualTo(original.getId());
+    assertThat(result.getCreatedAt()).isEqualTo(share.createdAt());
+    assertThat(result.getOriginalPhotoId()).isEqualTo(original.id());
   }
 
   @Test
@@ -155,21 +156,10 @@ class NewsfeedServiceTest {
   }
 
   private Photo photo(String id, String authorId, Instant createdAt) {
-    return new Photo(
-        id,
-        "https://example.test/photo.png",
-        "caption",
-        createdAt,
-        List.of("tag"),
-        new Photo.EmbeddedUser(authorId, authorId),
-        0,
-        0,
-        0,
-        List.of());
+    return DomainFixtures.photo(id, authorId, createdAt);
   }
 
   private User user(String id) {
-    return new User(
-        id, id, id + "@example.test", null, "hash", null, null, null, NOW, 0, 0, 0, null, null);
+    return DomainFixtures.user(id);
   }
 }

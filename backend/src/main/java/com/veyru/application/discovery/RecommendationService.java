@@ -5,6 +5,7 @@ import com.veyru.application.common.error.UseCaseError;
 import com.veyru.application.common.error.UseCaseException;
 import com.veyru.application.intelligence.EmbeddingService;
 import com.veyru.application.media.PhotoConversionService;
+import com.veyru.application.media.PhotoViewer;
 import com.veyru.application.port.out.CurrentActor;
 import com.veyru.application.port.out.FollowStore;
 import com.veyru.application.port.out.GraphFeedQuery;
@@ -22,7 +23,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -40,12 +40,12 @@ public class RecommendationService {
   private final PhotoConversionService photoConversionService;
   private final CurrentActor currentActor;
 
-  public List<PhotoResult> getRelatedPhotos(String photoId, int limit, Optional<User> currentUser) {
+  public List<PhotoResult> getRelatedPhotos(String photoId, int limit, PhotoViewer viewer) {
     Photo source = photoStore.findById(photoId).orElse(null);
     if (source == null) return List.of();
     try {
       ensurePhotoEmbedding(source);
-      String text = embeddingService.buildPhotoText(source.getCaption(), source.getTags());
+      String text = embeddingService.buildPhotoText(source.caption(), source.tags());
       float[] embedding = embeddingService.generateEmbedding(text);
       if (embedding != null) {
         List<String> ids =
@@ -55,23 +55,29 @@ public class RecommendationService {
                 .toList();
         Map<String, Photo> photos =
             photoStore.findAllById(ids).stream()
-                .collect(Collectors.toMap(Photo::getId, photo -> photo));
+                .collect(Collectors.toMap(Photo::id, photo -> photo));
         List<PhotoResult> related =
             ids.stream()
                 .map(photos::get)
                 .filter(Objects::nonNull)
-                .map(photo -> photoConversionService.convertToPhotoResponse(photo, currentUser))
+                .map(photo -> photoConversionService.convertToPhotoResponse(photo, viewer))
                 .toList();
         if (!related.isEmpty()) return related;
       }
     } catch (RuntimeException exception) {
       log.warn("Photo vector search unavailable; using tag fallback", exception);
     }
-    return relatedByTags(source, limit, currentUser);
+    return relatedByTags(source, limit, viewer);
   }
 
   public List<PhotoResult> getRelatedPhotos(String photoId, int limit) {
-    return getRelatedPhotos(photoId, limit, currentActor.id().flatMap(userStore::findById));
+    PhotoViewer viewer =
+        currentActor
+            .id()
+            .flatMap(userStore::findById)
+            .<PhotoViewer>map(PhotoViewer::authenticated)
+            .orElseGet(PhotoViewer::anonymous);
+    return getRelatedPhotos(photoId, limit, viewer);
   }
 
   public List<RecommendedUserResult> getSuggestedUsers(int limit) {
@@ -103,7 +109,7 @@ public class RecommendationService {
             .limit(limit)
             .toList();
     Map<String, User> users =
-        userStore.findAllById(ids).stream().collect(Collectors.toMap(User::getId, user -> user));
+        userStore.findAllById(ids).stream().collect(Collectors.toMap(User::id, user -> user));
     Map<String, Double> mutualCounts =
         graphCandidates.stream()
             .collect(
@@ -127,11 +133,8 @@ public class RecommendationService {
     if (suggestions.size() < limit) {
       excluded.addAll(suggestions.stream().map(RecommendedUserResult::id).toList());
       userStore.findAll().stream()
-          .filter(user -> !excluded.contains(user.getId()))
-          .sorted(
-              Comparator.comparingLong(User::getFollowerCount)
-                  .reversed()
-                  .thenComparing(User::getId))
+          .filter(user -> !excluded.contains(user.id()))
+          .sorted(Comparator.comparingLong(User::followerCount).reversed().thenComparing(User::id))
           .limit(limit - suggestions.size())
           .map(user -> result(user, 0.0, "Popular on Veyru"))
           .forEach(suggestions::add);
@@ -141,40 +144,39 @@ public class RecommendationService {
 
   private RecommendedUserResult result(User user, double score, String reason) {
     return new RecommendedUserResult(
-        user.getId(),
-        user.getUsername(),
-        user.getImageUrl(),
-        user.getBio(),
-        user.getFollowerCount(),
-        user.getPhotoCount(),
+        user.id(),
+        user.username(),
+        user.imageUrl(),
+        user.bio(),
+        user.followerCount(),
+        user.photoCount(),
         score,
         reason);
   }
 
-  private List<PhotoResult> relatedByTags(Photo source, int limit, Optional<User> currentUser) {
-    if (source.getTags() == null || source.getTags().isEmpty()) return List.of();
-    return photoStore.findByTags(source.getTags(), new PageQuery(0, limit + 1)).items().stream()
-        .filter(photo -> !photo.getId().equals(source.getId()))
+  private List<PhotoResult> relatedByTags(Photo source, int limit, PhotoViewer viewer) {
+    if (source.tags().isEmpty()) return List.of();
+    return photoStore.findByTags(source.tags(), new PageQuery(0, limit + 1)).items().stream()
+        .filter(photo -> !photo.id().equals(source.id()))
         .limit(limit)
-        .map(photo -> photoConversionService.convertToPhotoResponse(photo, currentUser))
+        .map(photo -> photoConversionService.convertToPhotoResponse(photo, viewer))
         .toList();
   }
 
   private Set<String> followingIds(String userId) {
     return followStore.findByFollowerId(userId).stream()
-        .map(Follow::getFollowingId)
+        .map(Follow::followingId)
         .collect(Collectors.toSet());
   }
 
   public void ensurePhotoEmbedding(Photo photo) {
-    if (vectorIndex.hasPhotoEmbedding(photo.getId())) return;
-    String text = embeddingService.buildPhotoText(photo.getCaption(), photo.getTags());
+    if (vectorIndex.hasPhotoEmbedding(photo.id())) return;
+    String text = embeddingService.buildPhotoText(photo.caption(), photo.tags());
     if (text.isBlank()) return;
     float[] embedding = embeddingService.generateEmbedding(text);
     if (embedding != null) {
-      String userId = photo.getUser() == null ? "" : photo.getUser().getUserId();
       vectorIndex.storePhotoEmbedding(
-          photo.getId(), embedding, photo.getCaption(), userId, photo.getTags());
+          photo.id(), embedding, photo.caption(), photo.author().userId(), photo.tags());
     }
   }
 

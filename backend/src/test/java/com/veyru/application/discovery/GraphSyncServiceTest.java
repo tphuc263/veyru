@@ -1,5 +1,6 @@
 package com.veyru.application.discovery;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -15,6 +16,7 @@ import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.port.out.UserStore;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
+import com.veyru.support.DomainFixtures;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -26,18 +28,7 @@ class GraphSyncServiceTest {
   void neo4jFailureDoesNotFailThePrimaryPhotoWrite() {
     GraphProjection graph = mock(GraphProjection.class);
     PhotoStore photos = mock(PhotoStore.class);
-    Photo photo =
-        new Photo(
-            "photo-1",
-            null,
-            null,
-            Instant.EPOCH,
-            List.of(),
-            new Photo.EmbeddedUser("user-1", "user"),
-            0,
-            0,
-            0,
-            List.of());
+    Photo photo = DomainFixtures.photo("photo-1", "user-1", Instant.EPOCH);
     when(photos.findById("photo-1")).thenReturn(Optional.of(photo));
     doThrow(new RuntimeException("neo4j unavailable"))
         .when(graph)
@@ -55,34 +46,8 @@ class GraphSyncServiceTest {
     GraphProjection graph = mock(GraphProjection.class);
     UserStore users = mock(UserStore.class);
     PhotoStore photos = mock(PhotoStore.class);
-    Photo photo =
-        new Photo(
-            "photo",
-            "https://example.test/photo.png",
-            "caption",
-            Instant.EPOCH,
-            List.of("tag"),
-            new Photo.EmbeddedUser("author", "author"),
-            0,
-            0,
-            0,
-            List.of());
-    User author =
-        new User(
-            "author",
-            "author",
-            "author@example.test",
-            null,
-            "hash",
-            null,
-            null,
-            null,
-            Instant.EPOCH,
-            1,
-            0,
-            0,
-            null,
-            null);
+    Photo photo = DomainFixtures.photo("photo", "author", Instant.EPOCH);
+    User author = DomainFixtures.user("author", 1, 0, 0);
     when(photos.findById("photo")).thenReturn(Optional.of(photo));
     when(users.findById("author")).thenReturn(Optional.of(author));
     var service =
@@ -105,5 +70,20 @@ class GraphSyncServiceTest {
             0,
             0,
             Instant.EPOCH);
+  }
+
+  @Test
+  void unavailableGraphDoesNotBlockStartupReconciliation() {
+    GraphProjection graph = mock(GraphProjection.class);
+    when(graph.getGraphStats()).thenThrow(new RuntimeException("neo4j unavailable"));
+    GraphSyncService service =
+        new GraphSyncService(
+            graph,
+            mock(UserStore.class),
+            mock(PhotoStore.class),
+            mock(FollowStore.class),
+            mock(LikeStore.class));
+
+    assertThat(service.performFullSync()).startsWith("Full sync degraded after");
   }
 }

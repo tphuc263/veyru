@@ -18,23 +18,24 @@ public class MongoFollowStore implements FollowStore {
 
   @Override
   public Follow save(Follow follow) {
-    return mongo.save(follow, COLLECTION);
+    return mongo.save(FollowDocument.fromDomain(follow), COLLECTION).toDomain();
   }
 
   @Override
   public void delete(Follow follow) {
-    mongo.remove(follow, COLLECTION);
+    mongo.remove(FollowDocument.fromDomain(follow), COLLECTION);
   }
 
   @Override
   public Optional<Follow> find(String followerId, String followingId) {
     return Optional.ofNullable(
-        mongo.findOne(relation(followerId, followingId), Follow.class, COLLECTION));
+            mongo.findOne(relation(followerId, followingId), FollowDocument.class, COLLECTION))
+        .map(FollowDocument::toDomain);
   }
 
   @Override
   public boolean exists(String followerId, String followingId) {
-    return mongo.exists(relation(followerId, followingId), Follow.class, COLLECTION);
+    return mongo.exists(relation(followerId, followingId), FollowDocument.class, COLLECTION);
   }
 
   @Override
@@ -49,19 +50,25 @@ public class MongoFollowStore implements FollowStore {
 
   @Override
   public List<Follow> findByFollowerId(String userId) {
-    return mongo.find(
-        Query.query(Criteria.where("followerId").is(userId)), Follow.class, COLLECTION);
+    return map(
+        mongo.find(
+            Query.query(Criteria.where("followerId").is(userId)),
+            FollowDocument.class,
+            COLLECTION));
   }
 
   @Override
   public List<Follow> findByFollowingId(String userId) {
-    return mongo.find(
-        Query.query(Criteria.where("followingId").is(userId)), Follow.class, COLLECTION);
+    return map(
+        mongo.find(
+            Query.query(Criteria.where("followingId").is(userId)),
+            FollowDocument.class,
+            COLLECTION));
   }
 
   @Override
   public List<Follow> findAll() {
-    return mongo.findAll(Follow.class, COLLECTION);
+    return map(mongo.findAll(FollowDocument.class, COLLECTION));
   }
 
   private Query relation(String followerId, String followingId) {
@@ -72,7 +79,11 @@ public class MongoFollowStore implements FollowStore {
   private List<Follow> paged(Criteria criteria, int page, int size) {
     Query query = Query.query(criteria);
     query.with(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
-    return mongo.find(query, Follow.class, COLLECTION);
+    return map(mongo.find(query, FollowDocument.class, COLLECTION));
+  }
+
+  private List<Follow> map(List<FollowDocument> documents) {
+    return documents.stream().map(FollowDocument::toDomain).toList();
   }
 
   public MongoFollowStore(MongoTemplate mongo) {

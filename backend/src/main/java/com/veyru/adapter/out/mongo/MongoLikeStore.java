@@ -16,33 +16,40 @@ public class MongoLikeStore implements LikeStore {
   private final MongoTemplate mongo;
 
   public Like save(Like like) {
-    return mongo.save(like, COLLECTION);
+    return mongo.save(LikeDocument.fromDomain(like), COLLECTION).toDomain();
   }
 
   public void delete(Like like) {
-    mongo.remove(like, COLLECTION);
+    mongo.remove(LikeDocument.fromDomain(like), COLLECTION);
   }
 
   public Optional<Like> find(String photoId, String userId) {
-    return Optional.ofNullable(mongo.findOne(relation(photoId, userId), Like.class, COLLECTION));
+    return Optional.ofNullable(
+            mongo.findOne(relation(photoId, userId), LikeDocument.class, COLLECTION))
+        .map(LikeDocument::toDomain);
   }
 
   public boolean exists(String photoId, String userId) {
-    return mongo.exists(relation(photoId, userId), Like.class, COLLECTION);
+    return mongo.exists(relation(photoId, userId), LikeDocument.class, COLLECTION);
   }
 
   public List<Like> findByPhotoId(String photoId) {
     Query query = Query.query(Criteria.where("photoId").is(photoId));
     query.with(Sort.by(Sort.Direction.DESC, "createdAt"));
-    return mongo.find(query, Like.class, COLLECTION);
+    return map(mongo.find(query, LikeDocument.class, COLLECTION));
   }
 
   public List<Like> findAll() {
-    return mongo.findAll(Like.class, COLLECTION);
+    return map(mongo.findAll(LikeDocument.class, COLLECTION));
   }
 
   public void deleteAllByPhotoId(String photoId) {
-    mongo.remove(Query.query(Criteria.where("photoId").is(photoId)), Like.class, COLLECTION);
+    mongo.remove(
+        Query.query(Criteria.where("photoId").is(photoId)), LikeDocument.class, COLLECTION);
+  }
+
+  private List<Like> map(List<LikeDocument> documents) {
+    return documents.stream().map(LikeDocument::toDomain).toList();
   }
 
   private Query relation(String photoId, String userId) {

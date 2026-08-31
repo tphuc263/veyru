@@ -31,9 +31,9 @@ public class AppUserDetails implements UserDetails {
   }
 
   public static AppUserDetails buildUserDetails(User user) {
-    List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(user.getRole().name()));
+    List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(user.role().name()));
     return new AppUserDetails(
-        user.getId(), user.getUsername(), user.getEmail(), user.getPassword(), true, authorities);
+        user.id(), user.username(), user.email(), user.password(), true, authorities);
   }
 
   @Override

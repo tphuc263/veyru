@@ -6,6 +6,7 @@ import com.veyru.application.common.PageResult;
 import com.veyru.application.discovery.FeedCursorCodec.FeedCursor;
 import com.veyru.application.identity.UserProfileService;
 import com.veyru.application.media.PhotoConversionService;
+import com.veyru.application.media.PhotoViewer;
 import com.veyru.application.port.out.AffinityCache;
 import com.veyru.application.port.out.AvatarCache;
 import com.veyru.application.port.out.FavoriteStore;
@@ -69,7 +70,7 @@ public class NewsfeedService {
         photoStore.findByUsersAfter(authorIds, clock.instant().minus(Duration.ofDays(30)));
     if (photos.isEmpty()) photos = photoStore.findByUsers(authorIds);
     List<Photo> ranked =
-        photos.stream().sorted(Comparator.comparing(Photo::getCreatedAt).reversed()).toList();
+        photos.stream().sorted(Comparator.comparing(Photo::createdAt).reversed()).toList();
     return paginatePhotos(ranked, currentUser, new PageQuery(page, size));
   }
 
@@ -108,7 +109,7 @@ public class NewsfeedService {
           userStore
               .findAllById(page.stream().map(ScoredCandidate::authorId).distinct().toList())
               .stream()
-              .collect(Collectors.toMap(User::getId, Function.identity()));
+              .collect(Collectors.toMap(User::id, Function.identity()));
       List<UnifiedPostResult> items =
           page.stream().map(item -> toResult(item.candidate(), currentUser, users)).toList();
       String nextCursor =
@@ -142,7 +143,7 @@ public class NewsfeedService {
   private List<String> authorIds(String userId) {
     List<String> ids =
         new ArrayList<>(
-            followStore.findByFollowerId(userId).stream().map(Follow::getFollowingId).toList());
+            followStore.findByFollowerId(userId).stream().map(Follow::followingId).toList());
     ids.add(userId);
     return ids.stream().distinct().toList();
   }
@@ -175,33 +176,28 @@ public class NewsfeedService {
   }
 
   private List<FeedCandidate> merge(List<Photo> photos, List<Share> shares) {
-    List<String> originalIds = shares.stream().map(Share::getPhotoId).distinct().toList();
+    List<String> originalIds = shares.stream().map(Share::photoId).distinct().toList();
     Map<String, Photo> originals =
         originalIds.isEmpty()
             ? Map.of()
             : photoStore.findAllById(originalIds).stream()
-                .collect(Collectors.toMap(Photo::getId, Function.identity()));
+                .collect(Collectors.toMap(Photo::id, Function.identity()));
     List<FeedCandidate> candidates = new ArrayList<>();
     photos.stream()
-        .filter(photo -> photo.getUser() != null)
         .map(
             photo ->
                 new FeedCandidate(
-                    "PHOTO:" + photo.getId(),
-                    photo.getUser().getUserId(),
-                    photo.getCreatedAt(),
-                    photo,
-                    null))
+                    "PHOTO:" + photo.id(), photo.author().userId(), photo.createdAt(), photo, null))
         .forEach(candidates::add);
     shares.stream()
-        .filter(share -> originals.containsKey(share.getPhotoId()))
+        .filter(share -> originals.containsKey(share.photoId()))
         .map(
             share ->
                 new FeedCandidate(
-                    "SHARE:" + share.getId(),
-                    share.getUserId(),
-                    share.getCreatedAt(),
-                    originals.get(share.getPhotoId()),
+                    "SHARE:" + share.id(),
+                    share.userId(),
+                    share.createdAt(),
+                    originals.get(share.photoId()),
                     share))
         .forEach(candidates::add);
     return candidates.stream()
@@ -263,11 +259,11 @@ public class NewsfeedService {
         Math.max(0.0, Duration.between(candidate.createdAt(), rankedAt).toMillis() / 3_600_000.0);
     double recency = Math.exp(-ageHours / ranking.recencyDecayHours());
     double engagementRaw =
-        photo.getLikeCount() * 2.0 + photo.getCommentCount() * 3.0 + photo.getShareCount() * 4.0;
+        photo.likeCount() * 2.0 + photo.commentCount() * 3.0 + photo.shareCount() * 4.0;
     double engagement = 1.0 - Math.exp(-engagementRaw / ranking.engagementScale());
-    String caption = photo.getCaption();
+    String caption = photo.caption();
     double quality = caption != null && !caption.isBlank() ? 0.5 : 0.0;
-    if (photo.getTags() != null && !photo.getTags().isEmpty()) quality += 0.5;
+    if (!photo.tags().isEmpty()) quality += 0.5;
     double postScore =
         ranking.recencyWeight() * recency
             + ranking.engagementWeight() * engagement
@@ -296,39 +292,37 @@ public class NewsfeedService {
     result.setUserId(candidate.authorId());
     User author = users.get(candidate.authorId());
     if (author != null) {
-      result.setUsername(author.getUsername());
-      result.setUserImageUrl(avatarCache.getAvatar(author.getId()));
+      result.setUsername(author.username());
+      result.setUserImageUrl(avatarCache.getAvatar(author.id()));
     }
     if (candidate.share() == null) {
-      result.setId(photo.getId());
+      result.setId(photo.id());
       result.setType(UnifiedPostResult.PostType.PHOTO);
-      result.setImageUrl(photo.getImageUrl());
-      result.setCaption(photo.getCaption());
-      result.setLikeCount((int) photo.getLikeCount());
-      result.setCommentCount((int) photo.getCommentCount());
-      result.setShareCount((int) photo.getShareCount());
-      result.setLikedByCurrentUser(likeStore.exists(photo.getId(), currentUser.getId()));
-      result.setSavedByCurrentUser(favoriteStore.exists(currentUser.getId(), photo.getId()));
+      result.setImageUrl(photo.imageUrl());
+      result.setCaption(photo.caption());
+      result.setLikeCount((int) photo.likeCount());
+      result.setCommentCount((int) photo.commentCount());
+      result.setShareCount((int) photo.shareCount());
+      result.setLikedByCurrentUser(likeStore.exists(photo.id(), currentUser.id()));
+      result.setSavedByCurrentUser(favoriteStore.exists(currentUser.id(), photo.id()));
       return result;
     }
 
     Share share = candidate.share();
-    result.setId("share_" + share.getId());
+    result.setId("share_" + share.id());
     result.setType(UnifiedPostResult.PostType.SHARE);
-    result.setShareCaption(share.getCaption());
-    result.setOriginalPhotoId(photo.getId());
-    result.setOriginalImageUrl(photo.getImageUrl());
-    result.setOriginalCaption(photo.getCaption());
-    result.setOriginalCreatedAt(photo.getCreatedAt());
-    result.setOriginalLikeCount((int) photo.getLikeCount());
-    result.setOriginalCommentCount((int) photo.getCommentCount());
-    result.setOriginalShareCount((int) photo.getShareCount());
-    if (photo.getUser() != null) {
-      result.setOriginalUsername(photo.getUser().getUsername());
-      result.setOriginalUserImageUrl(avatarCache.getAvatar(photo.getUser().getUserId()));
-    }
-    result.setLikedByCurrentUser(likeStore.exists(photo.getId(), currentUser.getId()));
-    result.setSavedByCurrentUser(favoriteStore.exists(currentUser.getId(), photo.getId()));
+    result.setShareCaption(share.caption());
+    result.setOriginalPhotoId(photo.id());
+    result.setOriginalImageUrl(photo.imageUrl());
+    result.setOriginalCaption(photo.caption());
+    result.setOriginalCreatedAt(photo.createdAt());
+    result.setOriginalLikeCount((int) photo.likeCount());
+    result.setOriginalCommentCount((int) photo.commentCount());
+    result.setOriginalShareCount((int) photo.shareCount());
+    result.setOriginalUsername(photo.author().username());
+    result.setOriginalUserImageUrl(avatarCache.getAvatar(photo.author().userId()));
+    result.setLikedByCurrentUser(likeStore.exists(photo.id(), currentUser.id()));
+    result.setSavedByCurrentUser(favoriteStore.exists(currentUser.id(), photo.id()));
     return result;
   }
 
@@ -343,7 +337,7 @@ public class NewsfeedService {
                 .map(
                     photo ->
                         photoConversionService.convertToPhotoResponse(
-                            photo, java.util.Optional.of(currentUser)))
+                            photo, PhotoViewer.authenticated(currentUser)))
                 .toList();
     return new PageResult<>(
         items,

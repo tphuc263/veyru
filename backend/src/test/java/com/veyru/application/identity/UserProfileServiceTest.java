@@ -11,7 +11,7 @@ import com.veyru.application.port.out.ImageStorage;
 import com.veyru.application.port.out.UserStore;
 import com.veyru.application.social.FollowService;
 import com.veyru.domain.model.User;
-import java.time.Instant;
+import com.veyru.support.DomainFixtures;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -45,20 +45,6 @@ class UserProfileServiceTest {
   }
 
   private User user(String id) {
-    return new User(
-        id,
-        id,
-        id + "@example.com",
-        null,
-        "hash",
-        null,
-        null,
-        null,
-        Instant.EPOCH,
-        0,
-        0,
-        0,
-        null,
-        null);
+    return DomainFixtures.user(id);
   }
 }

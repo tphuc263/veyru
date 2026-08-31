@@ -18,15 +18,16 @@ public class MongoCommentStore implements CommentStore {
   private final MongoTemplate mongo;
 
   public Comment save(Comment value) {
-    return mongo.save(value, COLLECTION);
+    return mongo.save(CommentDocument.fromDomain(value), COLLECTION).toDomain();
   }
 
   public void delete(Comment value) {
-    mongo.remove(value, COLLECTION);
+    mongo.remove(CommentDocument.fromDomain(value), COLLECTION);
   }
 
   public Optional<Comment> findById(String id) {
-    return Optional.ofNullable(mongo.findById(id, Comment.class, COLLECTION));
+    return Optional.ofNullable(mongo.findById(id, CommentDocument.class, COLLECTION))
+        .map(CommentDocument::toDomain);
   }
 
   public List<Comment> findTopLevelByPhotoId(String photoId) {
@@ -45,11 +46,12 @@ public class MongoCommentStore implements CommentStore {
   public List<Comment> findReplies(String id, int page, int size) {
     Query query = Query.query(Criteria.where("parentCommentId").is(id));
     query.with(PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt")));
-    return mongo.find(query, Comment.class, COLLECTION);
+    return map(mongo.find(query, CommentDocument.class, COLLECTION));
   }
 
   public long countByPhotoId(String id) {
-    return mongo.count(Query.query(Criteria.where("photoId").is(id)), Comment.class, COLLECTION);
+    return mongo.count(
+        Query.query(Criteria.where("photoId").is(id)), CommentDocument.class, COLLECTION);
   }
 
   public void incrementLikeCount(String id, long delta) {
@@ -61,21 +63,29 @@ public class MongoCommentStore implements CommentStore {
   }
 
   public void deleteAllByPhotoId(String id) {
-    mongo.remove(Query.query(Criteria.where("photoId").is(id)), Comment.class, COLLECTION);
+    mongo.remove(Query.query(Criteria.where("photoId").is(id)), CommentDocument.class, COLLECTION);
   }
 
   public void deleteAllReplies(String id) {
-    mongo.remove(Query.query(Criteria.where("parentCommentId").is(id)), Comment.class, COLLECTION);
+    mongo.remove(
+        Query.query(Criteria.where("parentCommentId").is(id)), CommentDocument.class, COLLECTION);
   }
 
   private void increment(String id, String field, long delta) {
     mongo.updateFirst(
-        Query.query(Criteria.where("_id").is(id)), new Update().inc(field, delta), COLLECTION);
+        MongoCounterUpdate.guardedById(id, field, delta),
+        new Update().inc(field, delta),
+        CommentDocument.class,
+        COLLECTION);
   }
 
   private List<Comment> sorted(Query query) {
     query.with(Sort.by(Sort.Direction.ASC, "createdAt"));
-    return mongo.find(query, Comment.class, COLLECTION);
+    return map(mongo.find(query, CommentDocument.class, COLLECTION));
+  }
+
+  private List<Comment> map(List<CommentDocument> documents) {
+    return documents.stream().map(CommentDocument::toDomain).toList();
   }
 
   public MongoCommentStore(MongoTemplate mongo) {

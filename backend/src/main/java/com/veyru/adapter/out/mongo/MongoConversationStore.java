@@ -39,6 +39,6 @@ public class MongoConversationStore implements ConversationStore {
 
   @Override
   public Conversation save(Conversation conversation) {
-    return repository.save(ConversationDocument.from(conversation)).toDomain();
+    return repository.save(ConversationDocument.fromDomain(conversation)).toDomain();
   }
 }

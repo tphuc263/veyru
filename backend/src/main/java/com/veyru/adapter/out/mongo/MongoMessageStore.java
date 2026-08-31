@@ -23,7 +23,7 @@ public class MongoMessageStore implements MessageStore {
 
   @Override
   public Message save(Message message) {
-    return repository.save(MessageDocument.from(message)).toDomain();
+    return repository.save(MessageDocument.fromDomain(message)).toDomain();
   }
 
   @Override

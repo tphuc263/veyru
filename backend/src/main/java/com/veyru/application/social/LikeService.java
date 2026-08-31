@@ -3,7 +3,6 @@ package com.veyru.application.social;
 import com.veyru.application.common.error.UseCaseError;
 import com.veyru.application.common.error.UseCaseException;
 import com.veyru.application.identity.UserProfileService;
-import com.veyru.application.media.PhotoConversionService;
 import com.veyru.application.notification.NotificationService;
 import com.veyru.application.port.out.AvatarCache;
 import com.veyru.application.port.out.GraphProjection;
@@ -18,16 +17,12 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class LikeService {
-  private static final Logger log = LoggerFactory.getLogger(LikeService.class);
   private final LikeStore likeStore;
   private final PhotoStore photoStore;
   private final UserStore userStore;
   private final UserProfileService userService;
-  private final PhotoConversionService photoConversionService;
   private final NotificationService notificationService;
   private final AvatarCache userAvatarCacheService;
   private final GraphProjection neo4jGraphService;
@@ -39,43 +34,30 @@ public class LikeService {
         photoStore
             .findById(photoId)
             .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
-    boolean alreadyLiked = likeStore.exists(photoId, currentUser.getId());
+    boolean alreadyLiked = likeStore.exists(photoId, currentUser.id());
     if (alreadyLiked) {
       return;
     }
-    Like like = new Like();
-    like.setPhotoId(photoId);
-    like.setUserId(currentUser.getId());
-    like.setCreatedAt(clock.instant());
-    likeStore.save(like);
+    likeStore.save(Like.create(photoId, currentUser.id(), clock.instant()));
     photoStore.incrementLikeCount(photoId, 1);
-    // Sync to Neo4j graph - create like relationship
-
-    neo4jGraphService.createLikeRelationship(currentUser.getId(), photoId);
-
-    // Send notification
-    if (photo.getUser() != null) {
-      notificationService.sendLikePhotoNotification(
-          photo.getUser().getUserId(), currentUser, photoId, photo.getImageUrl());
-    }
-    log.info("User {} liked photo {}", currentUser.getId(), photoId);
+    neo4jGraphService.createLikeRelationship(currentUser.id(), photoId);
+    notificationService.sendLikePhotoNotification(
+        photo.author().userId(), currentUser, photoId, photo.imageUrl());
   }
 
   public void unlike(String photoId) {
     User currentUser = userService.requireCurrentUser();
-    Like like = likeStore.find(photoId, currentUser.getId()).orElse(null);
-    if (like == null) return;
-    likeStore.delete(like);
-    photoStore.incrementLikeCount(photoId, -1);
-    // Sync to Neo4j graph - remove like relationship
-
-    neo4jGraphService.removeLikeRelationship(currentUser.getId(), photoId);
-
-    log.info("User {} unliked photo {}", currentUser.getId(), photoId);
+    likeStore
+        .find(photoId, currentUser.id())
+        .ifPresent(
+            like -> {
+              likeStore.delete(like);
+              photoStore.incrementLikeCount(photoId, -1);
+              neo4jGraphService.removeLikeRelationship(currentUser.id(), photoId);
+            });
   }
 
   public List<LikeResult> getPhotoLikes(String photoId) {
-    // Validate photo exists
     photoStore
         .findById(photoId)
         .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
@@ -84,26 +66,23 @@ public class LikeService {
   }
 
   public long getPhotoLikesCount(String photoId) {
-    return photoStore.findById(photoId).map(Photo::getLikeCount).orElse(0L);
+    return photoStore.findById(photoId).map(Photo::likeCount).orElse(0L);
   }
 
-  // Helper method
   private List<LikeResult> convertToLikeResponses(List<Like> likes) {
-    // Get all user IDs and fetch users in batch for performance
-    List<String> userIds = likes.stream().map(Like::getUserId).distinct().toList();
+    List<String> userIds = likes.stream().map(Like::userId).distinct().toList();
     Map<String, User> usersMap =
-        userStore.findAllById(userIds).stream()
-            .collect(Collectors.toMap(User::getId, user -> user));
+        userStore.findAllById(userIds).stream().collect(Collectors.toMap(User::id, user -> user));
     return likes.stream()
         .map(
             like -> {
-              User user = usersMap.get(like.getUserId());
+              User user = usersMap.get(like.userId());
               return new LikeResult(
-                  like.getId(),
-                  like.getUserId(),
-                  user == null ? null : user.getUsername(),
-                  user == null ? null : userAvatarCacheService.getAvatar(user.getId()),
-                  like.getCreatedAt());
+                  like.id(),
+                  like.userId(),
+                  user == null ? null : user.username(),
+                  user == null ? null : userAvatarCacheService.getAvatar(user.id()),
+                  like.createdAt());
             })
         .toList();
   }
@@ -113,7 +92,6 @@ public class LikeService {
       final PhotoStore photoStore,
       final UserStore userStore,
       final UserProfileService userService,
-      final PhotoConversionService photoConversionService,
       final NotificationService notificationService,
       final AvatarCache userAvatarCacheService,
       final GraphProjection neo4jGraphService,
@@ -122,7 +100,6 @@ public class LikeService {
     this.photoStore = photoStore;
     this.userStore = userStore;
     this.userService = userService;
-    this.photoConversionService = photoConversionService;
     this.notificationService = notificationService;
     this.userAvatarCacheService = userAvatarCacheService;
     this.neo4jGraphService = neo4jGraphService;

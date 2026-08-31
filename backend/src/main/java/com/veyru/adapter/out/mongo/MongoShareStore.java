@@ -17,17 +17,17 @@ public class MongoShareStore implements ShareStore {
   private final MongoTemplate mongo;
 
   public Share save(Share value) {
-    return mongo.save(value, COLLECTION);
+    return mongo.save(ShareDocument.fromDomain(value), COLLECTION).toDomain();
   }
 
   public long countByPhotoId(String photoId) {
-    return mongo.count(by("photoId", photoId), Share.class, COLLECTION);
+    return mongo.count(by("photoId", photoId), ShareDocument.class, COLLECTION);
   }
 
   public boolean exists(String photoId, String userId) {
     return mongo.exists(
         Query.query(Criteria.where("photoId").is(photoId).and("userId").is(userId)),
-        Share.class,
+        ShareDocument.class,
         COLLECTION);
   }
 
@@ -38,11 +38,11 @@ public class MongoShareStore implements ShareStore {
   public List<Share> findByUserId(String userId, int page, int size) {
     Query query = by("userId", userId);
     query.with(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
-    return mongo.find(query, Share.class, COLLECTION);
+    return map(mongo.find(query, ShareDocument.class, COLLECTION));
   }
 
   public long countByUserId(String userId) {
-    return mongo.count(by("userId", userId), Share.class, COLLECTION);
+    return mongo.count(by("userId", userId), ShareDocument.class, COLLECTION);
   }
 
   public List<Share> findByUserIds(List<String> ids) {
@@ -62,7 +62,7 @@ public class MongoShareStore implements ShareStore {
   }
 
   public void deleteAllByPhotoId(String photoId) {
-    mongo.remove(by("photoId", photoId), Share.class, COLLECTION);
+    mongo.remove(by("photoId", photoId), ShareDocument.class, COLLECTION);
   }
 
   private Query by(String field, String value) {
@@ -71,7 +71,11 @@ public class MongoShareStore implements ShareStore {
 
   private List<Share> sorted(Query query) {
     query.with(Sort.by(Sort.Direction.DESC, "createdAt"));
-    return mongo.find(query, Share.class, COLLECTION);
+    return map(mongo.find(query, ShareDocument.class, COLLECTION));
+  }
+
+  private List<Share> map(List<ShareDocument> documents) {
+    return documents.stream().map(ShareDocument::toDomain).toList();
   }
 
   public MongoShareStore(MongoTemplate mongo) {
