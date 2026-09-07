@@ -100,7 +100,7 @@ const Register = () => {
                     submit: result.error || 'Đăng ký thất bại. Vui lòng thử lại.'
                 })
             }
-        } catch (error) {
+        } catch {
             // Handle unexpected errors
             toastError.general();
             setErrors({

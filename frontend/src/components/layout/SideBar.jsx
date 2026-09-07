@@ -5,7 +5,7 @@ import {Heart, Home, LogOut, Menu, MessageCircle, Moon, PlusSquare, Search, Sun,
 import { getUnreadCount } from '../../services/notificationService'
 
 const SideBar = () => {
-    const {user, logout, isAuthenticated} = useAuthContext()
+    const {logout, isAuthenticated} = useAuthContext()
     const [moreMenuOpen, setMoreMenuOpen] = useState(false)
     const [unreadNotifications, setUnreadNotifications] = useState(0)
     const [theme, setTheme] = useState(() => {

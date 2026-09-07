@@ -27,3 +27,6 @@ dist-ssr
 scripts/*
 !scripts/seed-via-api.cjs
 !scripts/benchmark-feed.cjs
+
+plans-improvement
+test-results

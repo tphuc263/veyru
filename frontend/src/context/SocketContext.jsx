@@ -3,7 +3,6 @@ import { useAuthContext } from './AuthContext';
 import {
     connectSocket,
     disconnectSocket,
-    getSocket,
     subscribeToSocketEvent,
     unsubscribeFromSocketEvent
 } from '../services/socketService';
