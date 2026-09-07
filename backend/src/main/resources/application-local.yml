@@ -3,6 +3,9 @@ spring:
     import: optional:file:.env[.properties]
   mongodb:
     uri: ${MONGODB_URI:mongodb://localhost:27017/veyru}
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
   neo4j:
     uri: ${NEO4J_URI:bolt://localhost:7687}
     authentication:
