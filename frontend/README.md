@@ -21,6 +21,20 @@ npm run dev
 
 Vite serves the application at http://localhost:5173 and defaults to the backend at http://localhost:8080.
 
+## Production on Vercel
+
+Configure these build-time variables and redeploy the frontend:
+
+```text
+VITE_API_BASE_URL=https://api.veyru.dev/api/v1
+VITE_SOCKET_URL=https://api.veyru.dev
+VITE_OAUTH_URL=https://api.veyru.dev/oauth2/authorization/google
+```
+
+The API client obtains the CSRF token from `GET /api/v1/csrf`, stores it only in memory and sends
+it in `X-XSRF-TOKEN` for state-changing REST requests and STOMP `CONNECT`. It does not attempt to
+read the host-only cookie belonging to `api.veyru.dev`.
+
 ## Checks
 
 ```bash

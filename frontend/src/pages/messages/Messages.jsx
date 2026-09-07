@@ -714,7 +714,6 @@ const Messages = () => {
                                 placeholder="Message..."
                                 value={newMessage}
                                 onChange={handleTyping}
-                                autoFocus
                             />
                             <button
                                 type="submit"

@@ -15,6 +15,7 @@ import com.veyru.application.port.out.GraphProjection;
 import com.veyru.application.port.out.UserStore;
 import com.veyru.domain.model.Follow;
 import com.veyru.domain.model.User;
+import com.veyru.support.DomainFixtures;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -68,22 +69,7 @@ class FollowServiceTest {
   void followEvictsOnlyTheViewersAffinity() {
     when(currentActor.id()).thenReturn(Optional.of("viewer"));
     when(userStore.findById("viewer")).thenReturn(Optional.of(user("viewer")));
-    User updatedTarget =
-        new User(
-            "target",
-            "target",
-            "target@example.com",
-            null,
-            "hash",
-            null,
-            null,
-            null,
-            Instant.EPOCH,
-            3,
-            8,
-            99,
-            null,
-            null);
+    User updatedTarget = DomainFixtures.user("target", 3, 8, 99);
     when(userStore.findById("target"))
         .thenReturn(Optional.of(user("target")), Optional.of(updatedTarget));
     when(followStore.find("viewer", "target")).thenReturn(Optional.empty());
@@ -95,20 +81,6 @@ class FollowServiceTest {
   }
 
   private User user(String id) {
-    return new User(
-        id,
-        id,
-        id + "@example.com",
-        null,
-        "hash",
-        null,
-        null,
-        null,
-        Instant.EPOCH,
-        0,
-        0,
-        0,
-        null,
-        null);
+    return DomainFixtures.user(id);
   }
 }

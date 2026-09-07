@@ -188,7 +188,7 @@ const NotificationDropdown = ({ onPhotoClick, isControlled = false, onClose }) =
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
       showToast('success', 'Đã đánh dấu tất cả đã đọc');
-    } catch (error) {
+    } catch {
       showToast('error', 'Không thể đánh dấu đã đọc');
     }
   };

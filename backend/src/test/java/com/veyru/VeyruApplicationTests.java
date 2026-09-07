@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
@@ -28,11 +29,13 @@ import org.testcontainers.utility.DockerImageName;
 import tools.jackson.databind.ObjectMapper;
 
 @Testcontainers
+@ActiveProfiles("local")
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
       "auth.token.jwt-secret=VGhpcy1pcy1hLXRlc3Qtc2VjcmV0LWtleS0zMi1ieXRlcw==",
       "auth.cookie.secure=false",
+      "graph.reconcile-on-startup=false",
       "cors.allowed-origins=http://localhost:5173",
       "app.frontend.url=http://localhost:5173",
       "app.oauth2.redirect-uri=http://localhost:5173/auth/oauth2/redirect",
@@ -63,7 +66,10 @@ class VeyruApplicationTests {
       new Neo4jContainer<>("neo4j:5.26.29").withAdminPassword("test-password");
 
   @DynamicPropertySource
-  static void neo4jProperties(DynamicPropertyRegistry properties) {
+  static void infrastructureProperties(DynamicPropertyRegistry properties) {
+    properties.add(
+        "spring.data.redis.url",
+        () -> "redis://" + redis.getHost() + ":" + redis.getMappedPort(6379));
     properties.add("spring.neo4j.uri", neo4j::getBoltUrl);
     properties.add("spring.neo4j.authentication.username", () -> "neo4j");
     properties.add("spring.neo4j.authentication.password", () -> "test-password");
@@ -85,6 +91,34 @@ class VeyruApplicationTests {
     var response = get("/actuator/health/liveness");
 
     assertThat(response.statusCode()).isEqualTo(200);
+  }
+
+  @Test
+  void csrfEndpointReturnsTokenAndHostOnlyHttpOnlyCookie() throws Exception {
+    var response = get("/api/v1/csrf");
+
+    assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(objectMapper.readTree(response.body()).get("token").asText()).isNotBlank();
+    String cookie = response.headers().firstValue("set-cookie").orElseThrow();
+    assertThat(cookie)
+        .contains("XSRF-TOKEN=", "HttpOnly", "SameSite=Lax")
+        .doesNotContain("Domain=");
+
+    String token = objectMapper.readTree(response.body()).get("token").asText();
+    String cookiePair = cookie.substring(0, cookie.indexOf(';'));
+    var loginResponse =
+        HttpClient.newHttpClient()
+            .send(
+                HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/v1/sessions"))
+                    .header("Content-Type", "application/json")
+                    .header("Cookie", cookiePair)
+                    .header("X-XSRF-TOKEN", token)
+                    .POST(
+                        HttpRequest.BodyPublishers.ofString(
+                            "{\"identifier\":\"missing\",\"password\":\"invalid-password\"}"))
+                    .build(),
+                HttpResponse.BodyHandlers.ofString());
+    assertThat(loginResponse.statusCode()).isEqualTo(401);
   }
 
   @Test

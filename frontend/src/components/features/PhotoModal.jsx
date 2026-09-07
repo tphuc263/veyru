@@ -124,7 +124,7 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate, onPhotoClick }) => {
     });
   };
 
-  const handleCommentAdded = (newCommentData) => {
+  const handleCommentAdded = () => {
     setLocalCommentCount(prev => prev + 1);
     if (onPhotoUpdate && photoDetail) {
       const updatedPhoto = {
@@ -203,7 +203,7 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate, onPhotoClick }) => {
       setReplyingTo(null);
       handleCommentAdded(newCommentData);
       showToast('success', 'Đã thêm bình luận');
-    } catch (error) {
+    } catch {
       showToast('error', 'Không thể thêm bình luận');
     } finally {
       setIsSubmittingComment(false);

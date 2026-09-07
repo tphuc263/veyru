@@ -9,8 +9,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -18,7 +16,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 @Component
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
-  private static final Logger log = LoggerFactory.getLogger(OAuth2SuccessHandler.class);
   private final SessionService sessions;
 
   private final String defaultRedirectUri;
@@ -29,7 +26,6 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
       HttpServletRequest request, HttpServletResponse response, Authentication authentication)
       throws IOException, ServletException {
     if (!(authentication.getPrincipal() instanceof CustomOAuth2User customUser)) {
-      log.error("Principal type invalid: {}", authentication.getPrincipal().getClass().getName());
       sendErrorRedirect(response, "invalid_principal_type");
       return;
     }
@@ -41,16 +37,15 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     String code =
         sessions.issueOAuthCode(
             new AuthenticatedUser(
-                customUser.getUser().getId(),
-                customUser.getUser().getUsername(),
+                customUser.getUser().id(),
+                customUser.getUser().username(),
                 email,
-                customUser.getUser().getRole().name()));
+                customUser.getUser().role().name()));
     String redirectUrl =
         UriComponentsBuilder.fromUriString(defaultRedirectUri)
             .queryParam("code", code)
             .build()
             .toUriString();
-    log.info("OAuth2 login succeeded");
     getRedirectStrategy().sendRedirect(request, response, redirectUrl);
   }
 

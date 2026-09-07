@@ -68,7 +68,8 @@ public final class SendMessageUseCase {
                 command.receiverId(),
                 command.text(),
                 now));
-    conversationStore.save(conversation.recordLastMessage(command.text(), command.senderId(), now));
+    conversationStore.save(
+        conversation.withRecordedMessage(command.text(), command.senderId(), now));
 
     MessageResult result = MessageResult.from(saved);
     notifier.messageSent(

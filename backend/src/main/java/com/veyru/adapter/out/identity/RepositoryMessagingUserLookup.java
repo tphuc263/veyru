@@ -17,6 +17,6 @@ public class RepositoryMessagingUserLookup implements MessagingUserLookup {
   public Optional<UserSummary> findById(String userId) {
     return userStore
         .findById(userId)
-        .map(user -> new UserSummary(user.getId(), user.getUsername(), user.getImageUrl()));
+        .map(user -> new UserSummary(user.id(), user.username(), user.imageUrl()));
   }
 }

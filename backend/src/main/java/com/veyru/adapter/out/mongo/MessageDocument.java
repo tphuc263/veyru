@@ -23,7 +23,7 @@ public class MessageDocument {
     return new Message(id, conversationId, senderId, receiverId, text, read, createdAt);
   }
 
-  public static MessageDocument from(Message message) {
+  public static MessageDocument fromDomain(Message message) {
     MessageDocument document = new MessageDocument();
     document.id = message.id();
     document.conversationId = message.conversationId();

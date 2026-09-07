@@ -1,22 +1,56 @@
 package com.veyru.domain.model;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
-public class Comment {
-  private String id;
-  private String photoId;
-  private String userId;
-  private String text;
-  private Instant createdAt;
-  private EmbeddedUser user;
-  // Nested comments support
-  private String parentCommentId; // null for top-level comments
-  private long likeCount = 0;
-  private long replyCount = 0;
-  // Mentioned users in comment (when user types @username)
-  private List<String> mentionedUserIds = new ArrayList<>();
+/**
+ * Immutable comment aggregate identified by its persisted ID. It owns author-only editing, valid
+ * reply relationships, normalized mentions, and non-negative counters.
+ */
+public final class Comment {
+  private final String id;
+  private final String photoId;
+  private final String text;
+  private final Instant createdAt;
+  private final UserSnapshot author;
+  private final String parentCommentId;
+  private final long likeCount;
+  private final long replyCount;
+  private final List<String> mentionedUserIds;
+
+  private Comment(
+      String id,
+      String photoId,
+      String text,
+      Instant createdAt,
+      UserSnapshot author,
+      String parentCommentId,
+      long likeCount,
+      long replyCount,
+      List<String> mentionedUserIds) {
+    this.id =
+        id == null ? null : DomainRules.required(id, "comment.id.invalid", "Comment ID is invalid");
+    this.photoId =
+        DomainRules.required(photoId, "comment.photo.required", "Comment photo is required");
+    this.text = validateText(text);
+    DomainRules.require(createdAt != null, "comment.time.required", "Comment time is required");
+    this.createdAt = createdAt;
+    DomainRules.require(author != null, "comment.author.required", "Comment author is required");
+    this.author = author;
+    this.parentCommentId =
+        parentCommentId == null
+            ? null
+            : DomainRules.required(
+                parentCommentId, "comment.parent.invalid", "Parent comment ID is invalid");
+    this.likeCount =
+        DomainRules.nonNegative(
+            likeCount, "comment.like-count.negative", "Like count cannot be negative");
+    this.replyCount =
+        DomainRules.nonNegative(
+            replyCount, "comment.reply-count.negative", "Reply count cannot be negative");
+    this.mentionedUserIds = normalizeMentions(mentionedUserIds);
+  }
 
   public static Comment create(
       String photoId,
@@ -25,270 +59,148 @@ public class Comment {
       String text,
       List<String> mentionedUserIds,
       Instant createdAt) {
-    requireText(text);
-    if (photoId == null || photoId.isBlank() || userId == null || userId.isBlank()) {
-      throw new IllegalArgumentException("Comment photo and author are required");
-    }
     return new Comment(
         null,
         photoId,
-        userId,
-        text.trim(),
+        text,
         createdAt,
-        new EmbeddedUser(userId, username),
+        new UserSnapshot(userId, username),
         null,
         0,
         0,
-        mentionedUserIds == null ? List.of() : List.copyOf(mentionedUserIds));
+        mentionedUserIds);
   }
 
-  public Comment replyTo(Comment parent) {
-    if (parent == null || parent.id == null || !photoId.equals(parent.photoId)) {
-      throw new IllegalArgumentException("Reply parent must belong to the same photo");
-    }
-    parentCommentId = parent.id;
-    return this;
+  /** Reconstitutes persisted state. New comments should be created through {@link #create}. */
+  public static Comment restore(
+      String id,
+      String photoId,
+      String text,
+      Instant createdAt,
+      UserSnapshot author,
+      String parentCommentId,
+      long likeCount,
+      long replyCount,
+      List<String> mentionedUserIds) {
+    return new Comment(
+        DomainRules.required(id, "comment.id.required", "Persisted comment ID is required"),
+        photoId,
+        text,
+        createdAt,
+        author,
+        parentCommentId,
+        likeCount,
+        replyCount,
+        mentionedUserIds);
   }
 
-  public Comment edit(String actorId, String text, List<String> mentionedUserIds) {
-    if (!userId.equals(actorId)) throw new IllegalArgumentException("Only the author can edit");
-    requireText(text);
-    this.text = text.trim();
-    this.mentionedUserIds = mentionedUserIds == null ? List.of() : List.copyOf(mentionedUserIds);
-    return this;
+  public Comment asReplyTo(Comment parent) {
+    DomainRules.require(
+        parent != null && parent.id != null && photoId.equals(parent.photoId),
+        "comment.reply.invalid-parent",
+        "Reply parent must be persisted and belong to the same photo");
+    return new Comment(
+        id, photoId, text, createdAt, author, parent.id, likeCount, replyCount, mentionedUserIds);
   }
 
-  public Comment recordLike() {
-    likeCount++;
-    return this;
+  public Comment editedBy(String actorId, String text, List<String> mentionedUserIds) {
+    DomainRules.require(
+        author.userId().equals(actorId),
+        "comment.edit.not-author",
+        "Only the comment author can edit it");
+    return new Comment(
+        id,
+        photoId,
+        text,
+        createdAt,
+        author,
+        parentCommentId,
+        likeCount,
+        replyCount,
+        mentionedUserIds);
   }
 
-  private static void requireText(String text) {
-    if (text == null || text.isBlank())
-      throw new IllegalArgumentException("Comment text is required");
+  public Comment withRecordedLike() {
+    return new Comment(
+        id,
+        photoId,
+        text,
+        createdAt,
+        author,
+        parentCommentId,
+        likeCount + 1,
+        replyCount,
+        mentionedUserIds);
   }
 
-  public static class EmbeddedUser {
-    private String userId;
-    private String username;
-
-    public String getUserId() {
-      return this.userId;
-    }
-
-    public String getUsername() {
-      return this.username;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (o == this) return true;
-      if (!(o instanceof Comment.EmbeddedUser)) return false;
-      final Comment.EmbeddedUser other = (Comment.EmbeddedUser) o;
-      if (!other.canEqual((Object) this)) return false;
-      final Object this$userId = this.getUserId();
-      final Object other$userId = other.getUserId();
-      if (this$userId == null ? other$userId != null : !this$userId.equals(other$userId))
-        return false;
-      final Object this$username = this.getUsername();
-      final Object other$username = other.getUsername();
-      if (this$username == null ? other$username != null : !this$username.equals(other$username))
-        return false;
-      return true;
-    }
-
-    protected boolean canEqual(final Object other) {
-      return other instanceof Comment.EmbeddedUser;
-    }
-
-    @Override
-    public int hashCode() {
-      final int PRIME = 59;
-      int result = 1;
-      final Object $userId = this.getUserId();
-      result = result * PRIME + ($userId == null ? 43 : $userId.hashCode());
-      final Object $username = this.getUsername();
-      result = result * PRIME + ($username == null ? 43 : $username.hashCode());
-      return result;
-    }
-
-    @Override
-    public String toString() {
-      return "Comment.EmbeddedUser(userId="
-          + this.getUserId()
-          + ", username="
-          + this.getUsername()
-          + ")";
-    }
-
-    public EmbeddedUser() {}
-
-    public EmbeddedUser(final String userId, final String username) {
-      this.userId = userId;
-      this.username = username;
-    }
+  private static String validateText(String text) {
+    String normalized =
+        DomainRules.required(text, "comment.text.required", "Comment text is required");
+    DomainRules.require(
+        normalized.length() <= 500,
+        "comment.text.too-long",
+        "Comment text cannot exceed 500 characters");
+    return normalized;
   }
 
-  public String getId() {
-    return this.id;
+  private static List<String> normalizeMentions(List<String> mentionedUserIds) {
+    if (mentionedUserIds == null) return List.of();
+    return mentionedUserIds.stream()
+        .filter(Objects::nonNull)
+        .map(String::trim)
+        .filter(id -> !id.isEmpty())
+        .distinct()
+        .toList();
   }
 
-  public String getPhotoId() {
-    return this.photoId;
+  public String id() {
+    return id;
   }
 
-  public String getUserId() {
-    return this.userId;
+  public String photoId() {
+    return photoId;
   }
 
-  public String getText() {
-    return this.text;
+  public String userId() {
+    return author.userId();
   }
 
-  public Instant getCreatedAt() {
-    return this.createdAt;
+  public String text() {
+    return text;
   }
 
-  public EmbeddedUser getUser() {
-    return this.user;
+  public Instant createdAt() {
+    return createdAt;
   }
 
-  public String getParentCommentId() {
-    return this.parentCommentId;
+  public UserSnapshot author() {
+    return author;
   }
 
-  public long getLikeCount() {
-    return this.likeCount;
+  public String parentCommentId() {
+    return parentCommentId;
   }
 
-  public long getReplyCount() {
-    return this.replyCount;
+  public long likeCount() {
+    return likeCount;
   }
 
-  public List<String> getMentionedUserIds() {
-    return this.mentionedUserIds;
+  public long replyCount() {
+    return replyCount;
+  }
+
+  public List<String> mentionedUserIds() {
+    return mentionedUserIds;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (o == this) return true;
-    if (!(o instanceof Comment)) return false;
-    final Comment other = (Comment) o;
-    if (!other.canEqual((Object) this)) return false;
-    if (this.getLikeCount() != other.getLikeCount()) return false;
-    if (this.getReplyCount() != other.getReplyCount()) return false;
-    final Object this$id = this.getId();
-    final Object other$id = other.getId();
-    if (this$id == null ? other$id != null : !this$id.equals(other$id)) return false;
-    final Object this$photoId = this.getPhotoId();
-    final Object other$photoId = other.getPhotoId();
-    if (this$photoId == null ? other$photoId != null : !this$photoId.equals(other$photoId))
-      return false;
-    final Object this$userId = this.getUserId();
-    final Object other$userId = other.getUserId();
-    if (this$userId == null ? other$userId != null : !this$userId.equals(other$userId))
-      return false;
-    final Object this$text = this.getText();
-    final Object other$text = other.getText();
-    if (this$text == null ? other$text != null : !this$text.equals(other$text)) return false;
-    final Object this$createdAt = this.getCreatedAt();
-    final Object other$createdAt = other.getCreatedAt();
-    if (this$createdAt == null ? other$createdAt != null : !this$createdAt.equals(other$createdAt))
-      return false;
-    final Object this$user = this.getUser();
-    final Object other$user = other.getUser();
-    if (this$user == null ? other$user != null : !this$user.equals(other$user)) return false;
-    final Object this$parentCommentId = this.getParentCommentId();
-    final Object other$parentCommentId = other.getParentCommentId();
-    if (this$parentCommentId == null
-        ? other$parentCommentId != null
-        : !this$parentCommentId.equals(other$parentCommentId)) return false;
-    final Object this$mentionedUserIds = this.getMentionedUserIds();
-    final Object other$mentionedUserIds = other.getMentionedUserIds();
-    if (this$mentionedUserIds == null
-        ? other$mentionedUserIds != null
-        : !this$mentionedUserIds.equals(other$mentionedUserIds)) return false;
-    return true;
-  }
-
-  protected boolean canEqual(final Object other) {
-    return other instanceof Comment;
+  public boolean equals(Object other) {
+    if (this == other) return true;
+    return other instanceof Comment comment && id != null && id.equals(comment.id);
   }
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final long $likeCount = this.getLikeCount();
-    result = result * PRIME + (int) ($likeCount >>> 32 ^ $likeCount);
-    final long $replyCount = this.getReplyCount();
-    result = result * PRIME + (int) ($replyCount >>> 32 ^ $replyCount);
-    final Object $id = this.getId();
-    result = result * PRIME + ($id == null ? 43 : $id.hashCode());
-    final Object $photoId = this.getPhotoId();
-    result = result * PRIME + ($photoId == null ? 43 : $photoId.hashCode());
-    final Object $userId = this.getUserId();
-    result = result * PRIME + ($userId == null ? 43 : $userId.hashCode());
-    final Object $text = this.getText();
-    result = result * PRIME + ($text == null ? 43 : $text.hashCode());
-    final Object $createdAt = this.getCreatedAt();
-    result = result * PRIME + ($createdAt == null ? 43 : $createdAt.hashCode());
-    final Object $user = this.getUser();
-    result = result * PRIME + ($user == null ? 43 : $user.hashCode());
-    final Object $parentCommentId = this.getParentCommentId();
-    result = result * PRIME + ($parentCommentId == null ? 43 : $parentCommentId.hashCode());
-    final Object $mentionedUserIds = this.getMentionedUserIds();
-    result = result * PRIME + ($mentionedUserIds == null ? 43 : $mentionedUserIds.hashCode());
-    return result;
-  }
-
-  @Override
-  public String toString() {
-    return "Comment(id="
-        + this.getId()
-        + ", photoId="
-        + this.getPhotoId()
-        + ", userId="
-        + this.getUserId()
-        + ", text="
-        + this.getText()
-        + ", createdAt="
-        + this.getCreatedAt()
-        + ", user="
-        + this.getUser()
-        + ", parentCommentId="
-        + this.getParentCommentId()
-        + ", likeCount="
-        + this.getLikeCount()
-        + ", replyCount="
-        + this.getReplyCount()
-        + ", mentionedUserIds="
-        + this.getMentionedUserIds()
-        + ")";
-  }
-
-  public Comment() {}
-
-  public Comment(
-      final String id,
-      final String photoId,
-      final String userId,
-      final String text,
-      final Instant createdAt,
-      final EmbeddedUser user,
-      final String parentCommentId,
-      final long likeCount,
-      final long replyCount,
-      final List<String> mentionedUserIds) {
-    this.id = id;
-    this.photoId = photoId;
-    this.userId = userId;
-    this.text = text;
-    this.createdAt = createdAt;
-    this.user = user;
-    this.parentCommentId = parentCommentId;
-    this.likeCount = likeCount;
-    this.replyCount = replyCount;
-    this.mentionedUserIds = mentionedUserIds == null ? List.of() : List.copyOf(mentionedUserIds);
+    return id == null ? System.identityHashCode(this) : Objects.hash(id);
   }
 }

@@ -3,6 +3,7 @@ package com.veyru.adapter.in;
 import com.veyru.adapter.in.error.ErrorCode;
 import com.veyru.adapter.in.error.ValidationError;
 import com.veyru.application.common.error.UseCaseException;
+import com.veyru.domain.model.DomainValidationException;
 import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
 import java.util.List;
@@ -113,6 +114,13 @@ public class GlobalExceptionHandler {
             : ErrorCode.INVALID_REQUEST_VALUE,
         null,
         request);
+  }
+
+  @ExceptionHandler(DomainValidationException.class)
+  public ProblemDetail handleDomainValidation(DomainValidationException ex, WebRequest request) {
+    ProblemDetail problem = problem(ErrorCode.VALIDATION_FAILED, ex.getMessage(), request);
+    problem.setProperty("rule", ex.rule());
+    return problem;
   }
 
   @ExceptionHandler(HttpRequestMethodNotSupportedException.class)

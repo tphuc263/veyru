@@ -3,6 +3,7 @@ package com.veyru.application.port.out;
 import com.veyru.application.common.PageQuery;
 import com.veyru.application.common.PageResult;
 import com.veyru.domain.model.Photo;
+import com.veyru.domain.model.PhotoUserTag;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -21,8 +22,6 @@ public interface PhotoStore {
   PageResult<Photo> findByUser(String userId, PageQuery page);
 
   PageResult<Photo> searchText(String text, PageQuery page);
-
-  PageResult<Photo> searchCaption(String text, PageQuery page);
 
   PageResult<Photo> findByTags(List<String> tags, PageQuery page);
 
@@ -52,7 +51,7 @@ public interface PhotoStore {
 
   void incrementShareCount(String id, long delta);
 
-  void addUserTag(String id, Photo.EmbeddedUserTag tag);
+  void addUserTag(String id, PhotoUserTag tag);
 
   void removeUserTag(String id, String userId);
 }

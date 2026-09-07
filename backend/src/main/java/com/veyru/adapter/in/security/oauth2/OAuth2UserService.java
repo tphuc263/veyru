@@ -6,8 +6,6 @@ import java.time.Clock;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -21,7 +19,6 @@ import org.springframework.util.StringUtils;
 @Service
 @Transactional
 public class OAuth2UserService extends DefaultOAuth2UserService {
-  private static final Logger log = LoggerFactory.getLogger(OAuth2UserService.class);
   private final UserStore userStore;
   private final PasswordEncoder passwordEncoder;
   private final Clock clock;
@@ -39,13 +36,10 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
     if (!StringUtils.hasText(email)) {
       throw new OAuth2AuthenticationException("Can\'t take email from provider: " + provider);
     }
-    User user = userStore.findByEmail(email).orElse(null);
-    if (user == null) {
-      user = createUser(attributes, email, provider);
-      log.info("Created new OAuth2 user from {}", provider);
-    }
+    User user =
+        userStore.findByEmail(email).orElseGet(() -> createUser(attributes, email, provider));
     return new CustomOAuth2User(
-        user, attributes, Set.of(new SimpleGrantedAuthority(user.getRole().name())));
+        user, attributes, Set.of(new SimpleGrantedAuthority(user.role().name())));
   }
 
   private String extractEmail(Map<String, Object> attributes, String provider) {

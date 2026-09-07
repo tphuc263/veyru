@@ -4,6 +4,7 @@ import com.veyru.application.common.PageQuery;
 import com.veyru.application.common.PageResult;
 import com.veyru.application.port.out.PhotoStore;
 import com.veyru.domain.model.Photo;
+import com.veyru.domain.model.PhotoUserTag;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -22,19 +23,21 @@ public class MongoPhotoStore implements PhotoStore {
   private final MongoTemplate mongo;
 
   public Photo save(Photo value) {
-    return mongo.save(value, COLLECTION);
+    return mongo.save(PhotoDocument.fromDomain(value), COLLECTION).toDomain();
   }
 
   public Optional<Photo> findById(String id) {
-    return Optional.ofNullable(mongo.findById(id, Photo.class, COLLECTION));
+    return Optional.ofNullable(mongo.findById(id, PhotoDocument.class, COLLECTION))
+        .map(PhotoDocument::toDomain);
   }
 
   public List<Photo> findAll() {
-    return mongo.findAll(Photo.class, COLLECTION);
+    return map(mongo.findAll(PhotoDocument.class, COLLECTION));
   }
 
   public List<Photo> findAllById(List<String> ids) {
-    return mongo.find(Query.query(Criteria.where("_id").in(ids)), Photo.class, COLLECTION);
+    return map(
+        mongo.find(Query.query(Criteria.where("_id").in(ids)), PhotoDocument.class, COLLECTION));
   }
 
   public PageResult<Photo> findAll(PageQuery page) {
@@ -47,10 +50,6 @@ public class MongoPhotoStore implements PhotoStore {
 
   public PageResult<Photo> searchText(String text, PageQuery page) {
     return page(Query.query(Criteria.where("caption").regex(text, "i")), page);
-  }
-
-  public PageResult<Photo> searchCaption(String text, PageQuery page) {
-    return searchText(text, page);
   }
 
   public PageResult<Photo> findByTags(List<String> tags, PageQuery page) {
@@ -95,11 +94,11 @@ public class MongoPhotoStore implements PhotoStore {
   }
 
   public long count() {
-    return mongo.count(new Query(), Photo.class, COLLECTION);
+    return mongo.count(new Query(), PhotoDocument.class, COLLECTION);
   }
 
   public void deleteById(String id) {
-    mongo.remove(Query.query(Criteria.where("_id").is(id)), Photo.class, COLLECTION);
+    mongo.remove(Query.query(Criteria.where("_id").is(id)), PhotoDocument.class, COLLECTION);
   }
 
   public void incrementLikeCount(String id, long delta) {
@@ -114,19 +113,28 @@ public class MongoPhotoStore implements PhotoStore {
     increment(id, "shareCount", delta);
   }
 
-  public void addUserTag(String id, Photo.EmbeddedUserTag tag) {
-    mongo.updateFirst(byId(id), new Update().push("userTags", tag), COLLECTION);
+  public void addUserTag(String id, PhotoUserTag tag) {
+    mongo.updateFirst(
+        byId(id),
+        new Update().push("userTags", PhotoDocument.PhotoUserTagDocument.fromDomain(tag)),
+        PhotoDocument.class,
+        COLLECTION);
   }
 
   public void removeUserTag(String id, String userId) {
     mongo.updateFirst(
         byId(id),
         new Update().pull("userTags", Query.query(Criteria.where("taggedUserId").is(userId))),
+        PhotoDocument.class,
         COLLECTION);
   }
 
   private void increment(String id, String field, long delta) {
-    mongo.updateFirst(byId(id), new Update().inc(field, delta), COLLECTION);
+    mongo.updateFirst(
+        MongoCounterUpdate.guardedById(id, field, delta),
+        new Update().inc(field, delta),
+        PhotoDocument.class,
+        COLLECTION);
   }
 
   private Query byId(String id) {
@@ -135,14 +143,14 @@ public class MongoPhotoStore implements PhotoStore {
 
   private List<Photo> sorted(Query query) {
     query.with(Sort.by(Sort.Direction.DESC, "createdAt"));
-    return mongo.find(query, Photo.class, COLLECTION);
+    return map(mongo.find(query, PhotoDocument.class, COLLECTION));
   }
 
   private PageResult<Photo> page(Query query, PageQuery page) {
-    long total = mongo.count(Query.of(query).limit(-1).skip(-1), Photo.class, COLLECTION);
+    long total = mongo.count(Query.of(query).limit(-1).skip(-1), PhotoDocument.class, COLLECTION);
     query.with(PageRequest.of(page.page(), page.size(), Sort.by(Sort.Direction.DESC, "createdAt")));
     return new PageResult<>(
-        mongo.find(query, Photo.class, COLLECTION),
+        map(mongo.find(query, PhotoDocument.class, COLLECTION)),
         page.page(),
         page.size(),
         total,
@@ -169,12 +177,19 @@ public class MongoPhotoStore implements PhotoStore {
     operations.add(Aggregation.limit(page.size()));
     List<Photo> items =
         mongo
-            .aggregate(Aggregation.newAggregation(operations), COLLECTION, Photo.class)
-            .getMappedResults();
+            .aggregate(Aggregation.newAggregation(operations), COLLECTION, PhotoDocument.class)
+            .getMappedResults()
+            .stream()
+            .map(PhotoDocument::toDomain)
+            .toList();
     Query countQuery = criteria == null ? new Query() : Query.query(criteria);
-    long total = mongo.count(countQuery, Photo.class, COLLECTION);
+    long total = mongo.count(countQuery, PhotoDocument.class, COLLECTION);
     return new PageResult<>(
         items, page.page(), page.size(), total, (int) Math.ceil((double) total / page.size()));
+  }
+
+  private List<Photo> map(List<PhotoDocument> documents) {
+    return documents.stream().map(PhotoDocument::toDomain).toList();
   }
 
   public MongoPhotoStore(MongoTemplate mongo) {

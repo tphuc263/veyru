@@ -14,12 +14,9 @@ import java.time.ZonedDateTime;
 import java.time.format.TextStyle;
 import java.util.*;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Local AI service using algorithmic approaches instead of external APIs. */
 public class AIService {
-  private static final Logger log = LoggerFactory.getLogger(AIService.class);
   private final PhotoStore photoStore;
   private final CurrentActor currentActor;
   private static final Map<String, List<String>> SCENE_TAGS =
@@ -75,7 +72,6 @@ public class AIService {
         .orElseThrow(() -> new UseCaseException(UseCaseError.AUTHENTICATION_REQUIRED));
   }
 
-  // ==================== USER CONTEXT ====================
   private static class UserContext {
     private boolean hasHistory;
     private double avgCaptionLength;
@@ -121,18 +117,14 @@ public class AIService {
     }
     context.setHasHistory(true);
     List<String> recentCaptions =
-        recentPhotos.stream()
-            .map(Photo::getCaption)
-            .filter(c -> c != null && !c.isBlank())
-            .toList();
+        recentPhotos.stream().map(Photo::caption).filter(c -> c != null && !c.isBlank()).toList();
     if (!recentCaptions.isEmpty()) {
       double avgLength = recentCaptions.stream().mapToInt(String::length).average().orElse(0);
       context.setAvgCaptionLength(avgLength);
     }
     List<String> topTags =
         recentPhotos.stream()
-            .filter(p -> p.getTags() != null)
-            .flatMap(p -> p.getTags().stream())
+            .flatMap(p -> p.tags().stream())
             .collect(Collectors.groupingBy(t -> t, Collectors.counting()))
             .entrySet()
             .stream()
@@ -145,9 +137,7 @@ public class AIService {
     return context;
   }
 
-  // ==================== ENGAGEMENT ANALYSIS ====================
   public EngagementAnalysisResult analyzeEngagement(String userId, int recentPostCount) {
-    log.info("Analyzing engagement for user: {}, recentPostCount: {}", userId, recentPostCount);
     int count = recentPostCount > 0 ? Math.min(recentPostCount, 50) : 20;
     List<Photo> photos = photoStore.findByUser(userId);
     List<Photo> recentPhotos = photos.stream().limit(count).toList();
@@ -155,11 +145,10 @@ public class AIService {
       return new EngagementAnalysisResult(
           0, 0, 0, "no_data", List.of(), "Chưa có bài đăng nào để phân tích.");
     }
-    double avgLikes = recentPhotos.stream().mapToLong(Photo::getLikeCount).average().orElse(0);
-    double avgComments =
-        recentPhotos.stream().mapToLong(Photo::getCommentCount).average().orElse(0);
+    double avgLikes = recentPhotos.stream().mapToLong(Photo::likeCount).average().orElse(0);
+    double avgComments = recentPhotos.stream().mapToLong(Photo::commentCount).average().orElse(0);
     double totalEngagement =
-        recentPhotos.stream().mapToDouble(p -> p.getLikeCount() + p.getCommentCount() * 2.0).sum();
+        recentPhotos.stream().mapToDouble(p -> p.likeCount() + p.commentCount() * 2.0).sum();
     double engagementRate = recentPhotos.size() > 0 ? totalEngagement / recentPhotos.size() : 0;
     String trend = calculateTrend(recentPhotos);
     List<EngagementAnalysisResult.PostInsight> topPosts =
@@ -167,22 +156,22 @@ public class AIService {
             .sorted(
                 (a, b) ->
                     Double.compare(
-                        b.getLikeCount() + b.getCommentCount() * 2.0,
-                        a.getLikeCount() + a.getCommentCount() * 2.0))
+                        b.likeCount() + b.commentCount() * 2.0,
+                        a.likeCount() + a.commentCount() * 2.0))
             .limit(5)
             .map(
                 p ->
                     new EngagementAnalysisResult.PostInsight(
-                        p.getId(),
-                        p.getCaption() != null
-                            ? (p.getCaption().length() > 80
-                                ? p.getCaption().substring(0, 80) + "..."
-                                : p.getCaption())
+                        p.id(),
+                        p.caption() != null
+                            ? (p.caption().length() > 80
+                                ? p.caption().substring(0, 80) + "..."
+                                : p.caption())
                             : "",
-                        p.getImageUrl(),
-                        p.getLikeCount(),
-                        p.getCommentCount(),
-                        p.getLikeCount() + p.getCommentCount() * 2.0))
+                        p.imageUrl(),
+                        p.likeCount(),
+                        p.commentCount(),
+                        p.likeCount() + p.commentCount() * 2.0))
             .toList();
     String summary =
         buildEngagementSummary(avgLikes, avgComments, engagementRate, trend, recentPhotos);
@@ -202,12 +191,12 @@ public class AIService {
     List<Photo> olderHalf = photos.subList(half, photos.size());
     double recentAvg =
         recentHalf.stream()
-            .mapToDouble(p -> p.getLikeCount() + p.getCommentCount() * 2.0)
+            .mapToDouble(p -> p.likeCount() + p.commentCount() * 2.0)
             .average()
             .orElse(0);
     double olderAvg =
         olderHalf.stream()
-            .mapToDouble(p -> p.getLikeCount() + p.getCommentCount() * 2.0)
+            .mapToDouble(p -> p.likeCount() + p.commentCount() * 2.0)
             .average()
             .orElse(0);
     if (olderAvg == 0) return "new_account";
@@ -231,10 +220,8 @@ public class AIService {
     summary.append(String.format("• Điểm tương tác trung bình: %.1f\n", engagementRate));
     Map<String, Long> tagFrequency = new HashMap<>();
     for (Photo p : photos) {
-      if (p.getTags() != null) {
-        for (String tag : p.getTags()) {
-          tagFrequency.merge(tag, 1L, Long::sum);
-        }
+      for (String tag : p.tags()) {
+        tagFrequency.merge(tag, 1L, Long::sum);
       }
     }
     if (!tagFrequency.isEmpty()) {
@@ -263,9 +250,7 @@ public class AIService {
     return summary.toString();
   }
 
-  // ==================== POST TIMING ====================
   public PostTimingSuggestionResult suggestPostTiming(String userId) {
-    log.info("Suggesting post timing for user: {}", userId);
     List<Photo> photos = photoStore.findByUser(userId);
     if (photos.size() < 3) {
       return getDefaultTimingSuggestion();
@@ -273,11 +258,10 @@ public class AIService {
     Map<DayOfWeek, List<Double>> engagementByDay = new EnumMap<>(DayOfWeek.class);
     Map<Integer, List<Double>> engagementByHour = new HashMap<>();
     for (Photo photo : photos) {
-      if (photo.getCreatedAt() == null) continue;
-      ZonedDateTime postTime = photo.getCreatedAt().atZone(ZoneId.of("Asia/Ho_Chi_Minh"));
+      ZonedDateTime postTime = photo.createdAt().atZone(ZoneId.of("Asia/Ho_Chi_Minh"));
       DayOfWeek day = postTime.getDayOfWeek();
       int hour = postTime.getHour();
-      double engagement = photo.getLikeCount() + photo.getCommentCount() * 2.0;
+      double engagement = photo.likeCount() + photo.commentCount() * 2.0;
       engagementByDay.computeIfAbsent(day, k -> new ArrayList<>()).add(engagement);
       engagementByHour.computeIfAbsent(hour, k -> new ArrayList<>()).add(engagement);
     }
@@ -361,9 +345,7 @@ public class AIService {
     return sb.toString();
   }
 
-  // ==================== IMAGE ANALYSIS ====================
   public ImageAnalysisResult analyzeImage(ImageAnalysisCommand request) {
-    log.info("Analyzing image for user: {}", request.userId());
     UserContext userContext = buildUserContext(request.userId());
     return generateImageAnalysis(userContext);
   }

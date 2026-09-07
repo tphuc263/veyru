@@ -14,29 +14,32 @@ import org.springframework.data.mongodb.core.index.IndexDefinition;
 
 @Configuration
 public class MongoIndexConfig {
+  private static final int MANAGED_INDEX_COUNT = 11;
   private static final Logger log = LoggerFactory.getLogger(MongoIndexConfig.class);
   private final MongoTemplate mongoTemplate;
 
   @Bean
   public CommandLineRunner createIndexes() {
     return args -> {
-      log.info("Synchronizing MongoDB indexes with database definitions...");
+      long startedAt = System.nanoTime();
       createUserIndexes();
       createPhotoIndexes();
       createLikeIndexes();
       createCommentIndexes();
       createFollowIndexes();
       createShareIndexes();
-      log.info("MongoDB indexes synchronized successfully!");
+      long durationMillis = (System.nanoTime() - startedAt) / 1_000_000;
+      log.info(
+          "MongoDB index synchronization completed: outcome=success, durationMs={}, indexes={}",
+          durationMillis,
+          MANAGED_INDEX_COUNT);
     };
   }
 
   private void createUserIndexes() {
     String collection = "users";
     ensureIndex(collection, new Index().on("username", Sort.Direction.ASC).unique());
-    // auth require email unique
     ensureIndex(collection, new Index().on("email", Sort.Direction.ASC).unique());
-    log.info("✓ User indexes synchronized");
   }
 
   private void createPhotoIndexes() {
@@ -47,7 +50,6 @@ public class MongoIndexConfig {
     ensureIndex(
         collection, new CompoundIndexDefinition(new Document("tags", 1).append("createdAt", -1)));
     ensureIndex(collection, new Index().on("userTags.taggedUserId", Sort.Direction.ASC));
-    log.info("✓ Photo indexes synchronized");
   }
 
   private void createLikeIndexes() {
@@ -56,7 +58,6 @@ public class MongoIndexConfig {
     ensureIndex(
         collection,
         new CompoundIndexDefinition(new Document("photoId", 1).append("userId", 1)).unique());
-    log.info("✓ Like indexes synchronized");
   }
 
   private void createCommentIndexes() {
@@ -64,7 +65,6 @@ public class MongoIndexConfig {
     ensureIndex(
         collection,
         new CompoundIndexDefinition(new Document("photoId", 1).append("createdAt", -1)));
-    log.info("✓ Comment indexes synchronized");
   }
 
   private void createFollowIndexes() {
@@ -74,18 +74,14 @@ public class MongoIndexConfig {
         collection,
         new CompoundIndexDefinition(new Document("followerId", 1).append("followingId", 1))
             .unique());
-    log.info("✓ Follow indexes synchronized");
   }
 
   private void createShareIndexes() {
     ensureIndex(
         "shares", new CompoundIndexDefinition(new Document("userId", 1).append("createdAt", -1)));
-    log.info("✓ Share indexes synchronized");
   }
 
-  /** Helper method to safely create indexes */
   private void ensureIndex(String collection, IndexDefinition indexDefinition) {
-
     mongoTemplate.indexOps(collection).createIndex(indexDefinition);
   }
 

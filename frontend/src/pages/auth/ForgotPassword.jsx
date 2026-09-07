@@ -112,7 +112,6 @@ const ForgotPassword = () => {
                             className={`form-input ${error ? 'error' : ''}`}
                             disabled={loading}
                             autoComplete="email"
-                            autoFocus
                             required
                         />
                         {error && (

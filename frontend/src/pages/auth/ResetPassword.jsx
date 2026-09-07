@@ -125,7 +125,6 @@ const ResetPassword = () => {
                             className={`form-input ${errors.newPassword ? 'error' : ''}`}
                             disabled={loading}
                             autoComplete="new-password"
-                            autoFocus
                             required
                         />
                         {errors.newPassword && (

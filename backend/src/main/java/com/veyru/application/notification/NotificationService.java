@@ -12,11 +12,8 @@ import com.veyru.domain.model.Notification;
 import com.veyru.domain.model.User;
 import java.time.Clock;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class NotificationService {
-  private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
   private final NotificationStore notificationStore;
   private final NotificationNotifier notifier;
   private final AvatarCache userAvatarCacheService;
@@ -25,40 +22,40 @@ public class NotificationService {
 
   public void sendLikePhotoNotification(
       String photoOwnerId, User actor, String photoId, String thumbnailUrl) {
-    if (actor.getId().equals(photoOwnerId)) return; // Don't notify self
+    if (actor.id().equals(photoOwnerId)) return;
     publishNotification(
         photoOwnerId,
         actor,
         NotificationType.LIKE_PHOTO,
         photoId,
         null,
-        actor.getUsername() + " đã thích ảnh của bạn",
+        actor.username() + " đã thích ảnh của bạn",
         thumbnailUrl);
   }
 
   public void sendCommentPhotoNotification(
       String photoOwnerId, User actor, String photoId, String commentId, String thumbnailUrl) {
-    if (actor.getId().equals(photoOwnerId)) return;
+    if (actor.id().equals(photoOwnerId)) return;
     publishNotification(
         photoOwnerId,
         actor,
         NotificationType.COMMENT_PHOTO,
         photoId,
         commentId,
-        actor.getUsername() + " đã bình luận ảnh của bạn",
+        actor.username() + " đã bình luận ảnh của bạn",
         thumbnailUrl);
   }
 
   public void sendLikeCommentNotification(
       String commentOwnerId, User actor, String photoId, String commentId) {
-    if (actor.getId().equals(commentOwnerId)) return;
+    if (actor.id().equals(commentOwnerId)) return;
     publishNotification(
         commentOwnerId,
         actor,
         NotificationType.LIKE_COMMENT,
         photoId,
         commentId,
-        actor.getUsername() + " đã thích bình luận của bạn",
+        actor.username() + " đã thích bình luận của bạn",
         null);
   }
 
@@ -68,52 +65,52 @@ public class NotificationService {
       String photoId,
       String commentId,
       String thumbnailUrl) {
-    if (actor.getId().equals(parentCommentOwnerId)) return;
+    if (actor.id().equals(parentCommentOwnerId)) return;
     publishNotification(
         parentCommentOwnerId,
         actor,
         NotificationType.REPLY_COMMENT,
         photoId,
         commentId,
-        actor.getUsername() + " đã trả lời bình luận của bạn",
+        actor.username() + " đã trả lời bình luận của bạn",
         thumbnailUrl);
   }
 
   public void sendMentionNotification(
       String mentionedUserId, User actor, String photoId, String commentId, String thumbnailUrl) {
-    if (actor.getId().equals(mentionedUserId)) return;
+    if (actor.id().equals(mentionedUserId)) return;
     publishNotification(
         mentionedUserId,
         actor,
         NotificationType.MENTION_IN_COMMENT,
         photoId,
         commentId,
-        actor.getUsername() + " đã nhắc đến bạn trong một bình luận",
+        actor.username() + " đã nhắc đến bạn trong một bình luận",
         thumbnailUrl);
   }
 
   public void sendTagInPhotoNotification(
       String taggedUserId, User actor, String photoId, String thumbnailUrl) {
-    if (actor.getId().equals(taggedUserId)) return;
+    if (actor.id().equals(taggedUserId)) return;
     publishNotification(
         taggedUserId,
         actor,
         NotificationType.TAG_IN_PHOTO,
         photoId,
         null,
-        actor.getUsername() + " đã gắn thẻ bạn trong một ảnh",
+        actor.username() + " đã gắn thẻ bạn trong một ảnh",
         thumbnailUrl);
   }
 
   public void sendNewFollowerNotification(String followedUserId, User actor) {
-    if (actor.getId().equals(followedUserId)) return;
+    if (actor.id().equals(followedUserId)) return;
     publishNotification(
         followedUserId,
         actor,
         NotificationType.NEW_FOLLOWER,
         null,
         null,
-        actor.getUsername() + " đã bắt đầu theo dõi bạn",
+        actor.username() + " đã bắt đầu theo dõi bạn",
         null);
   }
 
@@ -138,11 +135,10 @@ public class NotificationService {
   public void markAsRead(String notificationId, String recipientId) {
     notificationStore
         .findById(notificationId)
-        .filter(notification -> notification.getRecipientId().equals(recipientId))
+        .filter(notification -> notification.recipientId().equals(recipientId))
         .ifPresentOrElse(
             notification -> {
-              notification.markRead();
-              notificationStore.save(notification);
+              notificationStore.save(notification.markedRead());
             },
             () -> {
               throw new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND);
@@ -155,8 +151,7 @@ public class NotificationService {
 
   public void markAllAsRead(String userId) {
     List<Notification> unreadNotifications = notificationStore.findUnread(userId);
-    unreadNotifications.forEach(Notification::markRead);
-    notificationStore.saveAll(unreadNotifications);
+    notificationStore.saveAll(unreadNotifications.stream().map(Notification::markedRead).toList());
   }
 
   public void markAllAsRead() {
@@ -177,12 +172,11 @@ public class NotificationService {
       String commentId,
       String message,
       String thumbnailUrl) {
-    // Save to database
     Notification notification =
         Notification.create(
             recipientId,
-            actor.getId(),
-            actor.getUsername(),
+            actor.id(),
+            actor.username(),
             type,
             photoId,
             commentId,
@@ -190,31 +184,22 @@ public class NotificationService {
             thumbnailUrl,
             clock.instant());
     Notification savedNotification = notificationStore.save(notification);
-    log.info("Saved notification: {} for user: {}", savedNotification.getId(), recipientId);
-    // Send real-time notification via WebSocket
-    sendRealTimeNotification(recipientId, convertToResponse(savedNotification));
-  }
-
-  // Send real-time notification via WebSocket
-  private void sendRealTimeNotification(String userId, NotificationResult response) {
-
-    notifier.send(userId, response);
-    log.info("Sent real-time notification to user: {}", userId);
+    notifier.send(recipientId, convertToResponse(savedNotification));
   }
 
   private NotificationResult convertToResponse(Notification notification) {
     return new NotificationResult(
-        notification.getId(),
-        notification.getType(),
-        notification.getMessage(),
-        notification.isRead(),
-        notification.getCreatedAt(),
-        notification.getActorId(),
-        notification.getActor() == null ? null : notification.getActor().getUsername(),
-        userAvatarCacheService.getAvatar(notification.getActorId()),
-        notification.getPhotoId(),
-        notification.getCommentId(),
-        notification.getThumbnailUrl());
+        notification.id(),
+        notification.type(),
+        notification.message(),
+        notification.read(),
+        notification.createdAt(),
+        notification.actorId(),
+        notification.actor().username(),
+        userAvatarCacheService.getAvatar(notification.actorId()),
+        notification.photoId(),
+        notification.commentId(),
+        notification.thumbnailUrl());
   }
 
   public NotificationService(

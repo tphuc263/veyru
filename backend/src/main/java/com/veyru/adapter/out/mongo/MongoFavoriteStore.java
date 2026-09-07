@@ -17,34 +17,42 @@ public class MongoFavoriteStore implements FavoriteStore {
   private final MongoTemplate mongo;
 
   public Favorite save(Favorite value) {
-    return mongo.save(value, COLLECTION);
+    return mongo.save(FavoriteDocument.fromDomain(value), COLLECTION).toDomain();
   }
 
   public void delete(Favorite value) {
-    mongo.remove(value, COLLECTION);
+    mongo.remove(FavoriteDocument.fromDomain(value), COLLECTION);
   }
 
   public Optional<Favorite> find(String userId, String photoId) {
     return Optional.ofNullable(
-        mongo.findOne(relation(userId, photoId), Favorite.class, COLLECTION));
+            mongo.findOne(relation(userId, photoId), FavoriteDocument.class, COLLECTION))
+        .map(FavoriteDocument::toDomain);
   }
 
   public boolean exists(String userId, String photoId) {
-    return mongo.exists(relation(userId, photoId), Favorite.class, COLLECTION);
+    return mongo.exists(relation(userId, photoId), FavoriteDocument.class, COLLECTION);
   }
 
   public List<Favorite> findByUserId(String userId) {
-    return mongo.find(Query.query(Criteria.where("userId").is(userId)), Favorite.class, COLLECTION);
+    return map(
+        mongo.find(
+            Query.query(Criteria.where("userId").is(userId)), FavoriteDocument.class, COLLECTION));
   }
 
   public List<Favorite> findByUserId(String userId, int page, int size) {
     Query query = Query.query(Criteria.where("userId").is(userId));
     query.with(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
-    return mongo.find(query, Favorite.class, COLLECTION);
+    return map(mongo.find(query, FavoriteDocument.class, COLLECTION));
   }
 
   public void deleteAllByPhotoId(String photoId) {
-    mongo.remove(Query.query(Criteria.where("photoId").is(photoId)), Favorite.class, COLLECTION);
+    mongo.remove(
+        Query.query(Criteria.where("photoId").is(photoId)), FavoriteDocument.class, COLLECTION);
+  }
+
+  private List<Favorite> map(List<FavoriteDocument> documents) {
+    return documents.stream().map(FavoriteDocument::toDomain).toList();
   }
 
   private Query relation(String userId, String photoId) {

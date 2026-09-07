@@ -18,6 +18,8 @@ import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.port.out.UserStore;
 import com.veyru.domain.model.Comment;
 import com.veyru.domain.model.User;
+import com.veyru.domain.model.UserSnapshot;
+import com.veyru.support.DomainFixtures;
 import java.time.Clock;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -53,22 +55,7 @@ class CommentServiceTest {
     Comment comment =
         Comment.create(
             "photo", "owner", "owner", "text", java.util.List.of(), java.time.Instant.EPOCH);
-    User actor =
-        new User(
-            "actor",
-            "actor",
-            "actor@example.com",
-            null,
-            "hash",
-            null,
-            null,
-            null,
-            java.time.Instant.EPOCH,
-            0,
-            0,
-            0,
-            null,
-            null);
+    User actor = DomainFixtures.user("actor");
     when(commentStore.findById("comment")).thenReturn(Optional.of(comment));
     when(userService.requireCurrentUser()).thenReturn(actor);
 
@@ -95,33 +82,17 @@ class CommentServiceTest {
   @Test
   void authenticatedCommentReadUsesPersonalizedFlag() {
     Comment comment =
-        new Comment(
+        Comment.restore(
             "comment",
             "photo",
-            "owner",
             "text",
             java.time.Instant.EPOCH,
-            new Comment.EmbeddedUser("owner", "owner"),
+            new UserSnapshot("owner", "owner"),
             null,
             0,
             0,
             java.util.List.of());
-    User actor =
-        new User(
-            "actor",
-            "actor",
-            "actor@example.com",
-            null,
-            "hash",
-            null,
-            null,
-            null,
-            java.time.Instant.EPOCH,
-            0,
-            0,
-            0,
-            null,
-            null);
+    User actor = DomainFixtures.user("actor");
     when(commentStore.findById("comment")).thenReturn(Optional.of(comment));
     when(userService.findCurrentUser()).thenReturn(Optional.of(actor));
     when(commentLikeStore.exists("comment", "actor")).thenReturn(true);

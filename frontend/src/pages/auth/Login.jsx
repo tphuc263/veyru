@@ -60,7 +60,7 @@ const Login = () => {
                     submit: result?.error || 'Đăng nhập thất bại. Vui lòng thử lại.'
                 })
             }
-        } catch (error) {
+        } catch {
             toastError.general();
             setErrors({
                 submit: 'Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.'

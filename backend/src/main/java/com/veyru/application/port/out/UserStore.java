@@ -27,10 +27,6 @@ public interface UserStore {
 
   List<User> findAllById(List<String> ids);
 
-  default List<User> findByIdIn(List<String> ids) {
-    return findAllById(ids);
-  }
-
   List<User> findAll();
 
   PageResult<User> findAll(PageQuery page);

@@ -2,19 +2,59 @@ package com.veyru.domain.model;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
-public class Photo {
-  private String id;
-  private String imageUrl;
-  private String caption;
-  private Instant createdAt;
-  private List<String> tags;
-  private EmbeddedUser user;
-  private long likeCount;
-  private long commentCount;
-  private long shareCount;
-  private List<EmbeddedUserTag> userTags;
+/**
+ * Immutable photo aggregate identified by its persisted ID. Creation and restoration enforce
+ * normalized tags, valid snapshots, and non-negative engagement counters.
+ */
+public final class Photo {
+  private final String id;
+  private final String imageUrl;
+  private final String caption;
+  private final Instant createdAt;
+  private final List<String> tags;
+  private final UserSnapshot author;
+  private final long likeCount;
+  private final long commentCount;
+  private final long shareCount;
+  private final List<PhotoUserTag> userTags;
+
+  private Photo(
+      String id,
+      String imageUrl,
+      String caption,
+      Instant createdAt,
+      List<String> tags,
+      UserSnapshot author,
+      long likeCount,
+      long commentCount,
+      long shareCount,
+      List<PhotoUserTag> userTags) {
+    this.id =
+        id == null ? null : DomainRules.required(id, "photo.id.invalid", "Photo ID is invalid");
+    this.imageUrl =
+        DomainRules.required(imageUrl, "photo.image.required", "Photo image is required");
+    this.caption =
+        DomainRules.limited(caption, 2_200, "photo.caption.too-long", "Photo caption is too long");
+    DomainRules.require(
+        createdAt != null, "photo.time.required", "Photo creation time is required");
+    this.createdAt = createdAt;
+    this.tags = normalizeTags(tags);
+    DomainRules.require(author != null, "photo.author.required", "Photo author is required");
+    this.author = author;
+    this.likeCount =
+        DomainRules.nonNegative(
+            likeCount, "photo.like-count.negative", "Like count cannot be negative");
+    this.commentCount =
+        DomainRules.nonNegative(
+            commentCount, "photo.comment-count.negative", "Comment count cannot be negative");
+    this.shareCount =
+        DomainRules.nonNegative(
+            shareCount, "photo.share-count.negative", "Share count cannot be negative");
+    this.userTags = userTags == null ? List.of() : List.copyOf(userTags);
+  }
 
   public static Photo create(
       String authorId,
@@ -23,387 +63,124 @@ public class Photo {
       String caption,
       List<String> tags,
       Instant createdAt) {
-    if (authorId == null || authorId.isBlank() || imageUrl == null || imageUrl.isBlank()) {
-      throw new IllegalArgumentException("Photo author and image are required");
-    }
-    if (caption != null && caption.length() > 2_200) {
-      throw new IllegalArgumentException("Photo caption is too long");
-    }
-    List<String> normalizedTags =
-        tags == null
-            ? List.of()
-            : tags.stream()
-                .filter(Objects::nonNull)
-                .map(String::trim)
-                .filter(tag -> !tag.isEmpty())
-                .map(String::toLowerCase)
-                .distinct()
-                .toList();
-    if (normalizedTags.size() > 30 || normalizedTags.stream().anyMatch(tag -> tag.length() > 50)) {
-      throw new IllegalArgumentException("Photo tags are invalid");
-    }
     return new Photo(
         null,
         imageUrl,
-        caption == null ? null : caption.trim(),
+        caption,
         createdAt,
-        normalizedTags,
-        new EmbeddedUser(authorId, authorUsername),
+        tags,
+        new UserSnapshot(authorId, authorUsername),
         0,
         0,
         0,
         List.of());
   }
 
-  public Photo recordShare() {
-    shareCount++;
-    return this;
+  /** Reconstitutes persisted state. New photos should be created through {@link #create}. */
+  public static Photo restore(
+      String id,
+      String imageUrl,
+      String caption,
+      Instant createdAt,
+      List<String> tags,
+      UserSnapshot author,
+      long likeCount,
+      long commentCount,
+      long shareCount,
+      List<PhotoUserTag> userTags) {
+    return new Photo(
+        DomainRules.required(id, "photo.id.required", "Persisted photo ID is required"),
+        imageUrl,
+        caption,
+        createdAt,
+        tags,
+        author,
+        likeCount,
+        commentCount,
+        shareCount,
+        userTags);
   }
 
-  public static class EmbeddedUser {
-    private String userId;
-    private String username;
-
-    public String getUserId() {
-      return this.userId;
-    }
-
-    public String getUsername() {
-      return this.username;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (o == this) return true;
-      if (!(o instanceof Photo.EmbeddedUser)) return false;
-      final Photo.EmbeddedUser other = (Photo.EmbeddedUser) o;
-      if (!other.canEqual((Object) this)) return false;
-      final Object this$userId = this.getUserId();
-      final Object other$userId = other.getUserId();
-      if (this$userId == null ? other$userId != null : !this$userId.equals(other$userId))
-        return false;
-      final Object this$username = this.getUsername();
-      final Object other$username = other.getUsername();
-      if (this$username == null ? other$username != null : !this$username.equals(other$username))
-        return false;
-      return true;
-    }
-
-    protected boolean canEqual(final Object other) {
-      return other instanceof Photo.EmbeddedUser;
-    }
-
-    @Override
-    public int hashCode() {
-      final int PRIME = 59;
-      int result = 1;
-      final Object $userId = this.getUserId();
-      result = result * PRIME + ($userId == null ? 43 : $userId.hashCode());
-      final Object $username = this.getUsername();
-      result = result * PRIME + ($username == null ? 43 : $username.hashCode());
-      return result;
-    }
-
-    @Override
-    public String toString() {
-      return "Photo.EmbeddedUser(userId="
-          + this.getUserId()
-          + ", username="
-          + this.getUsername()
-          + ")";
-    }
-
-    public EmbeddedUser() {}
-
-    public EmbeddedUser(final String userId, final String username) {
-      this.userId = userId;
-      this.username = username;
-    }
+  public Photo withRecordedShare() {
+    return new Photo(
+        id,
+        imageUrl,
+        caption,
+        createdAt,
+        tags,
+        author,
+        likeCount,
+        commentCount,
+        shareCount + 1,
+        userTags);
   }
 
-  public static class EmbeddedUserTag {
-    private String taggedUserId;
-    private String taggedByUserId;
-    private String username;
-    private Double positionX;
-    private Double positionY;
-    private Instant createdAt;
-
-    public String getTaggedUserId() {
-      return this.taggedUserId;
-    }
-
-    public String getTaggedByUserId() {
-      return this.taggedByUserId;
-    }
-
-    public String getUsername() {
-      return this.username;
-    }
-
-    public Double getPositionX() {
-      return this.positionX;
-    }
-
-    public Double getPositionY() {
-      return this.positionY;
-    }
-
-    public Instant getCreatedAt() {
-      return this.createdAt;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (o == this) return true;
-      if (!(o instanceof Photo.EmbeddedUserTag)) return false;
-      final Photo.EmbeddedUserTag other = (Photo.EmbeddedUserTag) o;
-      if (!other.canEqual((Object) this)) return false;
-      final Object this$positionX = this.getPositionX();
-      final Object other$positionX = other.getPositionX();
-      if (this$positionX == null
-          ? other$positionX != null
-          : !this$positionX.equals(other$positionX)) return false;
-      final Object this$positionY = this.getPositionY();
-      final Object other$positionY = other.getPositionY();
-      if (this$positionY == null
-          ? other$positionY != null
-          : !this$positionY.equals(other$positionY)) return false;
-      final Object this$taggedUserId = this.getTaggedUserId();
-      final Object other$taggedUserId = other.getTaggedUserId();
-      if (this$taggedUserId == null
-          ? other$taggedUserId != null
-          : !this$taggedUserId.equals(other$taggedUserId)) return false;
-      final Object this$taggedByUserId = this.getTaggedByUserId();
-      final Object other$taggedByUserId = other.getTaggedByUserId();
-      if (this$taggedByUserId == null
-          ? other$taggedByUserId != null
-          : !this$taggedByUserId.equals(other$taggedByUserId)) return false;
-      final Object this$username = this.getUsername();
-      final Object other$username = other.getUsername();
-      if (this$username == null ? other$username != null : !this$username.equals(other$username))
-        return false;
-      final Object this$createdAt = this.getCreatedAt();
-      final Object other$createdAt = other.getCreatedAt();
-      if (this$createdAt == null
-          ? other$createdAt != null
-          : !this$createdAt.equals(other$createdAt)) return false;
-      return true;
-    }
-
-    protected boolean canEqual(final Object other) {
-      return other instanceof Photo.EmbeddedUserTag;
-    }
-
-    @Override
-    public int hashCode() {
-      final int PRIME = 59;
-      int result = 1;
-      final Object $positionX = this.getPositionX();
-      result = result * PRIME + ($positionX == null ? 43 : $positionX.hashCode());
-      final Object $positionY = this.getPositionY();
-      result = result * PRIME + ($positionY == null ? 43 : $positionY.hashCode());
-      final Object $taggedUserId = this.getTaggedUserId();
-      result = result * PRIME + ($taggedUserId == null ? 43 : $taggedUserId.hashCode());
-      final Object $taggedByUserId = this.getTaggedByUserId();
-      result = result * PRIME + ($taggedByUserId == null ? 43 : $taggedByUserId.hashCode());
-      final Object $username = this.getUsername();
-      result = result * PRIME + ($username == null ? 43 : $username.hashCode());
-      final Object $createdAt = this.getCreatedAt();
-      result = result * PRIME + ($createdAt == null ? 43 : $createdAt.hashCode());
-      return result;
-    }
-
-    @Override
-    public String toString() {
-      return "Photo.EmbeddedUserTag(taggedUserId="
-          + this.getTaggedUserId()
-          + ", taggedByUserId="
-          + this.getTaggedByUserId()
-          + ", username="
-          + this.getUsername()
-          + ", positionX="
-          + this.getPositionX()
-          + ", positionY="
-          + this.getPositionY()
-          + ", createdAt="
-          + this.getCreatedAt()
-          + ")";
-    }
-
-    public EmbeddedUserTag() {}
-
-    public EmbeddedUserTag(
-        final String taggedUserId,
-        final String taggedByUserId,
-        final String username,
-        final Double positionX,
-        final Double positionY,
-        final Instant createdAt) {
-      this.taggedUserId = taggedUserId;
-      this.taggedByUserId = taggedByUserId;
-      this.username = username;
-      this.positionX = positionX;
-      this.positionY = positionY;
-      this.createdAt = createdAt;
-    }
+  private static List<String> normalizeTags(List<String> tags) {
+    List<String> normalized =
+        tags == null
+            ? List.of()
+            : tags.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(tag -> !tag.isEmpty())
+                .map(tag -> tag.toLowerCase(Locale.ROOT))
+                .distinct()
+                .toList();
+    DomainRules.require(
+        normalized.size() <= 30 && normalized.stream().allMatch(tag -> tag.length() <= 50),
+        "photo.tags.invalid",
+        "Photo tags exceed the supported limits");
+    return List.copyOf(normalized);
   }
 
-  public String getId() {
-    return this.id;
+  public String id() {
+    return id;
   }
 
-  public String getImageUrl() {
-    return this.imageUrl;
+  public String imageUrl() {
+    return imageUrl;
   }
 
-  public String getCaption() {
-    return this.caption;
+  public String caption() {
+    return caption;
   }
 
-  public Instant getCreatedAt() {
-    return this.createdAt;
+  public Instant createdAt() {
+    return createdAt;
   }
 
-  public List<String> getTags() {
-    return this.tags;
+  public List<String> tags() {
+    return tags;
   }
 
-  public EmbeddedUser getUser() {
-    return this.user;
+  public UserSnapshot author() {
+    return author;
   }
 
-  public long getLikeCount() {
-    return this.likeCount;
+  public long likeCount() {
+    return likeCount;
   }
 
-  public long getCommentCount() {
-    return this.commentCount;
+  public long commentCount() {
+    return commentCount;
   }
 
-  public long getShareCount() {
-    return this.shareCount;
+  public long shareCount() {
+    return shareCount;
   }
 
-  public List<EmbeddedUserTag> getUserTags() {
-    return this.userTags;
+  public List<PhotoUserTag> userTags() {
+    return userTags;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (o == this) return true;
-    if (!(o instanceof Photo)) return false;
-    final Photo other = (Photo) o;
-    if (!other.canEqual((Object) this)) return false;
-    if (this.getLikeCount() != other.getLikeCount()) return false;
-    if (this.getCommentCount() != other.getCommentCount()) return false;
-    if (this.getShareCount() != other.getShareCount()) return false;
-    final Object this$id = this.getId();
-    final Object other$id = other.getId();
-    if (this$id == null ? other$id != null : !this$id.equals(other$id)) return false;
-    final Object this$imageUrl = this.getImageUrl();
-    final Object other$imageUrl = other.getImageUrl();
-    if (this$imageUrl == null ? other$imageUrl != null : !this$imageUrl.equals(other$imageUrl))
-      return false;
-    final Object this$caption = this.getCaption();
-    final Object other$caption = other.getCaption();
-    if (this$caption == null ? other$caption != null : !this$caption.equals(other$caption))
-      return false;
-    final Object this$createdAt = this.getCreatedAt();
-    final Object other$createdAt = other.getCreatedAt();
-    if (this$createdAt == null ? other$createdAt != null : !this$createdAt.equals(other$createdAt))
-      return false;
-    final Object this$tags = this.getTags();
-    final Object other$tags = other.getTags();
-    if (this$tags == null ? other$tags != null : !this$tags.equals(other$tags)) return false;
-    final Object this$user = this.getUser();
-    final Object other$user = other.getUser();
-    if (this$user == null ? other$user != null : !this$user.equals(other$user)) return false;
-    final Object this$userTags = this.getUserTags();
-    final Object other$userTags = other.getUserTags();
-    if (this$userTags == null ? other$userTags != null : !this$userTags.equals(other$userTags))
-      return false;
-    return true;
-  }
-
-  protected boolean canEqual(final Object other) {
-    return other instanceof Photo;
+  public boolean equals(Object other) {
+    if (this == other) return true;
+    return other instanceof Photo photo && id != null && id.equals(photo.id);
   }
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final long $likeCount = this.getLikeCount();
-    result = result * PRIME + (int) ($likeCount >>> 32 ^ $likeCount);
-    final long $commentCount = this.getCommentCount();
-    result = result * PRIME + (int) ($commentCount >>> 32 ^ $commentCount);
-    final long $shareCount = this.getShareCount();
-    result = result * PRIME + (int) ($shareCount >>> 32 ^ $shareCount);
-    final Object $id = this.getId();
-    result = result * PRIME + ($id == null ? 43 : $id.hashCode());
-    final Object $imageUrl = this.getImageUrl();
-    result = result * PRIME + ($imageUrl == null ? 43 : $imageUrl.hashCode());
-    final Object $caption = this.getCaption();
-    result = result * PRIME + ($caption == null ? 43 : $caption.hashCode());
-    final Object $createdAt = this.getCreatedAt();
-    result = result * PRIME + ($createdAt == null ? 43 : $createdAt.hashCode());
-    final Object $tags = this.getTags();
-    result = result * PRIME + ($tags == null ? 43 : $tags.hashCode());
-    final Object $user = this.getUser();
-    result = result * PRIME + ($user == null ? 43 : $user.hashCode());
-    final Object $userTags = this.getUserTags();
-    result = result * PRIME + ($userTags == null ? 43 : $userTags.hashCode());
-    return result;
-  }
-
-  @Override
-  public String toString() {
-    return "Photo(id="
-        + this.getId()
-        + ", imageUrl="
-        + this.getImageUrl()
-        + ", caption="
-        + this.getCaption()
-        + ", createdAt="
-        + this.getCreatedAt()
-        + ", tags="
-        + this.getTags()
-        + ", user="
-        + this.getUser()
-        + ", likeCount="
-        + this.getLikeCount()
-        + ", commentCount="
-        + this.getCommentCount()
-        + ", shareCount="
-        + this.getShareCount()
-        + ", userTags="
-        + this.getUserTags()
-        + ")";
-  }
-
-  public Photo() {}
-
-  public Photo(
-      final String id,
-      final String imageUrl,
-      final String caption,
-      final Instant createdAt,
-      final List<String> tags,
-      final EmbeddedUser user,
-      final long likeCount,
-      final long commentCount,
-      final long shareCount,
-      final List<EmbeddedUserTag> userTags) {
-    this.id = id;
-    this.imageUrl = imageUrl;
-    this.caption = caption;
-    this.createdAt = createdAt;
-    this.tags = tags;
-    this.user = user;
-    this.likeCount = likeCount;
-    this.commentCount = commentCount;
-    this.shareCount = shareCount;
-    this.userTags = userTags;
+    return id == null ? System.identityHashCode(this) : Objects.hash(id);
   }
 }

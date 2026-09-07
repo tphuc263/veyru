@@ -6,14 +6,11 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 public class RedisUserAvatarCache implements AvatarCache {
-  private static final Logger log = LoggerFactory.getLogger(RedisUserAvatarCache.class);
   private final RedisTemplate<String, Object> redisTemplate;
   private final UserStore userStore;
   private static final String AVATAR_KEY_PREFIX = "user:avatar:";
@@ -28,12 +25,11 @@ public class RedisUserAvatarCache implements AvatarCache {
       return cached.toString();
     }
 
-    // Fallback to DB
     return userStore
         .findById(userId)
         .map(
             user -> {
-              String imageUrl = user.getImageUrl();
+              String imageUrl = user.imageUrl();
               if (imageUrl != null) {
 
                 redisTemplate.opsForValue().set(key, imageUrl, CACHE_TTL);
@@ -47,7 +43,6 @@ public class RedisUserAvatarCache implements AvatarCache {
     Map<String, String> result = new HashMap<>();
     if (userIds == null || userIds.isEmpty()) return result;
     List<String> missingIds = new java.util.ArrayList<>();
-    // Try cache first
     for (String userId : userIds) {
       String key = AVATAR_KEY_PREFIX + userId;
 
@@ -58,19 +53,18 @@ public class RedisUserAvatarCache implements AvatarCache {
         missingIds.add(userId);
       }
     }
-    // Fetch missing from DB
     if (!missingIds.isEmpty()) {
       userStore
           .findAllById(missingIds)
           .forEach(
               user -> {
-                String imageUrl = user.getImageUrl();
-                result.put(user.getId(), imageUrl);
+                String imageUrl = user.imageUrl();
+                result.put(user.id(), imageUrl);
                 if (imageUrl != null) {
 
                   redisTemplate
                       .opsForValue()
-                      .set(AVATAR_KEY_PREFIX + user.getId(), imageUrl, CACHE_TTL);
+                      .set(AVATAR_KEY_PREFIX + user.id(), imageUrl, CACHE_TTL);
                 }
               });
     }

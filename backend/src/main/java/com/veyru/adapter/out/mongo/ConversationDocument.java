@@ -29,7 +29,7 @@ public class ConversationDocument {
         updatedAt);
   }
 
-  public static ConversationDocument from(Conversation conversation) {
+  public static ConversationDocument fromDomain(Conversation conversation) {
     ConversationDocument document = new ConversationDocument();
     document.id = conversation.id();
     document.participantIds = conversation.participantIds();

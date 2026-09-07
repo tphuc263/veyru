@@ -140,8 +140,6 @@ const Home = () => {
                     const displayPhotoId = isShare ? post.originalPhotoId : post.id;
                     const displayImageUrl = isShare ? post.originalImageUrl : post.imageUrl;
                     const displayCaption = isShare ? post.shareCaption : post.caption;
-                    const displayUsername = isShare ? post.originalUsername : post.username;
-                    const displayUserImageUrl = isShare ? post.originalUserImageUrl : post.userImageUrl;
                     const displayLikesCount = isShare ? post.originalLikeCount : post.likeCount;
                     const displayCommentsCount = isShare ? post.originalCommentCount : post.commentCount;
                     const displayShareCount = isShare ? post.originalShareCount : post.shareCount;

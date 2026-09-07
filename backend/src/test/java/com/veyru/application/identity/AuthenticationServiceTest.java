@@ -1,6 +1,7 @@
 package com.veyru.application.identity;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -21,7 +22,7 @@ class AuthenticationServiceTest {
     IdentityUserStore users = mock(IdentityUserStore.class);
     User user =
         User.registered("alice", "alice@example.com", "hash", now)
-            .requestPasswordReset("reset-token", now.plusSeconds(60));
+            .withPasswordResetRequested("reset-token", now.plusSeconds(60));
     when(users.findByResetToken("reset-token")).thenReturn(Optional.of(user));
     AuthenticationService service =
         new AuthenticationService(
@@ -33,9 +34,13 @@ class AuthenticationServiceTest {
 
     service.resetPassword(new ResetPasswordCommand("reset-token", "new-password", "new-password"));
 
-    assertThat(user.getPassword()).isEqualTo("hashed-new-password");
-    assertThat(user.getResetToken()).isNull();
-    verify(users).save(user);
+    assertThat(user.password()).isEqualTo("hash");
+    assertThat(user.resetToken()).isEqualTo("reset-token");
+    verify(users)
+        .save(
+            argThat(
+                saved ->
+                    saved.password().equals("hashed-new-password") && saved.resetToken() == null));
   }
 
   @Test
@@ -44,7 +49,7 @@ class AuthenticationServiceTest {
     IdentityUserStore users = mock(IdentityUserStore.class);
     MailSender mail = mock(MailSender.class);
     User user = User.registered("alice", "alice@example.com", "hash", now);
-    when(users.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+    when(users.findByEmail(user.email())).thenReturn(Optional.of(user));
     AuthenticationService service =
         new AuthenticationService(
             users,
@@ -53,10 +58,14 @@ class AuthenticationServiceTest {
             () -> "reset-token",
             Clock.fixed(now, ZoneOffset.UTC));
 
-    service.forgotPassword(user.getEmail());
+    service.forgotPassword(user.email());
 
     verify(users)
-        .save(user.requestPasswordReset("reset-token", Instant.parse("2026-08-23T00:30:00Z")));
-    verify(mail).sendPasswordReset(user.getEmail(), "reset-token", user.getUsername());
+        .save(
+            argThat(
+                saved ->
+                    "reset-token".equals(saved.resetToken())
+                        && Instant.parse("2026-08-23T00:30:00Z").equals(saved.resetTokenExpiry())));
+    verify(mail).sendPasswordReset(user.email(), "reset-token", user.username());
   }
 }

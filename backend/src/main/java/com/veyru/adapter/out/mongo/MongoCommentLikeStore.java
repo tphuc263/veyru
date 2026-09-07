@@ -14,25 +14,28 @@ public class MongoCommentLikeStore implements CommentLikeStore {
   private final MongoTemplate mongo;
 
   public CommentLike save(CommentLike value) {
-    return mongo.save(value, COLLECTION);
+    return mongo.save(CommentLikeDocument.fromDomain(value), COLLECTION).toDomain();
   }
 
   public void delete(CommentLike value) {
-    mongo.remove(value, COLLECTION);
+    mongo.remove(CommentLikeDocument.fromDomain(value), COLLECTION);
   }
 
   public Optional<CommentLike> find(String commentId, String userId) {
     return Optional.ofNullable(
-        mongo.findOne(relation(commentId, userId), CommentLike.class, COLLECTION));
+            mongo.findOne(relation(commentId, userId), CommentLikeDocument.class, COLLECTION))
+        .map(CommentLikeDocument::toDomain);
   }
 
   public boolean exists(String commentId, String userId) {
-    return mongo.exists(relation(commentId, userId), CommentLike.class, COLLECTION);
+    return mongo.exists(relation(commentId, userId), CommentLikeDocument.class, COLLECTION);
   }
 
   public void deleteAllByCommentId(String commentId) {
     mongo.remove(
-        Query.query(Criteria.where("commentId").is(commentId)), CommentLike.class, COLLECTION);
+        Query.query(Criteria.where("commentId").is(commentId)),
+        CommentLikeDocument.class,
+        COLLECTION);
   }
 
   private Query relation(String commentId, String userId) {

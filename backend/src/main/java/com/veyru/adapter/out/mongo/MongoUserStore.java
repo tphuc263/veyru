@@ -21,12 +21,13 @@ public class MongoUserStore implements UserStore {
 
   @Override
   public User save(User user) {
-    return mongo.save(user, COLLECTION);
+    return mongo.save(UserDocument.fromDomain(user), COLLECTION).toDomain();
   }
 
   @Override
   public Optional<User> findById(String id) {
-    return Optional.ofNullable(mongo.findById(id, User.class, COLLECTION));
+    return Optional.ofNullable(mongo.findById(id, UserDocument.class, COLLECTION))
+        .map(UserDocument::toDomain);
   }
 
   @Override
@@ -66,12 +67,13 @@ public class MongoUserStore implements UserStore {
 
   @Override
   public List<User> findAllById(List<String> ids) {
-    return mongo.find(Query.query(Criteria.where("_id").in(ids)), User.class, COLLECTION);
+    return map(
+        mongo.find(Query.query(Criteria.where("_id").in(ids)), UserDocument.class, COLLECTION));
   }
 
   @Override
   public List<User> findAll() {
-    return mongo.findAll(User.class, COLLECTION);
+    return map(mongo.findAll(UserDocument.class, COLLECTION));
   }
 
   @Override
@@ -81,13 +83,7 @@ public class MongoUserStore implements UserStore {
 
   @Override
   public PageResult<User> searchByName(String term, PageQuery page) {
-    Criteria criteria =
-        new Criteria()
-            .orOperator(
-                Criteria.where("username").regex(term, "i"),
-                Criteria.where("firstName").regex(term, "i"),
-                Criteria.where("lastName").regex(term, "i"));
-    return page(Query.query(criteria), page);
+    return searchByUsername(term, page);
   }
 
   @Override
@@ -112,23 +108,31 @@ public class MongoUserStore implements UserStore {
 
   private void increment(String userId, String field, long delta) {
     mongo.updateFirst(
-        Query.query(Criteria.where("_id").is(userId)), new Update().inc(field, delta), COLLECTION);
+        MongoCounterUpdate.guardedById(userId, field, delta),
+        new Update().inc(field, delta),
+        UserDocument.class,
+        COLLECTION);
   }
 
   private Optional<User> one(Criteria criteria) {
-    return Optional.ofNullable(mongo.findOne(Query.query(criteria), User.class, COLLECTION));
+    return Optional.ofNullable(mongo.findOne(Query.query(criteria), UserDocument.class, COLLECTION))
+        .map(UserDocument::toDomain);
   }
 
   private boolean exists(Criteria criteria) {
-    return mongo.exists(Query.query(criteria), User.class, COLLECTION);
+    return mongo.exists(Query.query(criteria), UserDocument.class, COLLECTION);
   }
 
   private PageResult<User> page(Query query, PageQuery page) {
-    long total = mongo.count(Query.of(query).limit(-1).skip(-1), User.class, COLLECTION);
+    long total = mongo.count(Query.of(query).limit(-1).skip(-1), UserDocument.class, COLLECTION);
     query.with(PageRequest.of(page.page(), page.size(), Sort.by(Sort.Direction.DESC, "createdAt")));
-    List<User> items = mongo.find(query, User.class, COLLECTION);
+    List<User> items = map(mongo.find(query, UserDocument.class, COLLECTION));
     int pages = (int) Math.ceil((double) total / page.size());
     return new PageResult<>(items, page.page(), page.size(), total, pages);
+  }
+
+  private List<User> map(List<UserDocument> documents) {
+    return documents.stream().map(UserDocument::toDomain).toList();
   }
 
   public MongoUserStore(MongoTemplate mongo) {

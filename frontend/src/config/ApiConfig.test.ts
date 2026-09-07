@@ -1,6 +1,7 @@
 import { AxiosError, AxiosHeaders, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import api from './ApiConfig';
+import { clearCsrfToken, setCsrfToken } from './CsrfToken';
 
 const response = (config: InternalAxiosRequestConfig, status: number): AxiosResponse => ({
   config,
@@ -11,13 +12,28 @@ const response = (config: InternalAxiosRequestConfig, status: number): AxiosResp
 });
 
 describe('API client', () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    clearCsrfToken();
+    vi.restoreAllMocks();
+  });
 
-  it('uses credentialed cookies and the Spring CSRF convention', () => {
+  it('uses credentialed cookies without reading a cross-subdomain cookie', () => {
     expect(api.defaults.withCredentials).toBe(true);
-    expect(api.defaults.withXSRFToken).toBe(true);
-    expect(api.defaults.xsrfCookieName).toBe('XSRF-TOKEN');
-    expect(api.defaults.xsrfHeaderName).toBe('X-XSRF-TOKEN');
+    expect(api.defaults.withXSRFToken).toBe(false);
+  });
+
+  it('adds the in-memory CSRF token to unsafe requests', async () => {
+    let receivedToken: string | undefined;
+    api.defaults.adapter = async rawConfig => {
+      const config = { ...rawConfig, headers: rawConfig.headers ?? new AxiosHeaders() } as InternalAxiosRequestConfig;
+      receivedToken = config.headers.get('X-XSRF-TOKEN')?.toString();
+      return response(config, 204);
+    };
+    setCsrfToken('cross-subdomain-token');
+
+    await api.post('/photos', {});
+
+    expect(receivedToken).toBe('cross-subdomain-token');
   });
 
   it('shares one refresh request and retries each 401 once', async () => {

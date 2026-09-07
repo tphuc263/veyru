@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Heart, MessageCircle, CornerDownRight } from 'lucide-react';
+import { Heart, CornerDownRight } from 'lucide-react';
 import { createComment, toggleCommentLike } from '../../services/commentService';
 import { showToast } from '../../utils/toastService';
 import { useAuthContext } from '../../context/AuthContext';
@@ -30,7 +30,7 @@ const CommentItem = ({
     
     try {
       await onLike(comment.id, wasLiked);
-    } catch (error) {
+    } catch {
       // Revert on error
       setLocalIsLiked(wasLiked);
       setLocalLikeCount(prev => wasLiked ? prev + 1 : prev - 1);
@@ -222,7 +222,7 @@ const CommentSection = ({
       }
 
       showToast('success', 'Đã thêm bình luận');
-    } catch (error) {
+    } catch {
       showToast('error', 'Không thể thêm bình luận');
     } finally {
       setIsSubmitting(false);

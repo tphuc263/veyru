@@ -16,11 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class UserProfileService {
-  private static final Logger log = LoggerFactory.getLogger(UserProfileService.class);
   private final UserStore userStore;
   private final ImageStorage imageStorage;
   private final FollowService followService;
@@ -30,64 +27,55 @@ public class UserProfileService {
   public UserProfileResult getUserProfileById(String targetUserId) {
     User targetUser = findUserById(targetUserId);
     HashMap<String, Long> stats = new HashMap<>();
-    stats.put("posts", targetUser.getPhotoCount());
-    stats.put("followers", targetUser.getFollowerCount());
-    stats.put("following", targetUser.getFollowingCount());
+    stats.put("posts", targetUser.photoCount());
+    stats.put("followers", targetUser.followerCount());
+    stats.put("following", targetUser.followingCount());
     boolean following =
         findCurrentUser()
-            .map(currentUser -> followService.isFollowing(currentUser.getId(), targetUserId))
+            .map(currentUser -> followService.isFollowing(currentUser.id(), targetUserId))
             .orElse(false);
     return new UserProfileResult(
-        targetUser.getId(),
-        targetUser.getUsername(),
-        targetUser.getImageUrl(),
+        targetUser.id(),
+        targetUser.username(),
+        targetUser.imageUrl(),
         stats,
-        targetUser.getBio(),
+        targetUser.bio(),
         following);
   }
 
   public UserProfileResult getCurrentUserProfile() {
     User user = requireCurrentUser();
     HashMap<String, Long> stats = new HashMap<>();
-    stats.put("posts", user.getPhotoCount());
-    stats.put("followers", user.getFollowerCount());
-    stats.put("following", user.getFollowingCount());
+    stats.put("posts", user.photoCount());
+    stats.put("followers", user.followerCount());
+    stats.put("following", user.followingCount());
     return new UserProfileResult(
-        user.getId(), user.getUsername(), user.getImageUrl(), stats, user.getBio(), false);
+        user.id(), user.username(), user.imageUrl(), stats, user.bio(), false);
   }
 
   public UserProfileResult updateProfile(UpdateProfileCommand request) {
     User user = requireCurrentUser();
-    String oldImageUrl = user.getImageUrl();
-    updateUserFields(user, request);
-    // Handle image update if provided
+    String oldImageUrl = user.imageUrl();
+    user = user.withUpdatedProfile(request.username(), request.bio(), null);
     if (request.image() != null && !request.image().isEmpty()) {
-
-      // Delete old image if exists
+      String newImageUrl = imageStorage.upload(request.image());
+      user = user.withUpdatedProfile(null, null, newImageUrl);
+    }
+    User updatedUser = userStore.save(user);
+    if (!java.util.Objects.equals(updatedUser.imageUrl(), oldImageUrl)) {
+      userAvatarCacheService.updateAvatar(updatedUser.id(), updatedUser.imageUrl());
       if (oldImageUrl != null && !oldImageUrl.isEmpty()) {
         imageStorage.deleteByUrl(oldImageUrl);
       }
-      // Upload new imag
-      String newImageUrl = imageStorage.upload(request.image());
-      user.updateProfile(null, null, newImageUrl);
-      log.info("New profile image uploaded for user ID: {}", user.getId());
     }
-    User updatedUser = userStore.save(user);
-    // Update avatar cache if image changed
-    if (updatedUser.getImageUrl() != null && !updatedUser.getImageUrl().equals(oldImageUrl)) {
-      userAvatarCacheService.updateAvatar(updatedUser.getId(), updatedUser.getImageUrl());
-    }
-    log.info("User profile updated successfully for user ID: {}", updatedUser.getId());
     return mapToUserProfileResponse(updatedUser);
   }
 
   public PageResult<UserProfileResult> getAllUsers(int page, int size) {
-    log.info("Fetching all users - page: {}, size: {}", page, size);
     PageResult<User> users = userStore.findAll(new PageQuery(page, size));
     return users.map(this::mapToUserProfileResponse);
   }
 
-  // helper methods
   public User requireCurrentUser() {
     return findUserById(
         currentActor
@@ -112,20 +100,12 @@ public class UserProfileService {
   public User findUserById(String userId) {
     return userStore
         .findById(userId)
-        .orElseThrow(
-            () -> {
-              log.error("User not found with ID: {}", userId);
-              return new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND);
-            });
-  }
-
-  private void updateUserFields(User user, UpdateProfileCommand request) {
-    user.updateProfile(request.username(), request.bio(), null);
+        .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
   }
 
   private UserProfileResult mapToUserProfileResponse(User user) {
     return new UserProfileResult(
-        user.getId(), user.getUsername(), user.getImageUrl(), null, user.getBio(), false);
+        user.id(), user.username(), user.imageUrl(), null, user.bio(), false);
   }
 
   public Map<String, User> findUsersByIds(List<String> userIds) {
@@ -133,7 +113,7 @@ public class UserProfileService {
       return Map.of();
     }
     return userStore.findAllById(userIds).stream()
-        .collect(Collectors.toMap(User::getId, user -> user));
+        .collect(Collectors.toMap(User::id, user -> user));
   }
 
   public UserProfileService(

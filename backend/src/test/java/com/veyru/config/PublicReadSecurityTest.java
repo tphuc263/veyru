@@ -22,6 +22,7 @@ import com.veyru.application.result.user.UserProfileResult;
 import com.veyru.application.social.CommentService;
 import com.veyru.application.social.FollowService;
 import com.veyru.application.social.ShareService;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -76,6 +77,14 @@ class PublicReadSecurityTest {
     @Bean
     CorsProperties corsProperties() {
       return new CorsProperties(List.of("http://localhost:5173"));
+    }
+
+    @Bean
+    AuthProperties authProperties() {
+      return new AuthProperties(
+          new AuthProperties.Token(
+              "VGhpcy1pcy1hLXRlc3Qtc2VjcmV0LWtleS0zMi1ieXRlcw==", Duration.ofMinutes(15)),
+          new AuthProperties.Cookie(false));
     }
   }
 

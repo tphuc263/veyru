@@ -34,97 +34,87 @@ public class FollowService {
 
   public void follow(String targetUserId) {
     User currentUser = getCurrentUser();
-    Follow existingFollow = checkBeforeFollow(targetUserId, currentUser);
-    if (existingFollow != null) return;
-    Follow follow = Follow.create(currentUser.getId(), targetUserId, clock.instant());
+    Follow follow = Follow.create(currentUser.id(), targetUserId, clock.instant());
+    requireUser(targetUserId);
+    if (followStore.find(currentUser.id(), targetUserId).isPresent()) return;
     followStore.save(follow);
-    log.info("User {} followed user {}", currentUser.getId(), targetUserId);
-    userStore.incrementFollowingCount(currentUser.getId(), 1);
+    userStore.incrementFollowingCount(currentUser.id(), 1);
     userStore.incrementFollowerCount(targetUserId, 1);
     neo4jGraphService.upsertUser(
-        currentUser.getId(),
-        currentUser.getUsername(),
-        currentUser.getImageUrl(),
-        currentUser.getFollowerCount(),
-        currentUser.getPhotoCount(),
-        currentUser.getBio());
-    User targetUser = userStore.findById(targetUserId).orElse(null);
-    if (targetUser != null) {
-      neo4jGraphService.upsertUser(
-          targetUser.getId(),
-          targetUser.getUsername(),
-          targetUser.getImageUrl(),
-          targetUser.getFollowerCount(),
-          targetUser.getPhotoCount(),
-          targetUser.getBio());
-    }
-    neo4jGraphService.createFollowRelationship(currentUser.getId(), targetUserId);
-    log.debug("Synced follow relationship to Neo4j: {} -> {}", currentUser.getId(), targetUserId);
-    evictAffinity(currentUser.getId());
-    // Send notification to the user being followed
+        currentUser.id(),
+        currentUser.username(),
+        currentUser.imageUrl(),
+        currentUser.followerCount(),
+        currentUser.photoCount(),
+        currentUser.bio());
+    User updatedTarget = requireUser(targetUserId);
+    neo4jGraphService.upsertUser(
+        updatedTarget.id(),
+        updatedTarget.username(),
+        updatedTarget.imageUrl(),
+        updatedTarget.followerCount(),
+        updatedTarget.photoCount(),
+        updatedTarget.bio());
+    neo4jGraphService.createFollowRelationship(currentUser.id(), targetUserId);
+    evictAffinity(currentUser.id());
     notificationService.sendNewFollowerNotification(targetUserId, currentUser);
-    log.info("User {} followed user {}", currentUser.getId(), targetUserId);
   }
 
   public void unfollow(String targetUserId) {
     User currentUser = getCurrentUser();
-    Follow existingFollow = checkBeforeFollow(targetUserId, currentUser);
-    if (existingFollow == null) return;
-    followStore.delete(existingFollow);
-    log.info("User {} unfollowed user {}", currentUser.getId(), targetUserId);
-    userStore.incrementFollowingCount(currentUser.getId(), -1);
-    userStore.incrementFollowerCount(targetUserId, -1);
-    neo4jGraphService.removeFollowRelationship(currentUser.getId(), targetUserId);
-    userStore
-        .findById(targetUserId)
+    requireUser(targetUserId);
+    followStore
+        .find(currentUser.id(), targetUserId)
         .ifPresent(
-            targetUser ->
-                neo4jGraphService.upsertUser(
-                    targetUser.getId(),
-                    targetUser.getUsername(),
-                    targetUser.getImageUrl(),
-                    targetUser.getFollowerCount(),
-                    targetUser.getPhotoCount(),
-                    targetUser.getBio()));
-    evictAffinity(currentUser.getId());
+            existingFollow -> {
+              followStore.delete(existingFollow);
+              userStore.incrementFollowingCount(currentUser.id(), -1);
+              userStore.incrementFollowerCount(targetUserId, -1);
+              neo4jGraphService.removeFollowRelationship(currentUser.id(), targetUserId);
+              userStore
+                  .findById(targetUserId)
+                  .ifPresent(
+                      targetUser ->
+                          neo4jGraphService.upsertUser(
+                              targetUser.id(),
+                              targetUser.username(),
+                              targetUser.imageUrl(),
+                              targetUser.followerCount(),
+                              targetUser.photoCount(),
+                              targetUser.bio()));
+              evictAffinity(currentUser.id());
+            });
   }
 
   public List<FollowResult> getFollowers(String userId, int page, int size) {
-    // Validate user exists
     userStore
         .findById(userId)
         .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     List<Follow> follows = followStore.findFollowers(userId, page, size);
-    List<String> followerIds = follows.stream().map(Follow::getFollowerId).toList();
-    return convertToFollowResponses(followerIds, true);
+    List<String> followerIds = follows.stream().map(Follow::followerId).toList();
+    return convertToFollowResponses(followerIds);
   }
 
   public List<FollowResult> getFollowing(String userId, int page, int size) {
-    // Validate user exists
     userStore
         .findById(userId)
         .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     List<Follow> follows = followStore.findFollowing(userId, page, size);
-    List<String> followingIds = follows.stream().map(Follow::getFollowingId).toList();
-    return convertToFollowResponses(followingIds, false);
+    List<String> followingIds = follows.stream().map(Follow::followingId).toList();
+    return convertToFollowResponses(followingIds);
   }
 
   public boolean isFollowing(String followerId, String followingId) {
-    if (followerId == null) followerId = getCurrentUser().getId();
+    if (followerId == null) followerId = getCurrentUser().id();
     return followStore.exists(followerId, followingId);
   }
 
-  // Helper methods
-  private List<FollowResult> convertToFollowResponses(
-      List<String> userIds, boolean isFollowersList) {
+  private List<FollowResult> convertToFollowResponses(List<String> userIds) {
     if (userIds.isEmpty()) {
       return List.of();
     }
-    // Fetch users in batch
     Map<String, User> usersMap =
-        userStore.findAllById(userIds).stream()
-            .collect(Collectors.toMap(User::getId, user -> user));
-    // Get current user's following list for follow status
+        userStore.findAllById(userIds).stream().collect(Collectors.toMap(User::id, user -> user));
     Set<String> currentUserFollowing = getCurrentUserFollowing();
     return userIds.stream()
         .map(
@@ -132,13 +122,13 @@ public class FollowService {
               User user = usersMap.get(userId);
               if (user != null) {
                 return new FollowResult(
-                    user.getId(),
-                    user.getId(),
-                    user.getUsername(),
-                    userAvatarCacheService.getAvatar(user.getId()),
+                    user.id(),
+                    user.id(),
+                    user.username(),
+                    userAvatarCacheService.getAvatar(user.id()),
                     null,
                     null,
-                    user.getBio(),
+                    user.bio(),
                     currentUserFollowing.contains(userId));
               }
               return null;
@@ -153,23 +143,17 @@ public class FollowService {
         .map(
             actorId ->
                 followStore.findByFollowerId(actorId).stream()
-                    .map(Follow::getFollowingId)
+                    .map(Follow::followingId)
                     .collect(Collectors.toSet()))
         .orElseGet(Set::of);
   }
 
-  private Follow checkBeforeFollow(String targetUserId, User currentUser) {
-    userStore
-        .findById(targetUserId)
+  private User requireUser(String userId) {
+    return userStore
+        .findById(userId)
         .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
-    // Prevent self-following
-    if (currentUser.getId().equals(targetUserId)) {
-      throw new UseCaseException(UseCaseError.VALIDATION_FAILED);
-    }
-    return followStore.find(currentUser.getId(), targetUserId).orElse(null);
   }
 
-  // helper methods
   private User getCurrentUser() {
     String actorId =
         currentActor
@@ -177,11 +161,7 @@ public class FollowService {
             .orElseThrow(() -> new UseCaseException(UseCaseError.AUTHENTICATION_REQUIRED));
     return userStore
         .findById(actorId)
-        .orElseThrow(
-            () -> {
-              log.error("User not found with ID: {}", actorId);
-              return new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND);
-            });
+        .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
   }
 
   private void evictAffinity(String userId) {

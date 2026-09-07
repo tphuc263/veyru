@@ -18,15 +18,17 @@ class AggregateInvariantTest {
         Photo.create(
             "user", "alice", "https://image", " caption ", List.of(" Travel ", "travel"), NOW);
 
-    assertThat(photo.getCaption()).isEqualTo("caption");
-    assertThat(photo.getTags()).containsExactly("travel");
-    assertThat(photo.getLikeCount()).isZero();
+    assertThat(photo.caption()).isEqualTo("caption");
+    assertThat(photo.tags()).containsExactly("travel");
+    assertThat(photo.likeCount()).isZero();
   }
 
   @Test
   void followRejectsSelfFollow() {
     assertThatThrownBy(() -> Follow.create("user", "user", NOW))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOfSatisfying(
+            DomainValidationException.class,
+            exception -> assertThat(exception.rule()).isEqualTo("follow.self.invalid"));
   }
 
   @Test
@@ -35,11 +37,12 @@ class AggregateInvariantTest {
         .isInstanceOf(IllegalArgumentException.class);
 
     Comment comment = Comment.create("photo", "user", "alice", "hello", List.of("mentioned"), NOW);
-    assertThatThrownBy(() -> comment.edit("other", "edited", List.of()))
-        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> comment.editedBy("other", "edited", List.of()))
+        .isInstanceOf(DomainValidationException.class);
 
     Comment parent = Comment.create("other-photo", "other", "bob", "parent", List.of(), NOW);
-    assertThatThrownBy(() -> comment.replyTo(parent)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> comment.asReplyTo(parent))
+        .isInstanceOf(DomainValidationException.class);
   }
 
   @Test
@@ -48,8 +51,8 @@ class AggregateInvariantTest {
     Comment comment = Comment.create("photo", "user", "alice", "hello", mentionIds, NOW);
     mentionIds.add("other");
 
-    assertThat(comment.getMentionedUserIds()).containsExactly("mentioned");
-    assertThatThrownBy(() -> comment.getMentionedUserIds().add("other"))
+    assertThat(comment.mentionedUserIds()).containsExactly("mentioned");
+    assertThatThrownBy(() -> comment.mentionedUserIds().add("other"))
         .isInstanceOf(UnsupportedOperationException.class);
   }
 
@@ -67,6 +70,66 @@ class AggregateInvariantTest {
             null,
             NOW);
 
-    assertThat(notification.markRead().markRead().isRead()).isTrue();
+    Notification read = notification.markedRead();
+
+    assertThat(read.markedRead()).isSameAs(read);
+    assertThat(read.read()).isTrue();
+    assertThat(notification.read()).isFalse();
+  }
+
+  @Test
+  void photoTagRequiresCompleteNormalizedCoordinates() {
+    assertThatThrownBy(() -> new PhotoUserTag("tagged", "actor", "alice", .5, null, NOW))
+        .isInstanceOfSatisfying(
+            DomainValidationException.class,
+            exception -> assertThat(exception.rule()).isEqualTo("photo-tag.position.incomplete"));
+    assertThatThrownBy(() -> new PhotoUserTag("tagged", "actor", "alice", 1.1, .5, NOW))
+        .isInstanceOf(DomainValidationException.class);
+  }
+
+  @Test
+  void messagingRejectsInvalidParticipantsAndContent() {
+    assertThatThrownBy(() -> Conversation.between("user", "user", NOW))
+        .isInstanceOfSatisfying(
+            DomainValidationException.class,
+            exception ->
+                assertThat(exception.rule()).isEqualTo("conversation.participants.invalid"));
+    assertThatThrownBy(() -> Message.create("conversation", "user", "user", "hello", NOW))
+        .isInstanceOfSatisfying(
+            DomainValidationException.class,
+            exception -> assertThat(exception.rule()).isEqualTo("message.self.invalid"));
+    assertThatThrownBy(
+            () -> Message.create("conversation", "sender", "receiver", "x".repeat(4_001), NOW))
+        .isInstanceOfSatisfying(
+            DomainValidationException.class,
+            exception -> assertThat(exception.rule()).isEqualTo("message.text.too-long"));
+  }
+
+  @Test
+  void notificationRequiresReferencesForItsType() {
+    assertThatThrownBy(
+            () ->
+                Notification.create(
+                    "recipient",
+                    "actor",
+                    "alice",
+                    NotificationType.LIKE_COMMENT,
+                    "photo",
+                    null,
+                    "message",
+                    null,
+                    NOW))
+        .isInstanceOfSatisfying(
+            DomainValidationException.class,
+            exception -> assertThat(exception.rule()).isEqualTo("notification.comment.required"));
+  }
+
+  @Test
+  void relationRecordsUseValueEqualityAndNormalizeCaption() {
+    Share first = Share.create("photo", "user", " caption ", NOW);
+    Share second = Share.create("photo", "user", "caption", NOW);
+
+    assertThat(first).isEqualTo(second);
+    assertThat(first.caption()).isEqualTo("caption");
   }
 }
