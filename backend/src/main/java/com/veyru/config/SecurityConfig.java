@@ -31,12 +31,15 @@ public class SecurityConfig {
   private final OAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService;
   private final OAuth2SuccessHandler oAuth2SuccessHandler;
   private final OAuth2FailureHandler oAuth2FailureHandler;
+  private final boolean secureCookies;
 
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    var csrfRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+    var csrfRepository = new CookieCsrfTokenRepository();
     csrfRepository.setCookieName("XSRF-TOKEN");
     csrfRepository.setHeaderName("X-XSRF-TOKEN");
+    csrfRepository.setCookieCustomizer(
+        cookie -> cookie.httpOnly(true).secure(secureCookies).sameSite("Lax"));
     http.csrf(
             csrf ->
                 csrf.csrfTokenRepository(csrfRepository)
@@ -106,6 +109,7 @@ public class SecurityConfig {
       OAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService,
       OAuth2SuccessHandler oAuth2SuccessHandler,
       OAuth2FailureHandler oAuth2FailureHandler,
+      AuthProperties auth,
       @Value("${api.prefix}") String api) {
     this.authEntryPoint = authEntryPoint;
     this.accessDeniedHandler = accessDeniedHandler;
@@ -114,6 +118,7 @@ public class SecurityConfig {
     this.oAuth2UserService = oAuth2UserService;
     this.oAuth2SuccessHandler = oAuth2SuccessHandler;
     this.oAuth2FailureHandler = oAuth2FailureHandler;
+    this.secureCookies = auth.cookie().secure();
     this.api = api;
   }
 }

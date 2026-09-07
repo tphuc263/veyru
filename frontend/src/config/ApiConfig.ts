@@ -1,21 +1,30 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { API_BASE_URL } from "../utils/constants";
+import { getCsrfToken } from './CsrfToken';
 
 type RetryableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
 
 const noRefreshPaths = new Set(['/sessions', '/sessions/refresh', '/sessions/oauth2']);
+const safeMethods = new Set(['get', 'head', 'options', 'trace']);
 let refreshPromise: Promise<void> | null = null;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
   withCredentials: true,
-  withXSRFToken: true,
-  xsrfCookieName: 'XSRF-TOKEN',
-  xsrfHeaderName: 'X-XSRF-TOKEN',
+  withXSRFToken: false,
   headers: {
     "Content-Type": "application/json",
   },
+});
+
+api.interceptors.request.use(config => {
+  const method = config.method?.toLowerCase() ?? 'get';
+  const token = getCsrfToken();
+  if (token && !safeMethods.has(method)) {
+    config.headers.set('X-XSRF-TOKEN', token);
+  }
+  return config;
 });
 
 api.interceptors.response.use(

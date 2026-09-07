@@ -1,4 +1,5 @@
 import { Client } from '@stomp/stompjs';
+import { getCsrfToken } from '../config/CsrfToken';
 import { markAsRead } from './messageService';
 
 const resolveBrokerUrl = (): string => {
@@ -9,12 +10,6 @@ const resolveBrokerUrl = (): string => {
     const normalizedBase = base.replace(/^http:\/\//, 'ws://').replace(/^https:\/\//, 'wss://').replace(/\/+$/, '');
     return normalizedBase.endsWith('/ws') ? normalizedBase : `${normalizedBase}/ws`;
 };
-
-const csrfToken = (): string =>
-    document.cookie
-        .split('; ')
-        .find(cookie => cookie.startsWith('XSRF-TOKEN='))
-        ?.slice('XSRF-TOKEN='.length) ?? '';
 
 let client: Client | null = null;
 let currentUserId: string | null = null;
@@ -81,7 +76,7 @@ export const connectSocket = (userId: string): Client => {
     
     client = new Client({
         brokerURL: resolveBrokerUrl(),
-        connectHeaders: {'X-XSRF-TOKEN': decodeURIComponent(csrfToken())},
+        connectHeaders: {'X-XSRF-TOKEN': getCsrfToken() ?? ''},
         reconnectDelay: 5000,
         heartbeatIncoming: 10000,
         heartbeatOutgoing: 10000,
