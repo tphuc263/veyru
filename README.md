@@ -103,9 +103,18 @@ required credentials, URLs or the JWT signing key are missing. Use a Base64-enco
 containing at least 32 random bytes; Base64 is an encoding, not encryption.
 
 Spring Boot applies profile files first and lets OS environment variables override them. This
-repository keeps production-safe defaults in `application.yml` and localhost-only overrides in
-`application-local.yml`. Only the local profile imports `backend/.env`. The application does not
-expose Actuator's `env` or `configprops` endpoints.
+repository keeps shared defaults in `application.yml`, localhost-only overrides in
+`application-local.yml`, and public deployment policy in `application-prod.yml`. Only the local
+profile imports `backend/.env`; public deployments must set `SPRING_PROFILES_ACTIVE=prod`.
+
+Production uses `https://api.veyru.dev` for the API and allows only `https://veyru.dev` as its
+browser origin. The frontend reads the CSRF token returned by `/api/v1/csrf` and sends it explicitly
+for REST mutations and the STOMP connection, so the session cookies can remain host-only.
+
+Redis is configured through the single `REDIS_URL` variable and must support the Redis Search
+`FT.CREATE` and `FT.SEARCH` commands. Vector search is always active, and a missing Redis Search
+module fails startup rather than disabling the capability. See the [backend guide](backend/README.md)
+for the complete environment contract.
 
 ## Quality checks
 
