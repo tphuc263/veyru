@@ -29,15 +29,9 @@ public class RedisVectorAdapter implements VectorIndex {
 
   @PostConstruct
   public void initializeIndexes() {
-    try {
-      createIndexIfNotExists(
-          PHOTO_INDEX,
-          PHOTO_PREFIX,
-          new String[] {"caption", "TAG", "userId", "TAG", "tags", "TAG"});
-      log.info("Redis photo vector index initialized successfully");
-    } catch (RuntimeException exception) {
-      log.warn("Redis Search unavailable; related photos will use tag matching", exception);
-    }
+    createIndexIfNotExists(
+        PHOTO_INDEX, PHOTO_PREFIX, new String[] {"caption", "TAG", "userId", "TAG", "tags", "TAG"});
+    log.info("Redis photo vector index initialized successfully");
   }
 
   /** Create a vector search index if it doesn't exist. */

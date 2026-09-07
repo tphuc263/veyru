@@ -17,6 +17,7 @@ import com.veyru.application.result.recommendation.RecommendedUserResult;
 import com.veyru.domain.model.Follow;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -39,6 +40,7 @@ public class RecommendationService {
   private final FollowStore followStore;
   private final PhotoConversionService photoConversionService;
   private final CurrentActor currentActor;
+  private final MeterRegistry meters;
 
   public List<PhotoResult> getRelatedPhotos(String photoId, int limit, PhotoViewer viewer) {
     Photo source = photoStore.findById(photoId).orElse(null);
@@ -65,6 +67,7 @@ public class RecommendationService {
         if (!related.isEmpty()) return related;
       }
     } catch (RuntimeException exception) {
+      recordFallback("vector", "search");
       log.warn("Photo vector search unavailable; using tag fallback", exception);
     }
     return relatedByTags(source, limit, viewer);
@@ -97,6 +100,7 @@ public class RecommendationService {
     try {
       graphCandidates = graph.getSuggestedUsers(userId, limit * 2);
     } catch (RuntimeException exception) {
+      recordFallback("neo4j", "suggestions");
       log.warn("Neo4j suggestions unavailable; using popular-user fallback", exception);
       graphCandidates = List.of();
     }
@@ -186,6 +190,7 @@ public class RecommendationService {
     try {
       ensurePhotoEmbedding(photo);
     } catch (RuntimeException exception) {
+      recordFallback("vector", "index");
       log.warn("Photo {} will use tag fallback until vector indexing recovers", photoId, exception);
     }
   }
@@ -196,6 +201,13 @@ public class RecommendationService {
     return photos.size();
   }
 
+  private void recordFallback(String dependency, String operation) {
+    meters
+        .counter(
+            "veyru.recommendation.fallback.total", "dependency", dependency, "operation", operation)
+        .increment();
+  }
+
   public RecommendationService(
       EmbeddingService embeddingService,
       VectorIndex vectorIndex,
@@ -204,7 +216,8 @@ public class RecommendationService {
       UserStore userStore,
       FollowStore followStore,
       PhotoConversionService photoConversionService,
-      CurrentActor currentActor) {
+      CurrentActor currentActor,
+      MeterRegistry meters) {
     this.embeddingService = embeddingService;
     this.vectorIndex = vectorIndex;
     this.graph = graph;
@@ -213,5 +226,6 @@ public class RecommendationService {
     this.followStore = followStore;
     this.photoConversionService = photoConversionService;
     this.currentActor = currentActor;
+    this.meters = meters;
   }
 }

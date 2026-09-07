@@ -1,6 +1,7 @@
 package com.veyru.adapter.out.redis;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -19,6 +20,7 @@ import com.veyru.application.result.photo.PhotoResult;
 import com.veyru.config.RedisConfig;
 import com.veyru.domain.model.Photo;
 import com.veyru.support.DomainFixtures;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -69,6 +71,11 @@ class RedisAffinityCacheTest {
   }
 
   @Test
+  void vectorIndexInitializesAgainstRedisStack() {
+    assertThatCode(new RedisVectorAdapter(template)::initializeIndexes).doesNotThrowAnyException();
+  }
+
+  @Test
   void relatedPhotosUseTagsWhenTheSearchIndexIsUnavailable() {
     PhotoStore photos = mock(PhotoStore.class);
     PhotoConversionService conversion = mock(PhotoConversionService.class);
@@ -89,7 +96,8 @@ class RedisAffinityCacheTest {
             mock(UserStore.class),
             mock(FollowStore.class),
             conversion,
-            mock(CurrentActor.class));
+            mock(CurrentActor.class),
+            new SimpleMeterRegistry());
 
     assertThat(recommendations.getRelatedPhotos("source", 2, PhotoViewer.anonymous()))
         .containsExactly(expected);

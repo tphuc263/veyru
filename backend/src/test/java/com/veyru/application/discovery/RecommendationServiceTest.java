@@ -20,6 +20,7 @@ import com.veyru.application.result.photo.PhotoResult;
 import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
 import com.veyru.support.DomainFixtures;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -34,9 +35,10 @@ class RecommendationServiceTest {
   private final FollowStore follows = mock(FollowStore.class);
   private final PhotoConversionService conversion = mock(PhotoConversionService.class);
   private final CurrentActor actor = mock(CurrentActor.class);
+  private final SimpleMeterRegistry meters = new SimpleMeterRegistry();
   private final RecommendationService service =
       new RecommendationService(
-          embeddings, vectors, graph, photos, users, follows, conversion, actor);
+          embeddings, vectors, graph, photos, users, follows, conversion, actor, meters);
 
   @Test
   void usesTagMatchingWhenRedisSearchFails() {
@@ -52,6 +54,13 @@ class RecommendationServiceTest {
 
     assertThat(service.getRelatedPhotos("source", 2, PhotoViewer.anonymous()))
         .containsExactly(expected);
+    assertThat(
+            meters
+                .get("veyru.recommendation.fallback.total")
+                .tags("dependency", "vector", "operation", "search")
+                .counter()
+                .count())
+        .isEqualTo(1.0);
   }
 
   @Test
