@@ -1,20 +1,51 @@
 name: CD
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'backend/**'
-      - '.github/workflows/cd.yml'
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
+  check-changes:
+    name: Check Trigger Conditions
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    outputs:
+      should_deploy: ${{ steps.filter.outputs.should_deploy }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Check for backend changes
+        id: filter
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Triggered manually via workflow_dispatch. Proceeding."
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+          elif git diff-tree --no-commit-id --name-only -r HEAD | grep -qE '^(backend/|\.github/workflows/cd\.yml)'; then
+            echo "Changes detected in backend/ or cd.yml. Proceeding to deploy."
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No changes in backend/. Skipping deployment."
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+          fi
+
   deploy-backend:
     name: Deploy Backend to Heroku
+    needs: check-changes
+    if: needs.check-changes.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
