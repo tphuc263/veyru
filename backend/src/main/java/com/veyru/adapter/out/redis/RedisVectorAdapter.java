@@ -44,7 +44,9 @@ public class RedisVectorAdapter implements VectorIndex {
           });
     } catch (RedisSystemException e) {
       if (e.getCause() instanceof RedisCommandExecutionException cause
-          && "Index already exists".equals(cause.getMessage())) {
+          && cause.getMessage() != null
+          && (cause.getMessage().contains("Index already exists")
+              || cause.getMessage().contains("SEARCH_INDEX_EXISTS"))) {
         log.info("Index '{}' already exists", indexName);
         return;
       }
