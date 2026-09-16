@@ -26,7 +26,14 @@ class Session {
     for (const value of setCookies) {
       const [pair] = value.split(';');
       const separator = pair.indexOf('=');
-      this.cookies.set(pair.slice(0, separator), pair.slice(separator + 1));
+      const name = pair.slice(0, separator).trim();
+      const val = pair.slice(separator + 1).trim();
+      if (val) {
+        this.cookies.set(name, val);
+        if (name === 'XSRF-TOKEN') {
+          this.csrf = val;
+        }
+      }
     }
     const text = await response.text();
     const body = text ? JSON.parse(text) : null;
