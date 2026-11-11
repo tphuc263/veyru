@@ -25,9 +25,14 @@ export const AuthProvider = ({children}) => {
         const initializeAuth = async () => {
             try {
                 await initializeCsrf()
+                if (window.location.pathname === '/auth/oauth2/redirect') {
+                    return
+                }
                 setUser(await currentSession())
             } catch {
-                setUser(null)
+                if (window.location.pathname !== '/auth/oauth2/redirect') {
+                    setUser(null)
+                }
             } finally {
                 setInitLoading(false);
             }

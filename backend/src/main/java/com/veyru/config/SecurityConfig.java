@@ -5,11 +5,13 @@ import com.veyru.adapter.in.security.jwt.JwtAccessDeniedHandler;
 import com.veyru.adapter.in.security.jwt.JwtEntryPoint;
 import com.veyru.adapter.in.security.oauth2.OAuth2FailureHandler;
 import com.veyru.adapter.in.security.oauth2.OAuth2SuccessHandler;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -19,6 +21,9 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -40,7 +45,8 @@ public class SecurityConfig {
     csrfRepository.setHeaderName("X-XSRF-TOKEN");
     csrfRepository.setCookieCustomizer(
         cookie -> cookie.httpOnly(true).secure(secureCookies).sameSite("Lax"));
-    http.csrf(
+    http.cors(Customizer.withDefaults())
+        .csrf(
             csrf ->
                 csrf.csrfTokenRepository(csrfRepository)
                     .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))
@@ -99,6 +105,19 @@ public class SecurityConfig {
                     .successHandler(oAuth2SuccessHandler)
                     .failureHandler(oAuth2FailureHandler));
     return http.build();
+  }
+
+  @Bean
+  public CorsConfigurationSource corsConfigurationSource(CorsProperties cors) {
+    var config = new CorsConfiguration();
+    config.setAllowedOrigins(cors.allowedOrigins());
+    config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+    config.setAllowedHeaders(List.of("*"));
+    config.setAllowCredentials(true);
+    config.setMaxAge(3600L);
+    var source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", config);
+    return source;
   }
 
   public SecurityConfig(
