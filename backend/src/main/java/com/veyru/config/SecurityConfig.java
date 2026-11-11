@@ -20,6 +20,7 @@ import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -49,7 +50,8 @@ public class SecurityConfig {
         .csrf(
             csrf ->
                 csrf.csrfTokenRepository(csrfRepository)
-                    .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))
+                    .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler())
+                    .sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy()))
         .exceptionHandling(
             exception ->
                 exception

@@ -141,4 +141,46 @@ class PublicReadSecurityTest {
         .andExpect(header().string("Access-Control-Allow-Credentials", "true"))
         .andExpect(jsonPath("$.code").value("INVALID_CSRF_TOKEN"));
   }
+
+  @Test
+  void authenticatedRequestsDoNotClearOrRotateCsrfCookie() throws Exception {
+    doAnswer(
+            invocation -> {
+              var principal =
+                  new com.veyru.adapter.security.AppUserDetails(
+                      "u1",
+                      "user",
+                      "user@example.com",
+                      "pw",
+                      true,
+                      List.of(
+                          new org.springframework.security.core.authority.SimpleGrantedAuthority(
+                              "ROLE_USER")));
+              org.springframework.security.core.context.SecurityContextHolder.getContext()
+                  .setAuthentication(
+                      new com.veyru.adapter.security.UserIdAuthenticationToken(principal));
+              invocation
+                  .<jakarta.servlet.FilterChain>getArgument(2)
+                  .doFilter(invocation.getArgument(0), invocation.getArgument(1));
+              return null;
+            })
+        .when(authTokenFilter)
+        .doFilter(any(), any(), any());
+
+    var csrfCookie = new jakarta.servlet.http.Cookie("XSRF-TOKEN", "stable-token");
+
+    mvc.perform(
+            put("/api/v1/users/me/following/target1")
+                .header("X-XSRF-TOKEN", "stable-token")
+                .cookie(csrfCookie))
+        .andExpect(status().isNoContent())
+        .andExpect(header().doesNotExist("Set-Cookie"));
+
+    mvc.perform(
+            put("/api/v1/users/me/following/target2")
+                .header("X-XSRF-TOKEN", "stable-token")
+                .cookie(csrfCookie))
+        .andExpect(status().isNoContent())
+        .andExpect(header().doesNotExist("Set-Cookie"));
+  }
 }
