@@ -4,6 +4,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.veyru.adapter.in.security.jwt.AuthTokenFilter;
@@ -119,5 +122,60 @@ class PublicReadSecurityTest {
     mvc.perform(get("/api/v1/users/user")).andExpect(status().isOk());
     mvc.perform(get("/api/v1/users/me")).andExpect(status().isUnauthorized());
     mvc.perform(get("/api/v1/photos/photo/shares/me")).andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void includesCorsHeadersOnUnauthorizedAndCsrfForbiddenResponses() throws Exception {
+    mvc.perform(get("/api/v1/users/me").header("Origin", "http://localhost:5173"))
+        .andExpect(status().isUnauthorized())
+        .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"))
+        .andExpect(header().string("Access-Control-Allow-Credentials", "true"));
+
+    mvc.perform(
+            put("/api/v1/users/me/following/target")
+                .header("Origin", "http://localhost:5173")
+                .header("X-XSRF-TOKEN", "stale-token")
+                .cookie(new jakarta.servlet.http.Cookie("XSRF-TOKEN", "cookie-token")))
+        .andExpect(status().isForbidden())
+        .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"))
+        .andExpect(header().string("Access-Control-Allow-Credentials", "true"))
+        .andExpect(jsonPath("$.code").value("INVALID_CSRF_TOKEN"));
+  }
+
+  @Test
+  void authenticatedRequestsDoNotClearOrRotateCsrfCookie() throws Exception {
+    doAnswer(
+            invocation -> {
+              var principal =
+                  new com.veyru.adapter.security.AppUserDetails(
+                      "u1",
+                      "user",
+                      "user@example.com",
+                      "pw",
+                      true,
+                      List.of(
+                          new org.springframework.security.core.authority.SimpleGrantedAuthority(
+                              "ROLE_USER")));
+              org.springframework.security.core.context.SecurityContextHolder.getContext()
+                  .setAuthentication(
+                      new com.veyru.adapter.security.UserIdAuthenticationToken(principal));
+              invocation
+                  .<jakarta.servlet.FilterChain>getArgument(2)
+                  .doFilter(invocation.getArgument(0), invocation.getArgument(1));
+              return null;
+            })
+        .when(authTokenFilter)
+        .doFilter(any(), any(), any());
+
+    var csrfCookie = new jakarta.servlet.http.Cookie("XSRF-TOKEN", "stable-token");
+
+    for (int i = 1; i <= 5; i++) {
+      mvc.perform(
+              put("/api/v1/users/me/following/target-" + i)
+                  .header("X-XSRF-TOKEN", "stable-token")
+                  .cookie(csrfCookie))
+          .andExpect(status().isNoContent())
+          .andExpect(header().doesNotExist("Set-Cookie"));
+    }
   }
 }

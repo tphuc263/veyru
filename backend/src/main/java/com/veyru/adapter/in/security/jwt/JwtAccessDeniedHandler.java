@@ -10,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.csrf.CsrfException;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
@@ -21,12 +22,13 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
   public void handle(
       HttpServletRequest request, HttpServletResponse response, AccessDeniedException exception)
       throws IOException {
-    ProblemDetail problem =
-        ProblemDetail.forStatusAndDetail(
-            HttpErrorMapper.status(ErrorCode.ACCESS_DENIED), ErrorCode.ACCESS_DENIED.detail());
-    problem.setTitle(HttpErrorMapper.status(ErrorCode.ACCESS_DENIED).getReasonPhrase());
+    ErrorCode code =
+        exception instanceof CsrfException ? ErrorCode.INVALID_CSRF_TOKEN : ErrorCode.ACCESS_DENIED;
+    var status = HttpErrorMapper.status(code);
+    ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, code.detail());
+    problem.setTitle(status.getReasonPhrase());
     problem.setInstance(URI.create(request.getRequestURI()));
-    problem.setProperty("code", ErrorCode.ACCESS_DENIED.name());
+    problem.setProperty("code", code.name());
     response.setStatus(problem.getStatus());
     response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
     objectMapper.writeValue(response.getOutputStream(), problem);

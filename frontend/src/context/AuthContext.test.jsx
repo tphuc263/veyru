@@ -45,3 +45,16 @@ it('stays anonymous when no server session exists', async () => {
 
   expect(await screen.findByText('anonymous')).toBeInTheDocument()
 })
+
+it('skips currentSession bootstrap on OAuth2 redirect route after CSRF initialization', async () => {
+  window.history.pushState({}, '', '/auth/oauth2/redirect?code=test-code')
+  try {
+    render(<AuthProvider><SessionState /></AuthProvider>)
+
+    expect(await screen.findByText('anonymous')).toBeInTheDocument()
+    expect(initializeCsrf).toHaveBeenCalledOnce()
+    expect(currentSession).not.toHaveBeenCalled()
+  } finally {
+    window.history.pushState({}, '', '/')
+  }
+})

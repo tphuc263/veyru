@@ -1,5 +1,7 @@
 import { Client } from '@stomp/stompjs';
+import { syncCsrfToken } from '../config/ApiConfig';
 import { getCsrfToken } from '../config/CsrfToken';
+import { currentSession } from './authService';
 import { markAsRead } from './messageService';
 
 const resolveBrokerUrl = (): string => {
@@ -13,6 +15,8 @@ const resolveBrokerUrl = (): string => {
 
 let client: Client | null = null;
 let currentUserId: string | null = null;
+let needsSessionRecovery = false;
+let recoveryAttempted = false;
 interface PendingMessage {
     destination: string;
     body: string;
@@ -71,6 +75,8 @@ export const connectSocket = (userId: string): Client => {
     }
 
     currentUserId = userId;
+    needsSessionRecovery = false;
+    recoveryAttempted = false;
 
     console.log('[socketService] Creating new STOMP connection for user:', userId);
     
@@ -80,12 +86,38 @@ export const connectSocket = (userId: string): Client => {
         reconnectDelay: 5000,
         heartbeatIncoming: 10000,
         heartbeatOutgoing: 10000,
+        beforeConnect: async (stompClient) => {
+            if (needsSessionRecovery) {
+                if (recoveryAttempted) {
+                    disconnectSocket();
+                    return;
+                }
+                recoveryAttempted = true;
+                try {
+                    await currentSession();
+                    await syncCsrfToken();
+                    needsSessionRecovery = false;
+                } catch {
+                    disconnectSocket();
+                    return;
+                }
+            } else if (!getCsrfToken()) {
+                try {
+                    await syncCsrfToken();
+                } catch {
+                    // Proceed with current token state if /csrf is temporarily unreachable
+                }
+            }
+            stompClient.connectHeaders = {'X-XSRF-TOKEN': getCsrfToken() ?? ''};
+        },
         debug: (str) => {
             console.log('[STOMP]', str);
         }
     });
 
     client.onConnect = (frame) => {
+        needsSessionRecovery = false;
+        recoveryAttempted = false;
         console.log('[socketService] STOMP connected:', frame);
         triggerEvent('connect');
         
@@ -139,11 +171,13 @@ export const connectSocket = (userId: string): Client => {
     };
 
     client.onStompError = (frame) => {
+        needsSessionRecovery = true;
         console.error('[socketService] STOMP error:', frame.headers['message']);
         triggerEvent('connect_error', new Error(frame.headers['message']));
     };
 
     client.onWebSocketError = (event) => {
+        needsSessionRecovery = true;
         console.error('[socketService] STOMP websocket error:', event);
         triggerEvent('connect_error', event);
     };
@@ -163,6 +197,8 @@ export const disconnectSocket = (): void => {
         client.deactivate();
         client = null;
         currentUserId = null;
+        needsSessionRecovery = false;
+        recoveryAttempted = false;
     }
 };
 

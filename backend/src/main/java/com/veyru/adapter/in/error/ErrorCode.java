@@ -7,6 +7,7 @@ public enum ErrorCode {
   AUTHENTICATION_REQUIRED("Authentication is required."),
   INVALID_CREDENTIALS("Invalid credentials."),
   INVALID_TOKEN("The access token is invalid or expired."),
+  INVALID_CSRF_TOKEN("The CSRF token is missing or invalid."),
   ACCESS_DENIED("You do not have permission to perform this action."),
   RESOURCE_NOT_FOUND("The requested resource was not found."),
   METHOD_NOT_ALLOWED("The HTTP method is not supported for this resource."),
