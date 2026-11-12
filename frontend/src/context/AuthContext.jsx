@@ -2,6 +2,7 @@ import {createContext, useContext, useEffect, useState} from 'react'
 import {useAuth as useAuthLogic} from '../hooks/useAuth'
 import {toastSuccess} from '../utils/toastService'
 import {currentSession, initializeCsrf} from '../services/authService'
+import {pageCache} from '../utils/pageCache'
 
 const AuthContext = createContext(undefined)
 
@@ -42,7 +43,10 @@ export const AuthProvider = ({children}) => {
     }, [])
 
     useEffect(() => {
-        const expire = () => setUser(null)
+        const expire = () => {
+            pageCache.clearAll()
+            setUser(null)
+        }
         window.addEventListener('auth:expired', expire)
         return () => window.removeEventListener('auth:expired', expire)
     }, [])
@@ -51,6 +55,7 @@ export const AuthProvider = ({children}) => {
         const result = await handleLogin(credentials)
 
         if (result.success) {
+            pageCache.clearAll()
             setUser(result.data)
         }
 
@@ -64,6 +69,7 @@ export const AuthProvider = ({children}) => {
 
     const logout = async () => {
         const result = await handleLogout()
+        pageCache.clearAll()
         setUser(null)
         toastSuccess.logoutSuccess()
 

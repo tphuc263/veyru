@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { DEFAULT_AVATAR } from "../../utils/constants";
+import { optimizeImageUrl } from "../../utils/helpers";
+import { pageCache } from "../../utils/pageCache";
 import "../../assets/styles/pages/profilePage.css";
 import { useAuthContext } from "../../context/AuthContext.jsx";
 import { useUserProfile } from "../../hooks/useUserProfile.js";
@@ -11,15 +13,15 @@ import PhotoModal from "../../components/features/PhotoModal.jsx";
 import FollowListModal from "../../components/features/FollowListModal.jsx";
 
 const ProfilePage = () => {
-  const { profile, posts, handleLoadMore, setProfile, setPosts } = useUserProfile();
   const { user: currentUser } = useAuthContext();
+  const { profile, posts, handleLoadMore, setProfile, setPosts } = useUserProfile(currentUser?.id);
   const navigate = useNavigate();
 
   const [isFollowLoading, setIsFollowLoading] = useState(false);
   const [selectedPhotoId, setSelectedPhotoId] = useState(null);
   const [followModal, setFollowModal] = useState({ open: false, type: null });
   const [activeTab, setActiveTab] = useState('posts');
-  const [favorites, setFavorites] = useState([]);
+  const [favorites, setFavorites] = useState(() => pageCache.getFavorites() || []);
   const [favoritesLoading, setFavoritesLoading] = useState(false);
 
   const isOwnProfile =
@@ -28,10 +30,14 @@ const ProfilePage = () => {
   useEffect(() => {
     if (activeTab === 'saved' && isOwnProfile) {
       const fetchFavorites = async () => {
-        setFavoritesLoading(true);
+        const cachedFavs = pageCache.getFavorites();
+        if (!cachedFavs) {
+          setFavoritesLoading(true);
+        }
         try {
           const data = await getFavorites(0, 50);
           setFavorites(data);
+          pageCache.setFavorites(data);
         } catch (err) {
           console.error('Failed to load favorites:', err);
         } finally {
@@ -133,8 +139,9 @@ const ProfilePage = () => {
         <div className="profile-avatar">
           <div className="avatar-wrapper">
             <img
-              src={displayData.imageUrl || DEFAULT_AVATAR}
+              src={optimizeImageUrl(displayData.imageUrl, 240) || DEFAULT_AVATAR}
               alt="Avatar"
+              decoding="async"
               onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}
             />
           </div>
@@ -240,7 +247,7 @@ const ProfilePage = () => {
                     className="post-item"
                     onClick={() => handlePhotoClick(photoId)}
                   >
-                    <img src={displayImageUrl} alt={`Post ${post.id}`} />
+                    <img src={optimizeImageUrl(displayImageUrl, 500)} alt={`Post ${post.id}`} loading="lazy" decoding="async" />
                     <div className="post-overlay">
                       <div className="post-stats">
                         <span>❤️ {post.type === 'SHARE' ? (post.originalLikeCount || 0) : (post.likeCount || 0)}</span>
@@ -286,7 +293,7 @@ const ProfilePage = () => {
                     className="post-item"
                     onClick={() => handlePhotoClick(photo.id)}
                   >
-                    <img src={photo.imageUrl} alt={`Saved ${photo.id}`} />
+                    <img src={optimizeImageUrl(photo.imageUrl, 500)} alt={`Saved ${photo.id}`} loading="lazy" decoding="async" />
                     <div className="post-overlay">
                       <div className="post-stats">
                         <span>❤️ {photo.likeCount || 0}</span>
@@ -301,9 +308,38 @@ const ProfilePage = () => {
         )}
       </main>
 
-      {selectedPhotoId && (() => (
+      {selectedPhotoId && (() => {
+          const matchedPost = posts.data.find(
+            p => String(p.id) === String(selectedPhotoId) || String(p.originalPhotoId) === String(selectedPhotoId)
+          ) || favorites.find(f => String(f.id) === String(selectedPhotoId));
+
+          const initialPhoto = matchedPost
+            ? matchedPost.type === 'SHARE'
+              ? {
+                  id: matchedPost.originalPhotoId,
+                  userId: matchedPost.userId,
+                  username: matchedPost.originalUsername || matchedPost.username || displayData.username,
+                  userImageUrl: matchedPost.originalUserImageUrl || matchedPost.userImageUrl || displayData.imageUrl,
+                  imageUrl: matchedPost.originalImageUrl,
+                  caption: matchedPost.originalCaption ?? matchedPost.shareCaption,
+                  likeCount: matchedPost.originalLikeCount ?? 0,
+                  commentCount: matchedPost.originalCommentCount ?? 0,
+                  shareCount: matchedPost.originalShareCount ?? 0,
+                  isLikedByCurrentUser: matchedPost.isLikedByCurrentUser ?? false,
+                  isSavedByCurrentUser: matchedPost.isSavedByCurrentUser ?? false,
+                  createdAt: matchedPost.originalCreatedAt || matchedPost.createdAt
+                }
+              : {
+                  ...matchedPost,
+                  username: matchedPost.username || displayData.username,
+                  userImageUrl: matchedPost.userImageUrl || displayData.imageUrl
+                }
+            : null;
+
+          return (
           <PhotoModal
             photoId={selectedPhotoId}
+            initialPhoto={initialPhoto}
             onClose={handleCloseModal}
             onPhotoClick={handlePhotoClick}
             onPhotoUpdate={(photoId, updatedPhoto) => {
@@ -311,19 +347,23 @@ const ProfilePage = () => {
               setPosts(prevPosts => ({
                 ...prevPosts,
                 data: prevPosts.data.map(post => 
-                  post.id === photoId 
+                  String(post.id) === String(photoId) || String(post.originalPhotoId) === String(photoId)
                     ? { 
                         ...post, 
-                        isLikedByCurrentUser: updatedPhoto.isLikedByCurrentUser,
-                        likeCount: updatedPhoto.likeCount,
-                        commentCount: updatedPhoto.commentCount || post.commentCount
+                        isLikedByCurrentUser: updatedPhoto.isLikedByCurrentUser ?? post.isLikedByCurrentUser,
+                        isSavedByCurrentUser: updatedPhoto.isSavedByCurrentUser ?? post.isSavedByCurrentUser,
+                        likeCount: updatedPhoto.likeCount ?? post.likeCount,
+                        originalLikeCount: post.type === 'SHARE' ? (updatedPhoto.likeCount ?? post.originalLikeCount) : post.originalLikeCount,
+                        commentCount: updatedPhoto.commentCount ?? post.commentCount,
+                        originalCommentCount: post.type === 'SHARE' ? (updatedPhoto.commentCount ?? post.originalCommentCount) : post.originalCommentCount,
                       }
                     : post
                 )
               }));
             }}
           />
-      ))()} 
+          );
+      })()} 
 
       {followModal.open && (
         <FollowListModal

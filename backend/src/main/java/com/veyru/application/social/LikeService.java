@@ -81,7 +81,7 @@ public class LikeService {
                   like.id(),
                   like.userId(),
                   user == null ? null : user.username(),
-                  user == null ? null : userAvatarCacheService.getAvatar(user.id()),
+                  user == null ? null : user.imageUrl(),
                   like.createdAt());
             })
         .toList();

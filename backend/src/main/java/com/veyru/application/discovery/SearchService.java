@@ -36,7 +36,7 @@ public class SearchService {
     }
     PhotoViewer viewer = currentPhotoViewer();
     PageResult<Photo> photos = photoStore.searchText(sanitizedQuery, new PageQuery(page, size));
-    return photos.map(photo -> photoConversionService.convertToPhotoResponse(photo, viewer));
+    return photoConversionService.convertToPhotoPage(photos, viewer);
   }
 
   public PageResult<PhotoResult> searchPhotosByTags(String query, int page, int size) {
@@ -47,7 +47,7 @@ public class SearchService {
     List<String> tagNames = List.of(sanitizedQuery.split("\\s+"));
     PhotoViewer viewer = currentPhotoViewer();
     PageResult<Photo> photos = photoStore.findByTags(tagNames, new PageQuery(page, size));
-    return photos.map(photo -> photoConversionService.convertToPhotoResponse(photo, viewer));
+    return photoConversionService.convertToPhotoPage(photos, viewer);
   }
 
   public List<String> getSearchSuggestions(String query, int limit) {

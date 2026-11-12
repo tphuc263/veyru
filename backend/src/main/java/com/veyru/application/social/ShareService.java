@@ -57,7 +57,7 @@ public class ShareService {
                   share.photoId(),
                   share.userId(),
                   user == null ? null : user.username(),
-                  user == null ? null : userAvatarCacheService.getAvatar(user.id()),
+                  user == null ? null : user.imageUrl(),
                   share.caption(),
                   share.createdAt());
             })
@@ -95,7 +95,7 @@ public class ShareService {
                   response.setCreatedAt(share.createdAt());
                   if (sharerUser != null) {
                     response.setUsername(sharerUser.username());
-                    response.setUserImageUrl(userAvatarCacheService.getAvatar(sharerUser.id()));
+                    response.setUserImageUrl(sharerUser.imageUrl());
                   }
                   Photo originalPhoto = photoMap.get(share.photoId());
                   if (originalPhoto != null) {
@@ -109,8 +109,7 @@ public class ShareService {
                     response.setOriginalUsername(originalPhoto.author().username());
                     User originalUser = userMap.get(originalPhoto.author().userId());
                     if (originalUser != null) {
-                      response.setOriginalUserImageUrl(
-                          userAvatarCacheService.getAvatar(originalUser.id()));
+                      response.setOriginalUserImageUrl(originalUser.imageUrl());
                     }
                   }
                   return response;

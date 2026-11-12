@@ -26,24 +26,32 @@ public class UnifiedPostService {
     PageResult<Photo> photosPage = photoStore.findByUser(userId, new PageQuery(page, size));
     List<Photo> photos = photosPage.items();
     List<Share> shares = shareStore.findByUserId(userId, page, size);
+    User sharerUser = userStore.findById(userId).orElse(null);
+    String sharerAvatar =
+        sharerUser != null ? sharerUser.imageUrl() : userAvatarCacheService.getAvatar(userId);
     List<UnifiedPostResult> allPosts = new ArrayList<>();
     for (Photo photo : photos) {
-      UnifiedPostResult post = convertPhotoToUnifiedPost(photo);
+      UnifiedPostResult post = convertPhotoToUnifiedPost(photo, sharerAvatar);
       allPosts.add(post);
     }
+    List<String> sharedPhotoIds = shares.stream().map(Share::photoId).distinct().toList();
     Map<String, Photo> photoMap =
-        photoStore.findAllById(shares.stream().map(Share::photoId).distinct().toList()).stream()
-            .collect(Collectors.toMap(Photo::id, p -> p));
+        sharedPhotoIds.isEmpty()
+            ? Map.of()
+            : photoStore.findAllById(sharedPhotoIds).stream()
+                .collect(Collectors.toMap(Photo::id, p -> p));
     List<String> originalUserIds =
         photoMap.values().stream().map(photo -> photo.author().userId()).distinct().toList();
     Map<String, User> userMap =
-        userStore.findAllById(originalUserIds).stream().collect(Collectors.toMap(User::id, u -> u));
-    User sharerUser = userStore.findById(userId).orElse(null);
+        originalUserIds.isEmpty()
+            ? Map.of()
+            : userStore.findAllById(originalUserIds).stream()
+                .collect(Collectors.toMap(User::id, u -> u));
     for (Share share : shares) {
       Photo originalPhoto = photoMap.get(share.photoId());
       if (originalPhoto != null) {
         UnifiedPostResult post =
-            convertShareToUnifiedPost(share, originalPhoto, sharerUser, userMap);
+            convertShareToUnifiedPost(share, originalPhoto, sharerUser, sharerAvatar, userMap);
         allPosts.add(post);
       }
     }
@@ -59,14 +67,14 @@ public class UnifiedPostService {
         pagePosts, page, size, allPosts.size(), (int) Math.ceil((double) allPosts.size() / size));
   }
 
-  private UnifiedPostResult convertPhotoToUnifiedPost(Photo photo) {
+  private UnifiedPostResult convertPhotoToUnifiedPost(Photo photo, String userAvatar) {
     UnifiedPostResult post = new UnifiedPostResult();
     post.setId(photo.id());
     post.setType(UnifiedPostResult.PostType.PHOTO);
     post.setCreatedAt(photo.createdAt());
     post.setUserId(photo.author().userId());
     post.setUsername(photo.author().username());
-    post.setUserImageUrl(userAvatarCacheService.getAvatar(photo.author().userId()));
+    post.setUserImageUrl(userAvatar);
     post.setImageUrl(photo.imageUrl());
     post.setCaption(photo.caption());
     post.setLikeCount((int) photo.likeCount());
@@ -78,7 +86,11 @@ public class UnifiedPostService {
   }
 
   private UnifiedPostResult convertShareToUnifiedPost(
-      Share share, Photo originalPhoto, User sharerUser, Map<String, User> userMap) {
+      Share share,
+      Photo originalPhoto,
+      User sharerUser,
+      String sharerAvatar,
+      Map<String, User> userMap) {
     UnifiedPostResult post = new UnifiedPostResult();
     post.setId("share_" + share.id());
     post.setType(UnifiedPostResult.PostType.SHARE);
@@ -86,7 +98,7 @@ public class UnifiedPostService {
     if (sharerUser != null) {
       post.setUserId(sharerUser.id());
       post.setUsername(sharerUser.username());
-      post.setUserImageUrl(userAvatarCacheService.getAvatar(sharerUser.id()));
+      post.setUserImageUrl(sharerAvatar);
     }
     post.setShareCaption(share.caption());
     post.setOriginalPhotoId(originalPhoto.id());
@@ -99,7 +111,7 @@ public class UnifiedPostService {
     post.setOriginalUsername(originalPhoto.author().username());
     User originalUser = userMap.get(originalPhoto.author().userId());
     if (originalUser != null) {
-      post.setOriginalUserImageUrl(userAvatarCacheService.getAvatar(originalUser.id()));
+      post.setOriginalUserImageUrl(originalUser.imageUrl());
     }
     return post;
   }

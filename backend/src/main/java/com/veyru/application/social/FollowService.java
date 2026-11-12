@@ -125,7 +125,7 @@ public class FollowService {
                     user.id(),
                     user.id(),
                     user.username(),
-                    userAvatarCacheService.getAvatar(user.id()),
+                    user.imageUrl(),
                     null,
                     null,
                     user.bio(),

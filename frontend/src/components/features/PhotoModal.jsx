@@ -8,6 +8,7 @@ import { follow, unfollow } from '../../services/followService';
 import { getRelatedPhotos } from '../../services/recommendationService';
 import { showToast } from '../../utils/toastService';
 import { DEFAULT_AVATAR } from '../../utils/constants';
+import { optimizeImageUrl } from '../../utils/helpers';
 import { Loader } from '../common/Loader';
 import { useOptimisticLike } from '../../hooks/useOptimisticLike';
 import { Heart, MessageCircle } from 'lucide-react';
@@ -15,63 +16,106 @@ import ShareModal from './ShareModal';
 import CommentSection from './CommentSection';
 import { useAuthContext } from '../../context/AuthContext';
 
-const PhotoModal = ({ photoId, onClose, onPhotoUpdate, onPhotoClick }) => {
-  const [photoDetail, setPhotoDetail] = useState(null);
-  const [loading, setLoading] = useState(true);
+const PhotoModal = ({ photoId, initialPhoto = null, onClose, onPhotoUpdate, onPhotoClick }) => {
+  const [photoDetail, setPhotoDetail] = useState(initialPhoto);
+  const [loading, setLoading] = useState(!initialPhoto);
   const [error, setError] = useState(null);
   const [comments, setComments] = useState([]);
-  const [isSaved, setIsSaved] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(initialPhoto?.isSavedByCurrentUser ?? false);
   const [relatedPhotos, setRelatedPhotos] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [localShareCount, setLocalShareCount] = useState(0);
-  const [localCommentCount, setLocalCommentCount] = useState(0);
+  const [localShareCount, setLocalShareCount] = useState(initialPhoto?.shareCount || 0);
+  const [localCommentCount, setLocalCommentCount] = useState(initialPhoto?.commentCount || 0);
   const [newComment, setNewComment] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(initialPhoto?.followingByCurrentUser ?? false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
   const commentInputRef = useRef(null);
   const { user } = useAuthContext();
 
   // Pass actual photoDetail values directly - the hook will sync when they change
-  const { isLiked, likesCount, isProcessing, handleLike } = useOptimisticLike(
+  const { isLiked, likesCount, handleLike } = useOptimisticLike(
     photoId,
     photoDetail?.isLikedByCurrentUser ?? false,
     photoDetail?.likeCount ?? 0,
     onPhotoUpdate
   );
 
+  const initialPhotoRef = useRef(initialPhoto);
   useEffect(() => {
+    initialPhotoRef.current = initialPhoto;
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const seedPhoto = initialPhotoRef.current;
+
     const fetchPhotoDetail = async () => {
       try {
-        setLoading(true);
-        const response = await getPhotoById(photoId);
-        setPhotoDetail(response);
-        setIsSaved(response.isSavedByCurrentUser ?? false);
-        setIsFollowing(response.followingByCurrentUser ?? false);
-        setLocalShareCount(response.shareCount || 0);
-        setLocalCommentCount(response.commentCount || 0);
-        
-        // Fetch comments with nested structure
-        try {
-          const commentsResponse = await getPhotoComments(photoId);
-          setComments(commentsResponse.data ?? commentsResponse ?? []);
-        } catch (err) {
-          console.error('Failed to load comments:', err);
+        if (seedPhoto && String(seedPhoto.id) === String(photoId)) {
+          setPhotoDetail(seedPhoto);
+          setIsSaved(seedPhoto.isSavedByCurrentUser ?? false);
+          setIsFollowing(seedPhoto.followingByCurrentUser ?? false);
+          setLocalShareCount(seedPhoto.shareCount || 0);
+          setLocalCommentCount(seedPhoto.commentCount || 0);
+          setLoading(false);
+        } else {
+          setLoading(true);
+        }
+
+        const [photoResult, commentsResult] = await Promise.allSettled([
+          getPhotoById(photoId),
+          getPhotoComments(photoId)
+        ]);
+
+        if (!isMounted) return;
+
+        if (photoResult.status === 'fulfilled') {
+          const response = photoResult.value;
+          setPhotoDetail(prev => {
+            if (!prev) return response;
+            return {
+              ...response,
+              // Preserve local optimistic like/save if user already clicked before getPhotoById resolved
+              isLikedByCurrentUser: prev.isLikedByCurrentUser ?? response.isLikedByCurrentUser,
+              likeCount: prev.likeCount ?? response.likeCount,
+              isSavedByCurrentUser: prev.isSavedByCurrentUser ?? response.isSavedByCurrentUser,
+            };
+          });
+          setIsFollowing(response.followingByCurrentUser ?? false);
+          setLocalShareCount(response.shareCount || 0);
+          setLocalCommentCount(response.commentCount || 0);
+        } else if (!seedPhoto) {
+          setError(photoResult.reason?.message || 'Không thể tải bài viết');
+        }
+
+        if (commentsResult.status === 'fulfilled') {
+          const commentsResponse = commentsResult.value;
+          setComments(commentsResponse?.data ?? commentsResponse ?? []);
+        } else {
+          console.error('Failed to load comments:', commentsResult.reason);
           setComments([]);
         }
       } catch (err) {
-        setError(err.message);
+        if (isMounted && !seedPhoto) {
+          setError(err.message);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     if (photoId) {
       fetchPhotoDetail();
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, [photoId]);
 
   // Load related photos (AI recommendation)
@@ -218,17 +262,28 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate, onPhotoClick }) => {
   };
 
   const handleSave = async () => {
-    if (isSaving) return;
-    setIsSaving(true);
     const prevSaved = isSaved;
-    setIsSaved(!isSaved);
+    const nextSaved = !prevSaved;
+    setIsSaved(nextSaved);
+    if (onPhotoUpdate) {
+      onPhotoUpdate(photoId, {
+        isLikedByCurrentUser: isLiked,
+        likeCount: likesCount,
+        isSavedByCurrentUser: nextSaved,
+      });
+    }
     try {
       await toggleFavorite(photoId, prevSaved);
     } catch (err) {
       setIsSaved(prevSaved);
+      if (onPhotoUpdate) {
+        onPhotoUpdate(photoId, {
+          isLikedByCurrentUser: isLiked,
+          likeCount: likesCount,
+          isSavedByCurrentUser: prevSaved,
+        });
+      }
       console.error('Failed to toggle save:', err);
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -267,7 +322,7 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate, onPhotoClick }) => {
         <div className="photo-modal-container">
           {/* Left side - Photo */}
           <div className="photo-modal-image-section">
-            <img src={photoDetail.imageUrl} alt={photoDetail.caption} />
+            <img src={optimizeImageUrl(photoDetail.imageUrl, 1080)} alt={photoDetail.caption} decoding="async" />
           </div>
 
           {/* Right side - Details */}
@@ -275,7 +330,7 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate, onPhotoClick }) => {
             {/* Header */}
             <div className="photo-modal-header">
               <img 
-                src={photoDetail.userImageUrl || DEFAULT_AVATAR} 
+                src={optimizeImageUrl(photoDetail.userImageUrl, 120) || DEFAULT_AVATAR} 
                 alt={photoDetail.username} 
                 className="user-avatar"
                 onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}
@@ -319,7 +374,7 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate, onPhotoClick }) => {
               {photoDetail.caption && (
                 <div className="photo-modal-caption">
                   <img 
-                    src={photoDetail.userImageUrl || DEFAULT_AVATAR} 
+                    src={optimizeImageUrl(photoDetail.userImageUrl, 120) || DEFAULT_AVATAR} 
                     alt={photoDetail.username} 
                     className="user-avatar-small"
                     onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}
@@ -351,7 +406,6 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate, onPhotoClick }) => {
                   <button 
                     className={`action-btn ${isLiked ? 'liked' : ''}`}
                     onClick={handleLike}
-                    disabled={isProcessing}
                     aria-label={isLiked ? 'Unlike' : 'Like'}
                   >
                     <svg width="24" height="24" viewBox="0 0 24 24" fill={isLiked ? "red" : "none"} stroke="currentColor" strokeWidth="2">
@@ -377,7 +431,6 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate, onPhotoClick }) => {
                 <button 
                   className={`action-btn save-btn ${isSaved ? 'saved' : ''}`}
                   onClick={handleSave}
-                  disabled={isSaving}
                   aria-label={isSaved ? 'Unsave' : 'Save'}
                 >
                   <svg width="24" height="24" viewBox="0 0 24 24" fill={isSaved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
@@ -453,7 +506,7 @@ const PhotoModal = ({ photoId, onClose, onPhotoUpdate, onPhotoClick }) => {
                     onPhotoClick(photo.id);
                   }}
                 >
-                  <img src={photo.imageUrl} alt={photo.caption || 'Related photo'} loading="lazy" />
+                  <img src={optimizeImageUrl(photo.imageUrl, 400)} alt={photo.caption || 'Related photo'} loading="lazy" decoding="async" />
                   <div className="related-photo-overlay">
                     <div className="related-photo-stats">
                       <span><Heart size={16} fill="white" stroke="white" /> {photo.likeCount}</span>

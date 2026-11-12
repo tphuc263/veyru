@@ -1,9 +1,10 @@
 import '../../assets/styles/components/photoCard.css';
 import { useOptimisticLike } from '../../hooks/useOptimisticLike';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toggleFavorite } from '../../services/favoriteService';
 import ShareModal from './ShareModal';
 import { DEFAULT_AVATAR } from '../../utils/constants';
+import { optimizeImageUrl } from '../../utils/helpers';
 
 const PhotoCard = ({
                        photoId,
@@ -20,7 +21,7 @@ const PhotoCard = ({
                        onPhotoUpdate,
                        isSharePost = false
                    }) => {
-    const { isLiked, likesCount, isProcessing, handleLike } = useOptimisticLike(
+    const { isLiked, likesCount, handleLike } = useOptimisticLike(
         photoId,
         initialIsLiked,
         initialLikesCount,
@@ -28,37 +29,64 @@ const PhotoCard = ({
     );
 
     const [isSaved, setIsSaved] = useState(initialIsSaved);
-    const [isSaving, setIsSaving] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
     const [sharesCount, setSharesCount] = useState(initialSharesCount);
 
+    useEffect(() => {
+        setIsSaved(initialIsSaved);
+    }, [initialIsSaved]);
+
+    useEffect(() => {
+        setSharesCount(initialSharesCount);
+    }, [initialSharesCount]);
+
     const handleSave = async () => {
-        if (isSaving) return;
-        setIsSaving(true);
         const prevSaved = isSaved;
-        setIsSaved(!isSaved);
+        const nextSaved = !prevSaved;
+        setIsSaved(nextSaved);
+        if (onPhotoUpdate) {
+            onPhotoUpdate(photoId, {
+                isLikedByCurrentUser: isLiked,
+                likeCount: likesCount,
+                isSavedByCurrentUser: nextSaved,
+            });
+        }
         try {
             await toggleFavorite(photoId, prevSaved);
         } catch (err) {
             setIsSaved(prevSaved);
+            if (onPhotoUpdate) {
+                onPhotoUpdate(photoId, {
+                    isLikedByCurrentUser: isLiked,
+                    likeCount: likesCount,
+                    isSavedByCurrentUser: prevSaved,
+                });
+            }
             console.error('Failed to toggle save:', err);
-        } finally {
-            setIsSaving(false);
         }
     };
 
     return (
         <div className="photo-card">
             <div className="photo-card-header">
-                <img src={avatarSrc || DEFAULT_AVATAR} alt={`${username}'s avatar`} className="avatar" onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}/>
+                <img
+                    src={optimizeImageUrl(avatarSrc, 120) || DEFAULT_AVATAR}
+                    alt={`${username}'s avatar`}
+                    className="avatar"
+                    loading="lazy"
+                    decoding="async"
+                    onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}
+                />
                 <span className="username">{username}</span>
                 {isSharePost && <span className="share-indicator">shared a post</span>}
             </div>
 
             <img 
-                src={photoSrc} 
+                src={optimizeImageUrl(photoSrc, 800)} 
                 alt="Post" 
                 className="photo"
+                loading="lazy"
+                decoding="async"
                 onClick={onPhotoClick}
                 style={{ cursor: 'pointer' }}
             />
@@ -68,7 +96,6 @@ const PhotoCard = ({
                     <button
                         className={`action-btn ${isLiked ? 'liked' : ''}`}
                         onClick={handleLike}
-                        disabled={isProcessing}
                         aria-label={isLiked ? 'Unlike' : 'Like'}
                     >
                         <svg width="24" height="24" viewBox="0 0 24 24" fill={isLiked ? "red" : "none"} stroke="currentColor" strokeWidth="2">
@@ -99,7 +126,6 @@ const PhotoCard = ({
                 <button
                     className={`action-btn save-btn ${isSaved ? 'saved' : ''}`}
                     onClick={handleSave}
-                    disabled={isSaving}
                     aria-label={isSaved ? 'Unsave' : 'Save'}
                 >
                     <svg width="24" height="24" viewBox="0 0 24 24" fill={isSaved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">

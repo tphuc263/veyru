@@ -36,25 +36,22 @@ public class ExploreService {
     if (result.items().isEmpty() && page == 0) return getPopularPhotos(page, size);
     PhotoViewer viewer =
         actor.<PhotoViewer>map(PhotoViewer::authenticated).orElseGet(PhotoViewer::anonymous);
-    return result.map(photo -> conversion.convertToPhotoResponse(photo, viewer));
+    return conversion.convertToPhotoPage(result, viewer);
   }
 
   public PageResult<PhotoResult> getPopularPhotos(int page, int size) {
     var actor = users.findCurrentUser();
     PhotoViewer viewer =
         actor.<PhotoViewer>map(PhotoViewer::authenticated).orElseGet(PhotoViewer::anonymous);
-    return photos
-        .popular(new PageQuery(page, size))
-        .map(photo -> conversion.convertToPhotoResponse(photo, viewer));
+    return conversion.convertToPhotoPage(photos.popular(new PageQuery(page, size)), viewer);
   }
 
   public PageResult<PhotoResult> getPhotosByTag(String tag, int page, int size) {
     var actor = users.findCurrentUser();
     PhotoViewer viewer =
         actor.<PhotoViewer>map(PhotoViewer::authenticated).orElseGet(PhotoViewer::anonymous);
-    return photos
-        .findByTags(List.of(tag.toLowerCase()), new PageQuery(page, size))
-        .map(photo -> conversion.convertToPhotoResponse(photo, viewer));
+    return conversion.convertToPhotoPage(
+        photos.findByTags(List.of(tag.toLowerCase()), new PageQuery(page, size)), viewer);
   }
 
   public ExploreService(

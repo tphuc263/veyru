@@ -6,6 +6,7 @@ import {beforeEach, expect, it, vi} from 'vitest';
 import Home from './Home.jsx';
 import {getNewsfeed} from '../../services/newsfeedService';
 import {getExploreFeed} from '../../services/searchService';
+import {pageCache} from '../../utils/pageCache';
 
 vi.mock('../../services/newsfeedService', () => ({getNewsfeed: vi.fn()}));
 vi.mock('../../services/searchService', () => ({getExploreFeed: vi.fn()}));
@@ -18,7 +19,10 @@ vi.mock('../../components/common/Loader.jsx', () => ({Loader: () => <div>loading
 
 const post = id => ({id, type: 'PHOTO', imageUrl: `${id}.png`, createdAt: '2026-08-25T00:00:00Z'});
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+    vi.clearAllMocks();
+    pageCache.clearAll();
+});
 
 it('uses the initial page cursor for load-more', async () => {
     getNewsfeed

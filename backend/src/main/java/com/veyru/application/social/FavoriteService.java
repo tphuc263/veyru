@@ -9,10 +9,10 @@ import com.veyru.application.port.out.FavoriteStore;
 import com.veyru.application.port.out.PhotoStore;
 import com.veyru.application.result.photo.PhotoResult;
 import com.veyru.domain.model.Favorite;
+import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
 import java.time.Clock;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class FavoriteService {
   private final FavoriteStore favoriteStore;
@@ -38,11 +38,20 @@ public class FavoriteService {
   public List<PhotoResult> getFavorites(int page, int size) {
     User currentUser = userService.requireCurrentUser();
     List<Favorite> favorites = favoriteStore.findByUserId(currentUser.id(), page, size);
+    if (favorites.isEmpty()) {
+      return List.of();
+    }
     PhotoViewer viewer = PhotoViewer.authenticated(currentUser);
-    return favorites.stream()
-        .flatMap(favorite -> photoStore.findById(favorite.photoId()).stream())
-        .map(photo -> photoConversionService.convertToPhotoResponse(photo, viewer))
-        .collect(Collectors.toList());
+    List<String> photoIds = favorites.stream().map(Favorite::photoId).distinct().toList();
+    var photoMap =
+        photoStore.findAllById(photoIds).stream()
+            .collect(java.util.stream.Collectors.toMap(Photo::id, p -> p));
+    List<Photo> photos =
+        favorites.stream()
+            .map(fav -> photoMap.get(fav.photoId()))
+            .filter(java.util.Objects::nonNull)
+            .toList();
+    return photoConversionService.convertToPhotoResponses(photos, viewer);
   }
 
   public boolean isFavorited(String photoId) {

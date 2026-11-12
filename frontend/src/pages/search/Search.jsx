@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { debounce } from '../../utils/helpers'
+import { debounce, optimizeImageUrl } from '../../utils/helpers'
+import { pageCache } from '../../utils/pageCache'
 import { UserResultItem } from '../../components/features/UserResultItem.jsx'
 import { searchUsers, getExploreFeed } from '../../services/searchService'
 import PhotoModal from '../../components/features/PhotoModal.jsx'
@@ -19,11 +20,12 @@ const Search = () => {
     const [hasSearched, setHasSearched] = useState(false)
 
     // Explore state
-    const [explorePhotos, setExplorePhotos] = useState([])
-    const [exploreLoading, setExploreLoading] = useState(true)
+    const cachedExplore = pageCache.getExplore()
+    const [explorePhotos, setExplorePhotos] = useState(() => cachedExplore?.photos || [])
+    const [exploreLoading, setExploreLoading] = useState(() => !cachedExplore || cachedExplore.photos.length === 0)
     const [exploreLoadingMore, setExploreLoadingMore] = useState(false)
-    const [explorePage, setExplorePage] = useState(0)
-    const [exploreHasMore, setExploreHasMore] = useState(true)
+    const [explorePage, setExplorePage] = useState(() => cachedExplore?.page ?? 0)
+    const [exploreHasMore, setExploreHasMore] = useState(() => cachedExplore?.hasMore ?? true)
     const [exploreError, setExploreError] = useState(null)
 
     // Modal state
@@ -96,10 +98,10 @@ const Search = () => {
     }, [query, debouncedFetch])
 
     // ── Explore logic ──
-    const loadExplorePhotos = useCallback(async (pageNum = 0, isRefresh = false) => {
+    const loadExplorePhotos = useCallback(async (pageNum = 0, isRefresh = false, silent = false) => {
         try {
             if (pageNum === 0) {
-                setExploreLoading(true)
+                if (!silent) setExploreLoading(true)
             } else {
                 setExploreLoadingMore(true)
             }
@@ -107,21 +109,25 @@ const Search = () => {
 
             const response = await getExploreFeed(pageNum, 21)
             const newPhotos = response.items || response.content || []
+            const hasMore = response.page < response.totalPages - 1
 
             if (isRefresh) {
                 setExplorePhotos(newPhotos)
+                pageCache.setExplore({ photos: newPhotos, page: pageNum, hasMore })
             } else {
                 setExplorePhotos(prev => {
                     const existingIds = new Set(prev.map(p => p.id))
                     const unique = newPhotos.filter(p => !existingIds.has(p.id))
-                    return [...prev, ...unique]
+                    const merged = [...prev, ...unique]
+                    pageCache.setExplore({ photos: merged, page: pageNum, hasMore })
+                    return merged
                 })
             }
 
-            setExploreHasMore(response.page < response.totalPages - 1)
+            setExploreHasMore(hasMore)
             setExplorePage(pageNum)
         } catch (err) {
-            setExploreError(err.message)
+            if (!silent) setExploreError(err.message)
         } finally {
             setExploreLoading(false)
             setExploreLoadingMore(false)
@@ -130,7 +136,12 @@ const Search = () => {
 
     // Initial load
     useEffect(() => {
-        loadExplorePhotos(0, true)
+        if (pageCache.isExploreFresh() && (pageCache.getExplore()?.photos.length ?? 0) > 0) {
+            setExploreLoading(false)
+            return
+        }
+        const silent = (pageCache.getExplore()?.photos.length ?? 0) > 0
+        loadExplorePhotos(0, true, silent)
     }, [loadExplorePhotos])
 
     // Infinite scroll
@@ -265,9 +276,10 @@ const Search = () => {
                                     onClick={() => handlePhotoClick(photo.id)}
                                 >
                                     <img
-                                        src={photo.imageUrl}
+                                        src={optimizeImageUrl(photo.imageUrl, 500)}
                                         alt={photo.caption || 'Photo'}
                                         loading="lazy"
+                                        decoding="async"
                                     />
                                     <div className="explore-grid-overlay">
                                         <div className="explore-grid-stats">
@@ -298,14 +310,18 @@ const Search = () => {
             )}
 
             {/* Photo Modal */}
-            {selectedPhotoId && (() => (
-                <PhotoModal
-                    photoId={selectedPhotoId}
-                    onClose={handlePhotoClose}
-                    onPhotoClick={handlePhotoClick}
-                    onPhotoUpdate={handlePhotoUpdate}
-                />
-            ))()}
+            {selectedPhotoId && (() => {
+                const initialPhoto = explorePhotos.find(p => String(p.id) === String(selectedPhotoId)) || null
+                return (
+                    <PhotoModal
+                        photoId={selectedPhotoId}
+                        initialPhoto={initialPhoto}
+                        onClose={handlePhotoClose}
+                        onPhotoClick={handlePhotoClick}
+                        onPhotoUpdate={handlePhotoUpdate}
+                    />
+                )
+            })()}
         </div>
     )
 }

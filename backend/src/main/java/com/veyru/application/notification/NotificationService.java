@@ -115,9 +115,13 @@ public class NotificationService {
   }
 
   public List<NotificationResult> getNotifications(String userId, int page, int size) {
-    return notificationStore.findByRecipient(userId, page, size).stream()
-        .map(this::convertToResponse)
-        .toList();
+    List<Notification> notifications = notificationStore.findByRecipient(userId, page, size);
+    if (notifications.isEmpty()) {
+      return List.of();
+    }
+    List<String> actorIds = notifications.stream().map(Notification::actorId).distinct().toList();
+    var avatars = userAvatarCacheService.getAvatars(actorIds);
+    return notifications.stream().map(n -> convertToResponse(n, avatars.get(n.actorId()))).toList();
   }
 
   public List<NotificationResult> getNotifications(int page, int size) {
@@ -184,10 +188,12 @@ public class NotificationService {
             thumbnailUrl,
             clock.instant());
     Notification savedNotification = notificationStore.save(notification);
-    notifier.send(recipientId, convertToResponse(savedNotification));
+    String actorAvatar =
+        actor.imageUrl() != null ? actor.imageUrl() : userAvatarCacheService.getAvatar(actor.id());
+    notifier.send(recipientId, convertToResponse(savedNotification, actorAvatar));
   }
 
-  private NotificationResult convertToResponse(Notification notification) {
+  private NotificationResult convertToResponse(Notification notification, String actorAvatar) {
     return new NotificationResult(
         notification.id(),
         notification.type(),
@@ -196,7 +202,7 @@ public class NotificationService {
         notification.createdAt(),
         notification.actorId(),
         notification.actor().username(),
-        userAvatarCacheService.getAvatar(notification.actorId()),
+        actorAvatar,
         notification.photoId(),
         notification.commentId(),
         notification.thumbnailUrl());

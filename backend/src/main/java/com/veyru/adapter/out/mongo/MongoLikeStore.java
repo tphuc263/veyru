@@ -2,8 +2,11 @@ package com.veyru.adapter.out.mongo;
 
 import com.veyru.application.port.out.LikeStore;
 import com.veyru.domain.model.Like;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -31,6 +34,16 @@ public class MongoLikeStore implements LikeStore {
 
   public boolean exists(String photoId, String userId) {
     return mongo.exists(relation(photoId, userId), LikeDocument.class, COLLECTION);
+  }
+
+  @Override
+  public Set<String> findLikedPhotoIds(String userId, Collection<String> photoIds) {
+    if (userId == null || photoIds == null || photoIds.isEmpty()) return Set.of();
+    Query query = Query.query(Criteria.where("userId").is(userId).and("photoId").in(photoIds));
+    query.fields().include("photoId");
+    return mongo.find(query, LikeDocument.class, COLLECTION).stream()
+        .map(LikeDocument::photoId)
+        .collect(Collectors.toSet());
   }
 
   public List<Like> findByPhotoId(String photoId) {

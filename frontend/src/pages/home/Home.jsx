@@ -6,18 +6,20 @@ import PhotoCard from '../../components/features/PhotoCard.jsx';
 import PhotoModal from '../../components/features/PhotoModal.jsx';
 import SuggestedUsers from '../../components/features/SuggestedUsers.jsx';
 import {Loader} from '../../components/common/Loader.jsx'
+import {pageCache} from '../../utils/pageCache';
 import '../../assets/styles/pages/homePage.css';
 
 
 const Home = () => {
+    const cachedHome = pageCache.getHomeFeed();
     const [searchParams, setSearchParams] = useSearchParams();
-    const [feed, setFeed] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [feed, setFeed] = useState(() => cachedHome?.feed || []);
+    const [loading, setLoading] = useState(() => !cachedHome || cachedHome.feed.length === 0);
     const [error, setError] = useState(null);
-    const [nextCursor, setNextCursor] = useState(null);
-    const [hasMore, setHasMore] = useState(true);
-    const [isExploreFallback, setIsExploreFallback] = useState(false);
-    const [explorePage, setExplorePage] = useState(0);
+    const [nextCursor, setNextCursor] = useState(() => cachedHome?.nextCursor ?? null);
+    const [hasMore, setHasMore] = useState(() => cachedHome?.hasMore ?? true);
+    const [isExploreFallback, setIsExploreFallback] = useState(() => cachedHome?.isExploreFallback ?? false);
+    const [explorePage, setExplorePage] = useState(() => cachedHome?.explorePage ?? 0);
     const [selectedPhotoId, setSelectedPhotoId] = useState(null);
     const [showScrollTop, setShowScrollTop] = useState(false);
 
@@ -78,8 +80,17 @@ const Home = () => {
                 typeof exploreResponse?.totalPages === 'number'
                     ? page + 1 < exploreResponse.totalPages
                     : explorePosts.length === 20;
+            const nextFeed = isRefresh ? explorePosts : [...feed, ...explorePosts];
+            const nextIsExplore = explorePosts.length > 0 || !isRefresh;
             setHasMore(moreExplore);
             setNextCursor(null);
+            pageCache.setHomeFeed({
+                feed: nextFeed,
+                nextCursor: null,
+                hasMore: moreExplore,
+                isExploreFallback: nextIsExplore,
+                explorePage: page
+            });
         } catch (err) {
             setError(err.message);
         } finally {
@@ -87,11 +98,13 @@ const Home = () => {
         }
     };
 
-    const loadFeed = async (cursor = null, isRefresh = false) => {
+    const loadFeed = async (cursor = null, isRefresh = false, silent = false) => {
         try {
-            setLoading(true);
+            if (!silent) {
+                setLoading(true);
+            }
             setError(null);
-            if (isRefresh) {
+            if (isRefresh && !silent) {
                 setNextCursor(null);
                 setHasMore(true);
                 setIsExploreFallback(false);
@@ -106,20 +119,33 @@ const Home = () => {
                 return;
             }
 
+            const updatedFeed = isRefresh ? newPosts : [...feed, ...newPosts];
             if (isRefresh) {
                 setFeed(newPosts);
+                setIsExploreFallback(false);
+                setExplorePage(0);
             } else {
                 setFeed(prev => [...prev, ...newPosts]);
             }
 
-            setNextCursor(response.nextCursor || null);
+            const resolvedCursor = response.nextCursor || null;
+            setNextCursor(resolvedCursor);
             setHasMore(response.hasMore);
+            pageCache.setHomeFeed({
+                feed: updatedFeed,
+                nextCursor: resolvedCursor,
+                hasMore: response.hasMore,
+                isExploreFallback: false,
+                explorePage: 0
+            });
         } catch (err) {
             if (!isRefresh && err.response?.data?.code === 'INVALID_REQUEST_VALUE') {
                 await loadFeed(null, true);
                 return;
             }
-            setError(err.message);
+            if (!silent) {
+                setError(err.message);
+            }
         } finally {
             setLoading(false);
         }
@@ -141,7 +167,12 @@ const Home = () => {
     };
 
     useEffect(() => {
-        loadFeed(null, true).catch(err => {
+        if (pageCache.isHomeFeedFresh() && (pageCache.getHomeFeed()?.feed.length ?? 0) > 0) {
+            setLoading(false);
+            return;
+        }
+        const hasCachedItems = (pageCache.getHomeFeed()?.feed.length ?? 0) > 0;
+        loadFeed(null, true, hasCachedItems).catch(err => {
             console.error('Failed to load initial feed:', err);
         });
     }, []);
@@ -222,19 +253,28 @@ const Home = () => {
                             isSharePost={isShare}
                             onPhotoClick={() => handlePhotoSelect(displayPhotoId)}
                             onPhotoUpdate={(photoId, updatedPhoto) => {
-                                setFeed(prevFeed =>
-                                    prevFeed.map(p =>
-                                        p.id === post.id || p.originalPhotoId === photoId
+                                setFeed(prevFeed => {
+                                    const nextFeed = prevFeed.map(p =>
+                                        String(p.id) === String(photoId) || String(p.originalPhotoId) === String(photoId)
                                             ? {
                                                 ...p,
-                                                isLikedByCurrentUser: updatedPhoto.isLikedByCurrentUser,
-                                                likeCount: updatedPhoto.likeCount,
-                                                commentCount: updatedPhoto.commentCount || p.commentCount,
-                                                shareCount: updatedPhoto.shareCount ?? p.shareCount
+                                                isLikedByCurrentUser: updatedPhoto.isLikedByCurrentUser ?? p.isLikedByCurrentUser,
+                                                isSavedByCurrentUser: updatedPhoto.isSavedByCurrentUser ?? p.isSavedByCurrentUser,
+                                                likeCount: updatedPhoto.likeCount ?? p.likeCount,
+                                                originalLikeCount: p.type === 'SHARE' ? (updatedPhoto.likeCount ?? p.originalLikeCount) : p.originalLikeCount,
+                                                commentCount: updatedPhoto.commentCount ?? p.commentCount,
+                                                originalCommentCount: p.type === 'SHARE' ? (updatedPhoto.commentCount ?? p.originalCommentCount) : p.originalCommentCount,
+                                                shareCount: updatedPhoto.shareCount ?? p.shareCount,
+                                                originalShareCount: p.type === 'SHARE' ? (updatedPhoto.shareCount ?? p.originalShareCount) : p.originalShareCount,
                                               }
                                             : p
-                                    )
-                                );
+                                    );
+                                    const currentCache = pageCache.getHomeFeed();
+                                    if (currentCache) {
+                                        pageCache.setHomeFeed({ ...currentCache, feed: nextFeed });
+                                    }
+                                    return nextFeed;
+                                });
                             }}
                         />
                     );
@@ -276,29 +316,64 @@ const Home = () => {
                 </button>
             )}
 
-            {selectedPhotoId && (() => (
+            {selectedPhotoId && (() => {
+                const matchedPost = feed.find(
+                    p => String(p.id) === String(selectedPhotoId) || String(p.originalPhotoId) === String(selectedPhotoId)
+                );
+                const initialPhoto = matchedPost
+                    ? matchedPost.type === 'SHARE'
+                        ? {
+                            id: matchedPost.originalPhotoId,
+                            userId: matchedPost.originalAuthorId || matchedPost.userId,
+                            username: matchedPost.originalAuthorUsername || matchedPost.username,
+                            userImageUrl: matchedPost.originalAuthorAvatar || matchedPost.userImageUrl,
+                            imageUrl: matchedPost.originalImageUrl,
+                            caption: matchedPost.originalPhotoCaption ?? matchedPost.shareCaption,
+                            likeCount: matchedPost.originalLikeCount ?? 0,
+                            commentCount: matchedPost.originalCommentCount ?? 0,
+                            shareCount: matchedPost.originalShareCount ?? 0,
+                            isLikedByCurrentUser: matchedPost.isLikedByCurrentUser ?? false,
+                            isSavedByCurrentUser: matchedPost.isSavedByCurrentUser ?? false,
+                            createdAt: matchedPost.createdAt,
+                            tags: matchedPost.tags || []
+                        }
+                        : matchedPost
+                    : null;
+
+                return (
                     <PhotoModal
                         photoId={selectedPhotoId}
+                        initialPhoto={initialPhoto}
                         onClose={handlePhotoClose}
                         onPhotoClick={handlePhotoSelect}
                         onPhotoUpdate={(photoId, updatedPhoto) => {
                             // Sync state between modal and feed
-                            setFeed(prevFeed => 
-                                prevFeed.map(post => 
-                                    post.id === photoId 
+                            setFeed(prevFeed => {
+                                const nextFeed = prevFeed.map(post => 
+                                    String(post.id) === String(photoId) || String(post.originalPhotoId) === String(photoId)
                                         ? { 
                                             ...post, 
-                                            isLikedByCurrentUser: updatedPhoto.isLikedByCurrentUser,
-                                            likeCount: updatedPhoto.likeCount,
-                                            commentCount: updatedPhoto.commentCount || post.commentCount,
-                                            shareCount: updatedPhoto.shareCount ?? post.shareCount
+                                            isLikedByCurrentUser: updatedPhoto.isLikedByCurrentUser ?? post.isLikedByCurrentUser,
+                                            isSavedByCurrentUser: updatedPhoto.isSavedByCurrentUser ?? post.isSavedByCurrentUser,
+                                            likeCount: updatedPhoto.likeCount ?? post.likeCount,
+                                            originalLikeCount: post.type === 'SHARE' ? (updatedPhoto.likeCount ?? post.originalLikeCount) : post.originalLikeCount,
+                                            commentCount: updatedPhoto.commentCount ?? post.commentCount,
+                                            originalCommentCount: post.type === 'SHARE' ? (updatedPhoto.commentCount ?? post.originalCommentCount) : post.originalCommentCount,
+                                            shareCount: updatedPhoto.shareCount ?? post.shareCount,
+                                            originalShareCount: post.type === 'SHARE' ? (updatedPhoto.shareCount ?? post.originalShareCount) : post.originalShareCount,
                                           }
                                         : post
-                                )
-                            );
+                                );
+                                const currentCache = pageCache.getHomeFeed();
+                                if (currentCache) {
+                                    pageCache.setHomeFeed({ ...currentCache, feed: nextFeed });
+                                }
+                                return nextFeed;
+                            });
                         }}
                     />
-            ))()} 
+                );
+            })()} 
         </div>
     );
 };

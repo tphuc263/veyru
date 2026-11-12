@@ -49,8 +49,8 @@ class RecommendationServiceTest {
     when(vectors.hasPhotoEmbedding("source")).thenThrow(new IllegalStateException("redis down"));
     when(photos.findByTags(any(), any()))
         .thenReturn(new PageResult<>(List.of(source, candidate), 0, 3, 2, 1));
-    when(conversion.convertToPhotoResponse(candidate, PhotoViewer.anonymous()))
-        .thenReturn(expected);
+    when(conversion.convertToPhotoResponses(List.of(candidate), PhotoViewer.anonymous()))
+        .thenReturn(List.of(expected));
 
     assertThat(service.getRelatedPhotos("source", 2, PhotoViewer.anonymous()))
         .containsExactly(expected);

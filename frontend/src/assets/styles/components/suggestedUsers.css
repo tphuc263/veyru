@@ -142,6 +142,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    max-width: 185px;
+    display: block;
 }
 
 /* ── Follow button ── */

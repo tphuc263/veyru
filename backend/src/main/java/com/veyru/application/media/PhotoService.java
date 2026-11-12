@@ -57,13 +57,13 @@ public class PhotoService {
   public PageResult<PhotoResult> getAllPhotos(int page, int size) {
     PageResult<Photo> photos = photoStore.findAll(new PageQuery(page, size));
     PhotoViewer viewer = currentPhotoViewer();
-    return photos.map(photo -> photoConversionService.convertToPhotoResponse(photo, viewer));
+    return photoConversionService.convertToPhotoPage(photos, viewer);
   }
 
   public PageResult<PhotoResult> getPhotosByUserId(String userId, int page, int size) {
     PageResult<Photo> photos = photoStore.findByUser(userId, new PageQuery(page, size));
     PhotoViewer viewer = currentPhotoViewer();
-    return photos.map(photo -> photoConversionService.convertToPhotoResponse(photo, viewer));
+    return photoConversionService.convertToPhotoPage(photos, viewer);
   }
 
   public PhotoDetailResult getPhotoById(String photoId) {
@@ -136,7 +136,7 @@ public class PhotoService {
                   like.id(),
                   like.userId(),
                   user == null ? null : user.username(),
-                  user == null ? null : userAvatarCacheService.getAvatar(user.id()),
+                  user == null ? null : user.imageUrl(),
                   like.createdAt());
             })
         .toList();
@@ -144,6 +144,9 @@ public class PhotoService {
 
   private List<CommentResult> convertToCommentResponses(List<Comment> comments) {
     if (comments.isEmpty()) return List.of();
+    List<String> authorIds =
+        comments.stream().map(comment -> comment.author().userId()).distinct().toList();
+    Map<String, String> avatars = userAvatarCacheService.getAvatars(authorIds);
     return comments.stream()
         .map(
             comment -> {
@@ -157,7 +160,7 @@ public class PhotoService {
               res.setLikeCount(comment.likeCount());
               res.setReplyCount(comment.replyCount());
               res.setUsername(comment.author().username());
-              res.setUserImageUrl(userAvatarCacheService.getAvatar(comment.author().userId()));
+              res.setUserImageUrl(avatars.get(comment.author().userId()));
               return res;
             })
         .toList();

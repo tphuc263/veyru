@@ -17,7 +17,9 @@ import com.veyru.domain.model.Photo;
 import com.veyru.domain.model.User;
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -120,29 +122,25 @@ public class CommentService {
         .findById(photoId)
         .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     String currentUserId = userService.findCurrentUser().map(User::id).orElse(null);
-    List<Comment> topLevelComments = commentStore.findTopLevelByPhotoId(photoId);
-    return topLevelComments.stream()
-        .map(
-            comment -> {
-              CommentResult response = convertToCommentResponse(comment, currentUserId);
-              loadNestedReplies(response, currentUserId);
-              return response;
-            })
-        .toList();
-  }
-
-  private void loadNestedReplies(CommentResult parentResponse, String currentUserId) {
-    List<Comment> replies = commentStore.findReplies(parentResponse.getId());
-    List<CommentResult> replyResponses =
-        replies.stream()
-            .map(
-                reply -> {
-                  CommentResult replyResponse = convertToCommentResponse(reply, currentUserId);
-                  loadNestedReplies(replyResponse, currentUserId);
-                  return replyResponse;
-                })
-            .toList();
-    parentResponse.setReplies(replyResponses);
+    List<Comment> allComments = commentStore.findByPhotoId(photoId);
+    if (allComments.isEmpty()) {
+      return List.of();
+    }
+    List<CommentResult> results = convertToCommentResponses(allComments, currentUserId);
+    Map<String, List<CommentResult>> repliesByParent = new HashMap<>();
+    List<CommentResult> topLevel = new ArrayList<>();
+    for (CommentResult result : results) {
+      String parentId = result.getParentCommentId();
+      if (parentId == null || parentId.isEmpty()) {
+        topLevel.add(result);
+      } else {
+        repliesByParent.computeIfAbsent(parentId, k -> new ArrayList<>()).add(result);
+      }
+    }
+    for (CommentResult result : results) {
+      result.setReplies(repliesByParent.getOrDefault(result.getId(), List.of()));
+    }
+    return topLevel;
   }
 
   public List<CommentResult> getCommentReplies(String commentId, int page, int size) {
@@ -151,7 +149,7 @@ public class CommentService {
         .orElseThrow(() -> new UseCaseException(UseCaseError.RESOURCE_NOT_FOUND));
     String currentUserId = userService.findCurrentUser().map(User::id).orElse(null);
     List<Comment> replies = commentStore.findReplies(commentId, page, size);
-    return replies.stream().map(reply -> convertToCommentResponse(reply, currentUserId)).toList();
+    return convertToCommentResponses(replies, currentUserId);
   }
 
   public long getPhotoCommentsCount(String photoId) {
@@ -207,6 +205,61 @@ public class CommentService {
       userStore.findByUsername(username).ifPresent(user -> mentionedUserIds.add(user.id()));
     }
     return mentionedUserIds;
+  }
+
+  private List<CommentResult> convertToCommentResponses(
+      List<Comment> comments, String currentUserId) {
+    if (comments.isEmpty()) {
+      return List.of();
+    }
+    List<String> authorIds = comments.stream().map(c -> c.author().userId()).distinct().toList();
+    Map<String, String> avatars = userAvatarCacheService.getAvatars(authorIds);
+    List<String> commentIds = comments.stream().map(Comment::id).toList();
+    Set<String> likedCommentIds =
+        currentUserId == null
+            ? Set.of()
+            : commentLikeStore.findLikedCommentIds(currentUserId, commentIds);
+    List<String> mentionedIds =
+        comments.stream().flatMap(c -> c.mentionedUserIds().stream()).distinct().toList();
+    Map<String, User> mentionedUsersMap =
+        mentionedIds.isEmpty()
+            ? Map.of()
+            : userStore.findAllById(mentionedIds).stream()
+                .collect(Collectors.toMap(User::id, u -> u));
+
+    return comments.stream()
+        .map(
+            comment -> {
+              CommentResult response = new CommentResult();
+              response.setId(comment.id());
+              response.setPhotoId(comment.photoId());
+              response.setUserId(comment.userId());
+              response.setText(comment.text());
+              response.setCreatedAt(comment.createdAt());
+              response.setParentCommentId(comment.parentCommentId());
+              response.setLikeCount(comment.likeCount());
+              response.setReplyCount(comment.replyCount());
+              response.setUsername(comment.author().username());
+              response.setUserImageUrl(avatars.get(comment.author().userId()));
+              if (currentUserId != null) {
+                response.setLikedByCurrentUser(likedCommentIds.contains(comment.id()));
+              }
+              if (!comment.mentionedUserIds().isEmpty()) {
+                List<CommentResult.MentionedUser> mentionedUsers = new ArrayList<>();
+                for (String userId : comment.mentionedUserIds()) {
+                  User user = mentionedUsersMap.get(userId);
+                  if (user != null) {
+                    CommentResult.MentionedUser mu = new CommentResult.MentionedUser();
+                    mu.setUserId(user.id());
+                    mu.setUsername(user.username());
+                    mentionedUsers.add(mu);
+                  }
+                }
+                response.setMentionedUsers(mentionedUsers);
+              }
+              return response;
+            })
+        .toList();
   }
 
   private CommentResult convertToCommentResponse(Comment comment, String currentUserId) {

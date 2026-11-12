@@ -3,7 +3,6 @@ import { toggleLike } from '../services/likeService';
 import { showToast } from '../utils/toastService';
 import type { Photo } from '../types/api';
 
-
 export const useOptimisticLike = (
   photoId: string,
   initialIsLiked: boolean,
@@ -13,82 +12,100 @@ export const useOptimisticLike = (
   const [isLiked, setIsLiked] = useState(initialIsLiked);
   const [likesCount, setLikesCount] = useState(initialLikesCount);
   const [isProcessing, setIsProcessing] = useState(false);
-  
-  // Request deduplication - prevent multiple simultaneous requests
-  const pendingRequestRef = useRef<Promise<void> | null>(null);
-  const lastActionTimeRef = useRef<number>(0);
-  
-  // Track the current photoId to detect when it changes
+
+  const desiredLikedRef = useRef(initialIsLiked);
+  const serverLikedRef = useRef(initialIsLiked);
+  const countRef = useRef(initialLikesCount);
+  const syncingRef = useRef(false);
   const currentPhotoIdRef = useRef(photoId);
-  
+
   const onUpdateRef = useRef(onUpdate);
   useEffect(() => {
     onUpdateRef.current = onUpdate;
   });
 
-  // Sync from parent props when they actually change.
+  // Sync from parent props when they change and no background sync is in progress
   useEffect(() => {
     if (currentPhotoIdRef.current !== photoId) {
       currentPhotoIdRef.current = photoId;
+      syncingRef.current = false;
     }
-    setIsLiked(initialIsLiked);
-    setLikesCount(initialLikesCount);
+    if (!syncingRef.current) {
+      desiredLikedRef.current = initialIsLiked;
+      serverLikedRef.current = initialIsLiked;
+      countRef.current = initialLikesCount;
+      setIsLiked(initialIsLiked);
+      setLikesCount(initialLikesCount);
+    }
   }, [photoId, initialIsLiked, initialLikesCount]);
 
-  const handleLike = useCallback(async () => {
-    const now = Date.now();
-    if (now - lastActionTimeRef.current < 300) {
-      return;
-    }
-    lastActionTimeRef.current = now;
-
-    if (pendingRequestRef.current) {
-      await pendingRequestRef.current.catch(() => undefined);
-      return;
-    }
-
+  const flushLikeSync = useCallback(async (targetPhotoId: string) => {
+    if (syncingRef.current) return;
+    syncingRef.current = true;
     setIsProcessing(true);
-    
-    // Save current state for rollback
-    const previousState = { isLiked, likesCount };
-    
-    // Step 1: Optimistic update - UI responds immediately
-    const optimisticIsLiked = !isLiked;
-    const optimisticLikesCount = optimisticIsLiked 
-      ? likesCount + 1 
-      : Math.max(0, likesCount - 1);
-    
-    setIsLiked(optimisticIsLiked);
-    setLikesCount(optimisticLikesCount);
-    
-    // Step 2: Send request to backend
-    const requestPromise = toggleLike(photoId, isLiked);
-    pendingRequestRef.current = requestPromise;
-    
+
     try {
-      await requestPromise;
-
-      const updatedPhoto = {
-        isLikedByCurrentUser: optimisticIsLiked,
-        likeCount: optimisticLikesCount,
-      };
-
-      if (onUpdateRef.current) {
-        onUpdateRef.current(photoId, updatedPhoto);
+      while (desiredLikedRef.current !== serverLikedRef.current) {
+        const previousServerState = serverLikedRef.current;
+        const nextTargetState = desiredLikedRef.current;
+        await toggleLike(targetPhotoId, previousServerState);
+        serverLikedRef.current = nextTargetState;
       }
-      
+      if (onUpdateRef.current) {
+        onUpdateRef.current(targetPhotoId, {
+          isLikedByCurrentUser: desiredLikedRef.current,
+          likeCount: countRef.current,
+        });
+      }
     } catch (error) {
-      // Step 5: Rollback on error
-      setIsLiked(previousState.isLiked);
-      setLikesCount(previousState.likesCount);
-      
+      // Rollback UI state to last confirmed server state on failure
+      const confirmedLiked = serverLikedRef.current;
+      const wasOptimisticallyLiked = desiredLikedRef.current;
+      desiredLikedRef.current = confirmedLiked;
+      if (wasOptimisticallyLiked !== confirmedLiked) {
+        countRef.current = confirmedLiked
+          ? countRef.current + 1
+          : Math.max(0, countRef.current - 1);
+      }
+      setIsLiked(confirmedLiked);
+      setLikesCount(countRef.current);
+      if (onUpdateRef.current) {
+        onUpdateRef.current(targetPhotoId, {
+          isLikedByCurrentUser: confirmedLiked,
+          likeCount: countRef.current,
+        });
+      }
       showToast('error', 'Không thể cập nhật. Thử lại sau.');
       console.error('Failed to toggle like:', error);
     } finally {
+      syncingRef.current = false;
       setIsProcessing(false);
-      pendingRequestRef.current = null;
     }
-  }, [photoId, isLiked, likesCount]);
+  }, []);
+
+  const handleLike = useCallback(() => {
+    if (!photoId) return;
+
+    const nextLiked = !desiredLikedRef.current;
+    const nextCount = nextLiked
+      ? countRef.current + 1
+      : Math.max(0, countRef.current - 1);
+
+    desiredLikedRef.current = nextLiked;
+    countRef.current = nextCount;
+
+    setIsLiked(nextLiked);
+    setLikesCount(nextCount);
+
+    if (onUpdateRef.current) {
+      onUpdateRef.current(photoId, {
+        isLikedByCurrentUser: nextLiked,
+        likeCount: nextCount,
+      });
+    }
+
+    void flushLikeSync(photoId);
+  }, [photoId, flushLikeSync]);
 
   return {
     isLiked,
