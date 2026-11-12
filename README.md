@@ -1,135 +1,136 @@
 # Veyru
 
-Veyru is a full-stack photo-sharing platform with social feeds, real-time messaging, notifications and graph-based recommendations.
+A personal photo-sharing project built with Java, Spring Boot and React. Veyru combines a personalized social feed, real-time conversations and cookie-based authentication.
 
-[![Quality](https://github.com/tphuc263/veyru/actions/workflows/quality.yml/badge.svg)](https://github.com/tphuc263/veyru/actions/workflows/quality.yml)
+**[Live demo — veyru.dev](https://veyru.dev)** · [Backend guide](backend/README.md) · [Frontend guide](frontend/README.md)
+
+[![CI](https://github.com/tphuc263/veyru/actions/workflows/ci.yml/badge.svg)](https://github.com/tphuc263/veyru/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+To try it, create an account or sign in with Google. Find people to follow, browse your feed, and open a profile to start a conversation.
+
+![Veyru home feed with photo posts, navigation and suggested users](frontend/docs/demo.png)
 
 ## Features
 
-- HttpOnly cookie authentication, rotating refresh sessions, CSRF protection and Google OAuth2
-- Photo uploads, likes, comments, favorites, follows and personalized feeds
-- Real-time direct messages and notifications over STOMP WebSocket
-- MongoDB persistence, Redis caching and Neo4j social-graph ranking
-- Contract-first OpenAPI integration between Spring Boot and React
-- Responsive React UI served by Nginx
+| Area | What you can do |
+| --- | --- |
+| Photos and interactions | Upload photos, add captions and tags, like, comment, share and save posts |
+| Social feed | Follow people and browse a personalized feed of photos and shares with load-more pagination |
+| Discovery | Search for people and photos, find suggested users and view related photos |
+| Conversations | Exchange direct messages and receive live notifications for social activity |
+| Account | Register, sign in with a password or Google, edit your profile and reset your password by email |
 
-## Architecture
+## Backend engineering highlights
+
+### Personalized feed across three data stores
+
+The feed retrieves photos and shares from MongoDB, then combines recency and engagement with relationship signals from Neo4j. Redis caches author affinity scores to avoid repeating graph queries. Signed, user-bound cursors carry the ranking time and pagination position. If graph affinity lookup fails, ranking falls back to post signals.
+
+[Feed implementation](backend/src/main/java/com/veyru/application/discovery/NewsfeedService.java) · [Ranking and fallback tests](backend/src/test/java/com/veyru/application/discovery/NewsfeedServiceTest.java) · [Cursor tests](backend/src/test/java/com/veyru/application/discovery/FeedCursorCodecTest.java)
+
+### Real-time messaging with duplicate suppression
+
+Messages travel over STOMP WebSocket and are persisted in MongoDB. Before saving a message, the use case checks that both users belong to the conversation. When a client message ID is supplied, a Redis claim keyed by sender and message ID suppresses repeat processing for 24 hours. Persistence and notification delivery are separate operations; this does not provide exactly-once delivery.
+
+[Send-message use case](backend/src/main/java/com/veyru/application/messaging/SendMessageUseCase.java) · [Redis claim](backend/src/main/java/com/veyru/adapter/out/redis/RedisMessageIdempotency.java) · [Use-case tests](backend/src/test/java/com/veyru/application/messaging/SendMessageUseCaseTest.java)
+
+### Cookie sessions with refresh-token replay detection
+
+Password and Google sign-in issue an access JWT and an opaque refresh token in HttpOnly cookies. Spring Security applies CSRF protection and configured browser origins. A Redis Lua script rotates refresh tokens atomically; reuse of a spent token revokes its token family. The frontend obtains its CSRF token through an API endpoint so session cookies can remain host-only.
+
+[Refresh-token rotation](backend/src/main/java/com/veyru/adapter/out/redis/RedisRefreshSessionStore.java) · [Security configuration](backend/src/main/java/com/veyru/config/SecurityConfig.java) · [Session use-case tests](backend/src/test/java/com/veyru/application/identity/SessionServiceTest.java)
+
+## Architecture and technology
+
+The deployed application uses the following services:
 
 ```mermaid
 flowchart LR
-    Browser[React client] -->|REST / WebSocket| Nginx
-    Nginx --> API[Spring Boot API]
-    API --> MongoDB
+    Browser["Browser · React client"]
+    Vercel["Vercel · veyru.dev"]
+    API["Heroku · Spring Boot API"]
+    Mongo["MongoDB Atlas · application data"]
+    Graph["Neo4j Aura · social graph"]
+    Redis["Redis Cloud · sessions, cache and vector index"]
+    Images["Cloudinary · image storage"]
+    Google["Google OAuth2"]
+    Mail["SMTP · password-reset email"]
+
+    Vercel -->|Frontend assets| Browser
+    Browser -->|HTTPS REST / WSS| API
+    API --> Mongo
+    API --> Graph
     API --> Redis
-    API --> Neo4j
-    API --> Cloudinary
-    API --> Google[Google OAuth]
-    API --> SMTP
+    API --> Images
+    API --> Google
+    API --> Mail
 ```
 
-| Area | Technology |
+| Layer | Technology and role |
 | --- | --- |
-| Frontend | React 19, TypeScript, Vite, Nginx |
-| Backend | Java 25, Spring Boot 4.1, Maven |
-| Data | MongoDB 7, Redis 7, Neo4j 5 |
-| API and real-time | OpenAPI, REST, STOMP WebSocket |
-| Delivery | Docker Compose, GitHub Actions, GHCR |
+| Backend | Java 25, Spring Boot 4.1, Spring Security; REST APIs and application use cases |
+| Frontend | React 19, TypeScript/JavaScript, Vite, React Router and Axios |
+| Persistence | MongoDB for users, posts, interactions and conversations; Neo4j for graph queries |
+| Redis | Refresh sessions, message deduplication, affinity caching and Redis Search vector queries |
+| API integration | Committed OpenAPI documents and generated TypeScript types; STOMP for live events |
+| Delivery | GitHub Actions CI, Heroku backend deployment and Vercel frontend hosting |
 
-## Quick start
+The backend separates domain models, application use cases and ports, and adapters for HTTP, persistence and external services. See the [backend architecture](backend/README.md#architecture) for the dependency structure and data responsibilities.
 
-Requirements: Docker with Docker Compose.
+Local Docker Compose runs all five application/data services. Its frontend container uses Nginx to serve assets and proxy backend requests; the Vercel deployment serves assets separately and the browser calls the Heroku API directly.
+
+## Run locally
+
+Requires Docker with Docker Compose v2. Java and Node.js are only needed for running the applications outside containers.
 
 ```bash
 git clone https://github.com/tphuc263/veyru.git
 cd veyru
 cp .env.example .env
-# Fill in the required Cloudinary, Google OAuth and SMTP credentials.
+```
+
+Fill in the Cloudinary, Google OAuth and SMTP credentials in `.env` before starting. These are required dependencies, even when you only want to explore other features. Keep the remaining local defaults for this setup. See [environment configuration](backend/README.md#environment-configuration), including the Google callback URLs.
+
+```bash
 docker compose up --build
 ```
 
-Open:
+| Service | Local URL |
+| --- | --- |
+| Application | [localhost:5173](http://localhost:5173) |
+| Swagger UI | [localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html) |
+| Neo4j Browser | [localhost:7474](http://localhost:7474) |
 
-- Application: http://localhost:5173
-- Swagger UI: http://localhost:8080/swagger-ui.html
-- Neo4j Browser: http://localhost:7474
+Stop the stack with `docker compose down`; database volumes are retained. `docker compose down --volumes` also deletes the local database data.
 
-The root `.env` is used by Docker Compose. Direct backend development uses
-`backend/.env`; the two files are intentionally separate and are never committed. Cloudinary,
-Google OAuth and SMTP are required application dependencies, so startup fails with the missing
-property name when any required configuration is absent.
+For development with hot reload, follow the [backend setup](backend/README.md#local-development) and [frontend setup](frontend/README.md#local-development). Compose reads the root `.env`; running Spring Boot directly uses a separate `backend/.env`.
 
-Stop the stack with `docker compose down`. Add `--volumes` only when you also want to delete local database data.
+## Testing and delivery
 
-## Development
+[CI](.github/workflows/ci.yml) runs on pull requests and pushes to `main`:
 
-Start only the data services:
+- **Backend:** Spotless formatting checks, JUnit tests including Testcontainers integration tests, and a Docker image build.
+- **Frontend:** OpenAPI type checks, ESLint, Vitest/Testing Library tests, a TypeScript/Vite build, Playwright smoke tests and a Docker image build. The Playwright tests mock API responses; they do not exercise the complete deployed stack.
 
-```bash
-docker compose up -d mongodb redis neo4j
-```
+The [backend CD workflow](.github/workflows/cd.yml) runs after successful CI on `main`. Its change filter checks the triggering commit for backend or CD workflow changes, then builds and releases a container to Heroku. It can also be triggered manually. Frontend hosting is managed separately on Vercel.
 
-Run the backend:
+| Documentation | Contents |
+| --- | --- |
+| [Backend guide](backend/README.md) | Architecture, configuration, security, deployment and test commands |
+| [Frontend guide](frontend/README.md) | Local setup, Vercel variables, sessions, WebSocket and test commands |
+| [Backend OpenAPI](backend/openapi/openapi.json) | Committed REST API contract |
+| [Frontend contract workflow](frontend/README.md#api-contract) | Release copy and generated TypeScript types |
 
-```bash
-cd backend
-cp ../.env.example .env
-SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
-```
+## Trade-offs and current limits
 
-Run the frontend in another terminal:
+- **Multiple data stores:** MongoDB, Neo4j and Redis support different query patterns, but add configuration, synchronization and operational work. Graph and vector projections can lag application data.
+- **Feed ranking:** The scoring weights are heuristics, and candidate retrieval is bounded. They have not been tuned through an offline relevance evaluation.
+- **Real-time scaling:** Spring's simple STOMP broker runs in process. Multiple backend instances would need additional broker and user-routing coordination.
+- **Recommendations:** Photo similarity uses hash-based vectors from captions and tags. Caption/tag suggestions use local rules and templates; they are not image understanding or a trained language model.
 
-```bash
-cd frontend
-npm ci
-npm run dev
-```
+## Author and license
 
-Repository layout:
+Built by **Duong Tri Phuc** · [GitHub](https://github.com/tphuc263)
 
-```text
-backend/    Spring Boot API and committed OpenAPI contract
-frontend/   React client, generated API types and Nginx configuration
-compose.yml Full local stack
-```
-
-More detail is available in the [backend guide](backend/README.md) and [frontend guide](frontend/README.md).
-
-## Deployment configuration
-
-For a public backend deployment, provide configuration through the platform's environment-variable
-or secret dashboard. Do not deploy a `.env` file. Startup fails before receiving traffic when
-required credentials, URLs or the JWT signing key are missing. Use a Base64-encoded JWT key
-containing at least 32 random bytes; Base64 is an encoding, not encryption.
-
-Spring Boot applies profile files first and lets OS environment variables override them. This
-repository keeps shared defaults in `application.yml`, localhost-only overrides in
-`application-local.yml`, and public deployment policy in `application-prod.yml`. Only the local
-profile imports `backend/.env`; public deployments must set `SPRING_PROFILES_ACTIVE=prod`.
-
-Production uses `https://api.veyru.dev` for the API and allows only `https://veyru.dev` as its
-browser origin. The frontend reads the CSRF token returned by `/api/v1/csrf` and sends it explicitly
-for REST mutations and the STOMP connection, so the session cookies can remain host-only.
-
-Redis is configured through the single `REDIS_URL` variable and must support the Redis Search
-`FT.CREATE` and `FT.SEARCH` commands. Vector search is always active, and a missing Redis Search
-module fails startup rather than disabling the capability. See the [backend guide](backend/README.md)
-for the complete environment contract.
-
-## Quality checks
-
-```bash
-(cd backend && ./mvnw spotless:check test)
-(cd frontend && npm run api:check && npm run lint && npm test && npm run build)
-(cd frontend && npm run test:e2e)
-```
-
-Pull requests run backend and frontend checks independently. Tags matching `v*` publish both container images to GitHub Container Registry; the release workflow can also be started manually.
-
-## API contract
-
-The backend contract lives at `backend/openapi/openapi.json`. The frontend keeps a release copy at `frontend/openapi/openapi.json` and verifies its generated TypeScript types with `npm run api:check`.
-
-## License
-
-[MIT](LICENSE) © 2026 tphuc263
+[MIT License](LICENSE) © 2026 tphuc263
