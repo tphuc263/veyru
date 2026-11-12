@@ -1,6 +1,7 @@
 import {useEffect, useState} from "react";
 import {useSearchParams} from "react-router-dom";
 import {getNewsfeed} from "../../services/newsfeedService";
+import {getExploreFeed} from "../../services/searchService";
 import PhotoCard from '../../components/features/PhotoCard.jsx';
 import PhotoModal from '../../components/features/PhotoModal.jsx';
 import SuggestedUsers from '../../components/features/SuggestedUsers.jsx';
@@ -15,6 +16,8 @@ const Home = () => {
     const [error, setError] = useState(null);
     const [nextCursor, setNextCursor] = useState(null);
     const [hasMore, setHasMore] = useState(true);
+    const [isExploreFallback, setIsExploreFallback] = useState(false);
+    const [explorePage, setExplorePage] = useState(0);
     const [selectedPhotoId, setSelectedPhotoId] = useState(null);
     const [showScrollTop, setShowScrollTop] = useState(false);
 
@@ -52,6 +55,38 @@ const Home = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    const loadExploreFallback = async (page = 0, isRefresh = false) => {
+        try {
+            setLoading(true);
+            setError(null);
+            const exploreResponse = await getExploreFeed(page, 20);
+            const explorePosts = (exploreResponse?.items || []).map(photo => ({
+                ...photo,
+                type: 'PHOTO'
+            }));
+
+            setIsExploreFallback(explorePosts.length > 0 || !isRefresh);
+            setExplorePage(page);
+
+            if (isRefresh) {
+                setFeed(explorePosts);
+            } else {
+                setFeed(prev => [...prev, ...explorePosts]);
+            }
+
+            const moreExplore =
+                typeof exploreResponse?.totalPages === 'number'
+                    ? page + 1 < exploreResponse.totalPages
+                    : explorePosts.length === 20;
+            setHasMore(moreExplore);
+            setNextCursor(null);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const loadFeed = async (cursor = null, isRefresh = false) => {
         try {
             setLoading(true);
@@ -59,10 +94,17 @@ const Home = () => {
             if (isRefresh) {
                 setNextCursor(null);
                 setHasMore(true);
+                setIsExploreFallback(false);
+                setExplorePage(0);
             }
 
             const response = await getNewsfeed(cursor || undefined, 20);
             const newPosts = response.items || [];
+
+            if (cursor === null && newPosts.length === 0) {
+                await loadExploreFallback(0, true);
+                return;
+            }
 
             if (isRefresh) {
                 setFeed(newPosts);
@@ -84,7 +126,10 @@ const Home = () => {
     };
 
     const loadMore = () => {
-        if (!loading && hasMore && nextCursor) {
+        if (loading || !hasMore) return;
+        if (isExploreFallback) {
+            loadExploreFallback(explorePage + 1, false);
+        } else if (nextCursor) {
             loadFeed(nextCursor, false);
         }
     };
@@ -130,6 +175,21 @@ const Home = () => {
                         </svg>
                         <h3>Chưa có bài viết nào</h3>
                         <p>Hãy theo dõi người dùng khác để xem bài viết của họ</p>
+                    </div>
+                )}
+
+                {!error && isExploreFallback && feed.length > 0 && (
+                    <div className="explore-fallback-banner">
+                        <div className="explore-fallback-header">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+                            </svg>
+                            <div>
+                                <h3>Gợi ý khám phá dành cho bạn</h3>
+                                <p>Theo dõi các tài khoản yêu thích để cá nhân hóa bảng tin của bạn</p>
+                            </div>
+                        </div>
                     </div>
                 )}
 

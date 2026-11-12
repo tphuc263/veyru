@@ -184,6 +184,40 @@
     margin: 0;
 }
 
+/* Explore Fallback Banner */
+.explore-fallback-banner {
+    margin-bottom: 20px;
+    padding: 14px 16px;
+    background-color: var(--ig-surface, #ffffff);
+    border: 1px solid var(--ig-border-color, #dbdbdb);
+    border-radius: 8px;
+}
+
+.explore-fallback-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--ig-primary-text, #262626);
+}
+
+.explore-fallback-header svg {
+    flex-shrink: 0;
+    color: #0095f6;
+}
+
+.explore-fallback-header h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ig-primary-text, #262626);
+    margin: 0 0 2px 0;
+}
+
+.explore-fallback-header p {
+    font-size: 12px;
+    color: var(--ig-secondary-text, #8e8e8e);
+    margin: 0;
+}
+
 /* End of Feed Message */
 .end-of-feed {
     display: flex;

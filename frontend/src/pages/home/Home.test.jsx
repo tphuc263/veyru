@@ -5,8 +5,10 @@ import {MemoryRouter} from 'react-router-dom';
 import {beforeEach, expect, it, vi} from 'vitest';
 import Home from './Home.jsx';
 import {getNewsfeed} from '../../services/newsfeedService';
+import {getExploreFeed} from '../../services/searchService';
 
 vi.mock('../../services/newsfeedService', () => ({getNewsfeed: vi.fn()}));
+vi.mock('../../services/searchService', () => ({getExploreFeed: vi.fn()}));
 vi.mock('../../components/features/PhotoCard.jsx', () => ({
     default: ({photoId}) => <div>post-{photoId}</div>
 }));
@@ -47,4 +49,21 @@ it('starts a fresh ranking session when the load-more cursor expires', async () 
     expect(getNewsfeed).toHaveBeenNthCalledWith(3, undefined, 20);
     expect(await screen.findByText('post-fresh')).toBeInTheDocument();
     expect(screen.queryByText('post-old')).not.toBeInTheDocument();
+});
+
+it('falls back to explore feed when initial newsfeed is empty', async () => {
+    getNewsfeed.mockResolvedValueOnce({items: [], nextCursor: null, hasMore: false});
+    getExploreFeed.mockResolvedValueOnce({
+        items: [post('explore-1')],
+        page: 0,
+        size: 20,
+        totalElements: 1,
+        totalPages: 1
+    });
+
+    render(<MemoryRouter><Home /></MemoryRouter>);
+
+    expect(await screen.findByText('Gợi ý khám phá dành cho bạn')).toBeInTheDocument();
+    expect(screen.getByText('post-explore-1')).toBeInTheDocument();
+    expect(getExploreFeed).toHaveBeenCalledWith(0, 20);
 });
