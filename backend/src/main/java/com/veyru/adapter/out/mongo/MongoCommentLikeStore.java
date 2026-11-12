@@ -2,7 +2,10 @@ package com.veyru.adapter.out.mongo;
 
 import com.veyru.application.port.out.CommentLikeStore;
 import com.veyru.domain.model.CommentLike;
+import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -29,6 +32,16 @@ public class MongoCommentLikeStore implements CommentLikeStore {
 
   public boolean exists(String commentId, String userId) {
     return mongo.exists(relation(commentId, userId), CommentLikeDocument.class, COLLECTION);
+  }
+
+  @Override
+  public Set<String> findLikedCommentIds(String userId, Collection<String> commentIds) {
+    if (userId == null || commentIds == null || commentIds.isEmpty()) return Set.of();
+    Query query = Query.query(Criteria.where("userId").is(userId).and("commentId").in(commentIds));
+    query.fields().include("commentId");
+    return mongo.find(query, CommentLikeDocument.class, COLLECTION).stream()
+        .map(CommentLikeDocument::commentId)
+        .collect(Collectors.toSet());
   }
 
   public void deleteAllByCommentId(String commentId) {

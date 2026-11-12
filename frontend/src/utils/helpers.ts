@@ -79,3 +79,19 @@ export const validateRegistration = (userData: RegisterData): ValidationResult =
         errors
     };
 };
+
+/**
+ * Inject Cloudinary on-the-fly transformation parameters (f_auto, q_auto, w_<width>, c_limit)
+ * to drastically reduce image payload sizes while preserving visual quality.
+ */
+export const optimizeImageUrl = (url?: string | null, width: number = 800): string => {
+    if (!url || typeof url !== 'string') return '';
+    if (!url.includes('res.cloudinary.com') || !url.includes('/image/upload/')) {
+        return url;
+    }
+    if (url.includes('/image/upload/f_auto') || url.includes('/image/upload/q_auto')) {
+        return url;
+    }
+    return url.replace('/image/upload/', `/image/upload/f_auto,q_auto,w_${width},c_limit/`);
+};
+

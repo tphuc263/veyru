@@ -276,16 +276,41 @@ const Home = () => {
                 </button>
             )}
 
-            {selectedPhotoId && (() => (
+            {selectedPhotoId && (() => {
+                const matchedPost = feed.find(
+                    p => String(p.id) === String(selectedPhotoId) || String(p.originalPhotoId) === String(selectedPhotoId)
+                );
+                const initialPhoto = matchedPost
+                    ? matchedPost.type === 'SHARE'
+                        ? {
+                            id: matchedPost.originalPhotoId,
+                            userId: matchedPost.originalAuthorId || matchedPost.userId,
+                            username: matchedPost.originalAuthorUsername || matchedPost.username,
+                            userImageUrl: matchedPost.originalAuthorAvatar || matchedPost.userImageUrl,
+                            imageUrl: matchedPost.originalImageUrl,
+                            caption: matchedPost.originalPhotoCaption ?? matchedPost.shareCaption,
+                            likeCount: matchedPost.originalLikeCount ?? 0,
+                            commentCount: matchedPost.originalCommentCount ?? 0,
+                            shareCount: matchedPost.originalShareCount ?? 0,
+                            isLikedByCurrentUser: matchedPost.isLikedByCurrentUser ?? false,
+                            isSavedByCurrentUser: matchedPost.isSavedByCurrentUser ?? false,
+                            createdAt: matchedPost.createdAt,
+                            tags: matchedPost.tags || []
+                        }
+                        : matchedPost
+                    : null;
+
+                return (
                     <PhotoModal
                         photoId={selectedPhotoId}
+                        initialPhoto={initialPhoto}
                         onClose={handlePhotoClose}
                         onPhotoClick={handlePhotoSelect}
                         onPhotoUpdate={(photoId, updatedPhoto) => {
                             // Sync state between modal and feed
                             setFeed(prevFeed => 
                                 prevFeed.map(post => 
-                                    post.id === photoId 
+                                    post.id === photoId || post.originalPhotoId === photoId
                                         ? { 
                                             ...post, 
                                             isLikedByCurrentUser: updatedPhoto.isLikedByCurrentUser,
@@ -298,7 +323,8 @@ const Home = () => {
                             );
                         }}
                     />
-            ))()} 
+                );
+            })()} 
         </div>
     );
 };

@@ -14,7 +14,7 @@ import org.springframework.data.mongodb.core.index.IndexDefinition;
 
 @Configuration
 public class MongoIndexConfig {
-  private static final int MANAGED_INDEX_COUNT = 11;
+  private static final int MANAGED_INDEX_COUNT = 18;
   private static final Logger log = LoggerFactory.getLogger(MongoIndexConfig.class);
   private final MongoTemplate mongoTemplate;
 
@@ -25,9 +25,12 @@ public class MongoIndexConfig {
       createUserIndexes();
       createPhotoIndexes();
       createLikeIndexes();
+      createFavoriteIndexes();
       createCommentIndexes();
+      createCommentLikeIndexes();
       createFollowIndexes();
       createShareIndexes();
+      createNotificationIndexes();
       long durationMillis = (System.nanoTime() - startedAt) / 1_000_000;
       log.info(
           "MongoDB index synchronization completed: outcome=success, durationMs={}, indexes={}",
@@ -58,6 +61,17 @@ public class MongoIndexConfig {
     ensureIndex(
         collection,
         new CompoundIndexDefinition(new Document("photoId", 1).append("userId", 1)).unique());
+    ensureIndex(
+        collection, new CompoundIndexDefinition(new Document("userId", 1).append("photoId", 1)));
+  }
+
+  private void createFavoriteIndexes() {
+    String collection = "favorites";
+    ensureIndex(
+        collection,
+        new CompoundIndexDefinition(new Document("userId", 1).append("photoId", 1)).unique());
+    ensureIndex(
+        collection, new CompoundIndexDefinition(new Document("userId", 1).append("createdAt", -1)));
   }
 
   private void createCommentIndexes() {
@@ -65,6 +79,18 @@ public class MongoIndexConfig {
     ensureIndex(
         collection,
         new CompoundIndexDefinition(new Document("photoId", 1).append("createdAt", -1)));
+    ensureIndex(
+        collection,
+        new CompoundIndexDefinition(new Document("parentCommentId", 1).append("createdAt", 1)));
+  }
+
+  private void createCommentLikeIndexes() {
+    String collection = "comment_likes";
+    ensureIndex(
+        collection,
+        new CompoundIndexDefinition(new Document("commentId", 1).append("userId", 1)).unique());
+    ensureIndex(
+        collection, new CompoundIndexDefinition(new Document("userId", 1).append("commentId", 1)));
   }
 
   private void createFollowIndexes() {
@@ -79,6 +105,13 @@ public class MongoIndexConfig {
   private void createShareIndexes() {
     ensureIndex(
         "shares", new CompoundIndexDefinition(new Document("userId", 1).append("createdAt", -1)));
+  }
+
+  private void createNotificationIndexes() {
+    ensureIndex(
+        "notifications",
+        new CompoundIndexDefinition(
+            new Document("recipientId", 1).append("read", 1).append("createdAt", -1)));
   }
 
   private void ensureIndex(String collection, IndexDefinition indexDefinition) {

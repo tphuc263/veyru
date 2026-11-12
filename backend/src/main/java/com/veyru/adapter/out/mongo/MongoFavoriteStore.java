@@ -2,8 +2,11 @@ package com.veyru.adapter.out.mongo;
 
 import com.veyru.application.port.out.FavoriteStore;
 import com.veyru.domain.model.Favorite;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -32,6 +35,16 @@ public class MongoFavoriteStore implements FavoriteStore {
 
   public boolean exists(String userId, String photoId) {
     return mongo.exists(relation(userId, photoId), FavoriteDocument.class, COLLECTION);
+  }
+
+  @Override
+  public Set<String> findFavoritedPhotoIds(String userId, Collection<String> photoIds) {
+    if (userId == null || photoIds == null || photoIds.isEmpty()) return Set.of();
+    Query query = Query.query(Criteria.where("userId").is(userId).and("photoId").in(photoIds));
+    query.fields().include("photoId");
+    return mongo.find(query, FavoriteDocument.class, COLLECTION).stream()
+        .map(FavoriteDocument::photoId)
+        .collect(Collectors.toSet());
   }
 
   public List<Favorite> findByUserId(String userId) {

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { toggleFavorite } from '../../services/favoriteService';
 import ShareModal from './ShareModal';
 import { DEFAULT_AVATAR } from '../../utils/constants';
+import { optimizeImageUrl } from '../../utils/helpers';
 
 const PhotoCard = ({
                        photoId,
@@ -50,15 +51,24 @@ const PhotoCard = ({
     return (
         <div className="photo-card">
             <div className="photo-card-header">
-                <img src={avatarSrc || DEFAULT_AVATAR} alt={`${username}'s avatar`} className="avatar" onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}/>
+                <img
+                    src={optimizeImageUrl(avatarSrc, 120) || DEFAULT_AVATAR}
+                    alt={`${username}'s avatar`}
+                    className="avatar"
+                    loading="lazy"
+                    decoding="async"
+                    onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}
+                />
                 <span className="username">{username}</span>
                 {isSharePost && <span className="share-indicator">shared a post</span>}
             </div>
 
             <img 
-                src={photoSrc} 
+                src={optimizeImageUrl(photoSrc, 800)} 
                 alt="Post" 
                 className="photo"
+                loading="lazy"
+                decoding="async"
                 onClick={onPhotoClick}
                 style={{ cursor: 'pointer' }}
             />

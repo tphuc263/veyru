@@ -105,13 +105,30 @@ public class NewsfeedService {
 
       boolean hasMore = scored.size() > size;
       List<ScoredCandidate> page = scored.subList(0, Math.min(size, scored.size()));
+      List<String> allUserIds =
+          page.stream()
+              .flatMap(
+                  item -> {
+                    String photoAuthorId = item.candidate().photo().author().userId();
+                    return java.util.stream.Stream.of(item.authorId(), photoAuthorId);
+                  })
+              .distinct()
+              .toList();
       Map<String, User> users =
-          userStore
-              .findAllById(page.stream().map(ScoredCandidate::authorId).distinct().toList())
-              .stream()
+          userStore.findAllById(allUserIds).stream()
               .collect(Collectors.toMap(User::id, Function.identity()));
+      List<String> pagePhotoIds =
+          page.stream().map(item -> item.candidate().photo().id()).distinct().toList();
+      java.util.Set<String> likedPhotoIds =
+          likeStore.findLikedPhotoIds(currentUser.id(), pagePhotoIds);
+      java.util.Set<String> savedPhotoIds =
+          favoriteStore.findFavoritedPhotoIds(currentUser.id(), pagePhotoIds);
       List<UnifiedPostResult> items =
-          page.stream().map(item -> toResult(item.candidate(), currentUser, users)).toList();
+          page.stream()
+              .map(
+                  item ->
+                      toResult(item.candidate(), currentUser, users, likedPhotoIds, savedPhotoIds))
+              .toList();
       String nextCursor =
           hasMore && !page.isEmpty()
               ? cursorCodec.encode(
@@ -285,7 +302,11 @@ public class NewsfeedService {
   }
 
   private UnifiedPostResult toResult(
-      FeedCandidate candidate, User currentUser, Map<String, User> users) {
+      FeedCandidate candidate,
+      User currentUser,
+      Map<String, User> users,
+      java.util.Set<String> likedPhotoIds,
+      java.util.Set<String> savedPhotoIds) {
     Photo photo = candidate.photo();
     UnifiedPostResult result = new UnifiedPostResult();
     result.setCreatedAt(candidate.createdAt());
@@ -293,7 +314,8 @@ public class NewsfeedService {
     User author = users.get(candidate.authorId());
     if (author != null) {
       result.setUsername(author.username());
-      result.setUserImageUrl(avatarCache.getAvatar(author.id()));
+      result.setUserImageUrl(
+          author.imageUrl() != null ? author.imageUrl() : avatarCache.getAvatar(author.id()));
     }
     if (candidate.share() == null) {
       result.setId(photo.id());
@@ -303,8 +325,8 @@ public class NewsfeedService {
       result.setLikeCount((int) photo.likeCount());
       result.setCommentCount((int) photo.commentCount());
       result.setShareCount((int) photo.shareCount());
-      result.setLikedByCurrentUser(likeStore.exists(photo.id(), currentUser.id()));
-      result.setSavedByCurrentUser(favoriteStore.exists(currentUser.id(), photo.id()));
+      result.setLikedByCurrentUser(likedPhotoIds.contains(photo.id()));
+      result.setSavedByCurrentUser(savedPhotoIds.contains(photo.id()));
       return result;
     }
 
@@ -320,9 +342,13 @@ public class NewsfeedService {
     result.setOriginalCommentCount((int) photo.commentCount());
     result.setOriginalShareCount((int) photo.shareCount());
     result.setOriginalUsername(photo.author().username());
-    result.setOriginalUserImageUrl(avatarCache.getAvatar(photo.author().userId()));
-    result.setLikedByCurrentUser(likeStore.exists(photo.id(), currentUser.id()));
-    result.setSavedByCurrentUser(favoriteStore.exists(currentUser.id(), photo.id()));
+    User originalAuthor = users.get(photo.author().userId());
+    result.setOriginalUserImageUrl(
+        originalAuthor != null && originalAuthor.imageUrl() != null
+            ? originalAuthor.imageUrl()
+            : avatarCache.getAvatar(photo.author().userId()));
+    result.setLikedByCurrentUser(likedPhotoIds.contains(photo.id()));
+    result.setSavedByCurrentUser(savedPhotoIds.contains(photo.id()));
     return result;
   }
 
@@ -333,12 +359,8 @@ public class NewsfeedService {
     List<PhotoResult> items =
         start >= photos.size()
             ? List.of()
-            : photos.subList(start, end).stream()
-                .map(
-                    photo ->
-                        photoConversionService.convertToPhotoResponse(
-                            photo, PhotoViewer.authenticated(currentUser)))
-                .toList();
+            : photoConversionService.convertToPhotoResponses(
+                photos.subList(start, end), PhotoViewer.authenticated(currentUser));
     return new PageResult<>(
         items,
         page.page(),

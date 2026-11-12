@@ -42,11 +42,16 @@ public class RedisUserAvatarCache implements AvatarCache {
   public Map<String, String> getAvatars(List<String> userIds) {
     Map<String, String> result = new HashMap<>();
     if (userIds == null || userIds.isEmpty()) return result;
-    List<String> missingIds = new java.util.ArrayList<>();
-    for (String userId : userIds) {
-      String key = AVATAR_KEY_PREFIX + userId;
+    List<String> distinctIds =
+        userIds.stream().filter(id -> id != null && !id.isBlank()).distinct().toList();
+    if (distinctIds.isEmpty()) return result;
 
-      Object cached = redisTemplate.opsForValue().get(key);
+    List<String> keys = distinctIds.stream().map(id -> AVATAR_KEY_PREFIX + id).toList();
+    List<Object> cachedValues = redisTemplate.opsForValue().multiGet(keys);
+    List<String> missingIds = new java.util.ArrayList<>();
+    for (int i = 0; i < distinctIds.size(); i++) {
+      String userId = distinctIds.get(i);
+      Object cached = cachedValues != null && i < cachedValues.size() ? cachedValues.get(i) : null;
       if (cached != null) {
         result.put(userId, cached.toString());
       } else {
@@ -61,7 +66,6 @@ public class RedisUserAvatarCache implements AvatarCache {
                 String imageUrl = user.imageUrl();
                 result.put(user.id(), imageUrl);
                 if (imageUrl != null) {
-
                   redisTemplate
                       .opsForValue()
                       .set(AVATAR_KEY_PREFIX + user.id(), imageUrl, CACHE_TTL);

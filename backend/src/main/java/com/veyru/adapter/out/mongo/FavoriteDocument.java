@@ -24,4 +24,8 @@ final class FavoriteDocument {
   Favorite toDomain() {
     return new Favorite(id, userId, photoId, createdAt);
   }
+
+  String photoId() {
+    return photoId;
+  }
 }

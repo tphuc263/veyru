@@ -24,4 +24,8 @@ final class LikeDocument {
   Like toDomain() {
     return new Like(id, photoId, userId, createdAt);
   }
+
+  String photoId() {
+    return photoId;
+  }
 }

@@ -58,12 +58,9 @@ public class RecommendationService {
         Map<String, Photo> photos =
             photoStore.findAllById(ids).stream()
                 .collect(Collectors.toMap(Photo::id, photo -> photo));
+        List<Photo> orderedPhotos = ids.stream().map(photos::get).filter(Objects::nonNull).toList();
         List<PhotoResult> related =
-            ids.stream()
-                .map(photos::get)
-                .filter(Objects::nonNull)
-                .map(photo -> photoConversionService.convertToPhotoResponse(photo, viewer))
-                .toList();
+            photoConversionService.convertToPhotoResponses(orderedPhotos, viewer);
         if (!related.isEmpty()) return related;
       }
     } catch (RuntimeException exception) {
@@ -160,11 +157,12 @@ public class RecommendationService {
 
   private List<PhotoResult> relatedByTags(Photo source, int limit, PhotoViewer viewer) {
     if (source.tags().isEmpty()) return List.of();
-    return photoStore.findByTags(source.tags(), new PageQuery(0, limit + 1)).items().stream()
-        .filter(photo -> !photo.id().equals(source.id()))
-        .limit(limit)
-        .map(photo -> photoConversionService.convertToPhotoResponse(photo, viewer))
-        .toList();
+    List<Photo> candidates =
+        photoStore.findByTags(source.tags(), new PageQuery(0, limit + 1)).items().stream()
+            .filter(photo -> !photo.id().equals(source.id()))
+            .limit(limit)
+            .toList();
+    return photoConversionService.convertToPhotoResponses(candidates, viewer);
   }
 
   private Set<String> followingIds(String userId) {

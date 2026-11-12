@@ -5,6 +5,7 @@ import { follow } from '../../services/followService';
 import { useAuthContext } from '../../context/AuthContext';
 import { getCurrentUserProfile } from '../../services/userService';
 import { DEFAULT_AVATAR } from '../../utils/constants';
+import { optimizeImageUrl } from '../../utils/helpers';
 import '../../assets/styles/components/suggestedUsers.css';
 
 const SuggestedUsers = () => {
@@ -32,7 +33,7 @@ const SuggestedUsers = () => {
     const loadSuggestions = async () => {
         try {
             setLoading(true);
-            const users = await getSuggestedUsers(20);
+            const users = await getSuggestedUsers(10);
             setSuggestedUsers(users);
         } catch (err) {
             console.error('Failed to load suggested users:', err);
@@ -90,9 +91,11 @@ const SuggestedUsers = () => {
             {currentUser && (
                 <Link to="/profile" className="current-user-mini">
                     <img
-                        src={currentUserProfile?.imageUrl || DEFAULT_AVATAR}
+                        src={optimizeImageUrl(currentUserProfile?.imageUrl, 120) || DEFAULT_AVATAR}
                         alt={currentUser.username}
                         className="current-user-avatar"
+                        loading="lazy"
+                        decoding="async"
                         onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}
                     />
                     <div className="current-user-info">
@@ -117,18 +120,25 @@ const SuggestedUsers = () => {
 
             {/* User list */}
             <div className="suggested-list">
-                {displayedUsers.map(user => (
+                {displayedUsers.map(user => {
+                    const rawSubtitle = (user.bio && user.bio.trim()) ? user.bio.trim() : 'Gợi ý cho bạn';
+                    const subtitle = rawSubtitle.length > 42 ? `${rawSubtitle.slice(0, 42).trim()}…` : rawSubtitle;
+                    return (
                     <div key={user.id} className="suggested-user-item">
                         <Link to={`/profile/${user.id}`} className="suggested-user-link">
                             <img
-                                src={user.imageUrl || DEFAULT_AVATAR}
+                                src={optimizeImageUrl(user.imageUrl, 120) || DEFAULT_AVATAR}
                                 alt={user.username}
                                 className="suggested-user-avatar"
+                                loading="lazy"
+                                decoding="async"
                                 onError={e => { e.currentTarget.src = DEFAULT_AVATAR; }}
                             />
                             <div className="suggested-user-info">
                                 <span className="suggested-user-username">{user.username}</span>
-                                <span className="suggested-user-reason">{user.reason}</span>
+                                <span className="suggested-user-reason" title={user.bio || ''}>
+                                    {subtitle}
+                                </span>
                             </div>
                         </Link>
                         {followingSet.has(user.id) ? (
@@ -142,7 +152,8 @@ const SuggestedUsers = () => {
                             </button>
                         )}
                     </div>
-                ))}
+                    );
+                })}
             </div>
 
             {/* Footer */}

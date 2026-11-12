@@ -24,4 +24,8 @@ final class CommentLikeDocument {
   CommentLike toDomain() {
     return new CommentLike(id, commentId, userId, createdAt);
   }
+
+  String commentId() {
+    return commentId;
+  }
 }
