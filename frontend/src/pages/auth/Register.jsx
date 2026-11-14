@@ -19,7 +19,7 @@ const Register = () => {
     // Local UI state
     const [errors, setErrors] = useState({})           // Form validation errors
     const [showPassword, setShowPassword] = useState(false)      // Password visibility
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false)  // Confirm password visibility
+    const passwordToggleLabel = showPassword ? 'Hide both passwords' : 'Show both passwords'
 
     // Get auth context and navigation
     const {register, operationLoading: loading} = useAuthContext()
@@ -114,13 +114,6 @@ const Register = () => {
      */
     const togglePasswordVisibility = () => {
         setShowPassword(prev => !prev)
-    }
-
-    /**
-     * Handle confirm password visibility toggle
-     */
-    const toggleConfirmPasswordVisibility = () => {
-        setShowConfirmPassword(prev => !prev)
     }
 
     /**
@@ -229,7 +222,7 @@ const Register = () => {
                                 className="password-toggle"
                                 onClick={togglePasswordVisibility}
                                 disabled={loading}
-                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                aria-label={passwordToggleLabel}
                             >
                                 {showPassword ? <EyeOff className="w-5 h-5"/> : <Eye className="w-5 h-5"/>}
                             </button>
@@ -269,7 +262,7 @@ const Register = () => {
                         <div className="password-input-wrapper">
                             <input
                                 id="confirmPassword"
-                                type={showConfirmPassword ? 'text' : 'password'}
+                                type={showPassword ? 'text' : 'password'}
                                 name="confirmPassword"
                                 placeholder="Confirm your password"
                                 value={formData.confirmPassword}
@@ -283,9 +276,9 @@ const Register = () => {
                             <button
                                 type="button"
                                 className="password-toggle"
-                                onClick={toggleConfirmPasswordVisibility}
+                                onClick={togglePasswordVisibility}
                                 disabled={loading}
-                                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                                aria-label={passwordToggleLabel}
                             >
                                 {showPassword ? <EyeOff className="w-5 h-5"/> : <Eye className="w-5 h-5"/>}
                             </button>

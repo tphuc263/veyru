@@ -1,5 +1,6 @@
 import {useState} from 'react'
 import {Link, useLocation, useNavigate} from 'react-router-dom'
+import {Eye, EyeOff} from 'lucide-react'
 import {useAuthContext} from '../../context/AuthContext'
 import {validateCredentials} from "../../utils/helpers";
 import {Loader} from "../../components/common/Loader.jsx";
@@ -15,6 +16,7 @@ const Login = () => {
     })
 
     const [errors, setErrors] = useState({})
+    const [showPassword, setShowPassword] = useState(false)
 
     const { login, operationLoading: loading } = useAuthContext();
     const navigate = useNavigate()
@@ -108,18 +110,29 @@ const Login = () => {
 
                     {/* Password Input Field */}
                     <div className="form-group">
-                        <input
-                            id="password"
-                            type="password"
-                            name="password"
-                            placeholder="Password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            className={`form-input ${errors.password ? 'error' : ''}`}
-                            disabled={loading}
-                            autoComplete="current-password"
-                            required
-                        />
+                        <div className="password-input-wrapper">
+                            <input
+                                id="password"
+                                type={showPassword ? 'text' : 'password'}
+                                name="password"
+                                placeholder="Password"
+                                value={formData.password}
+                                onChange={handleChange}
+                                className={`form-input ${errors.password ? 'error' : ''}`}
+                                disabled={loading}
+                                autoComplete="current-password"
+                                required
+                            />
+                            <button
+                                type="button"
+                                className="password-toggle"
+                                onClick={() => setShowPassword(prev => !prev)}
+                                disabled={loading}
+                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                            >
+                                {showPassword ? <EyeOff className="w-5 h-5"/> : <Eye className="w-5 h-5"/>}
+                            </button>
+                        </div>
                         {/* Show password validation error */}
                         {errors.password && (
                             <span className="error-message" role="alert">
